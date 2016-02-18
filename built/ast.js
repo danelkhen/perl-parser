@@ -93,10 +93,38 @@ var UseStatement = (function (_super) {
     }
     return UseStatement;
 }(Statement));
-var PackageName = (function (_super) {
-    __extends(PackageName, _super);
-    function PackageName() {
+var MemberExpression = (function (_super) {
+    __extends(MemberExpression, _super);
+    function MemberExpression() {
         _super.apply(this, arguments);
     }
-    return PackageName;
-}(AstNode));
+    return MemberExpression;
+}(Expression));
+var InvocationExpression = (function (_super) {
+    __extends(InvocationExpression, _super);
+    function InvocationExpression() {
+        _super.apply(this, arguments);
+    }
+    return InvocationExpression;
+}(Expression));
+var QwExpression = (function (_super) {
+    __extends(QwExpression, _super);
+    function QwExpression() {
+        _super.apply(this, arguments);
+    }
+    return QwExpression;
+}(Expression));
+var ValueExpression = (function (_super) {
+    __extends(ValueExpression, _super);
+    function ValueExpression() {
+        _super.apply(this, arguments);
+    }
+    return ValueExpression;
+}(Expression));
+var ReturnStatement = (function (_super) {
+    __extends(ReturnStatement, _super);
+    function ReturnStatement() {
+        _super.apply(this, arguments);
+    }
+    return ReturnStatement;
+}(Statement));

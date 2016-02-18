@@ -26,11 +26,18 @@ class Token {
     toString() {
         return this.type.name + " " + this.value;
     }
-    is(type: TokenType) {
-        return this.type.name == type.name;
+    is(type: TokenType, value?:string) {
+        if(this.type.name != type.name)
+            return false;
+        if(value!=null && this.value!=value)
+            return false;
+        return true;
     }
-    isKeyword(keyword: string) {
-        return this.is(TokenTypes.keyword) && this.value == keyword;
+    isKeyword(value?: string) {
+        return this.is(TokenTypes.keyword, value);
+    }
+    isIdentifier(value?: string) {
+        return this.is(TokenTypes.identifier, value);
     }
 
 }
@@ -52,7 +59,7 @@ class TokenTypes {
 
     }
     static qq = new TokenType(/qq\|.*\|/);
-    static keyword = new TokenType(/package|use|my|sub/);
+    static keyword = new TokenType(/package|use|my|sub|return|if/);
     static end = new TokenType(/__END__/);
     static whitespace = new TokenType(/[ \t\r\n]+/);
     static packageSeparator = new TokenType(/\:\:/);

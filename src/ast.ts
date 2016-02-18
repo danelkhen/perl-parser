@@ -23,7 +23,7 @@ class Unit extends AstNode {
 
 class PackageDeclaration extends Statement {
     statements: Statement[];
-    name: PackageName;
+    name: MemberExpression;
 }
 
 class VariableDeclarationStatement extends Statement {
@@ -34,12 +34,12 @@ class SimpleName extends Expression {
     name: string;
 }
 class VariableDeclarationExpression extends Expression {
-    name: SimpleName;
+    variables: Expression;  //my $name, my ($name, $age)
     initializer: Expression;
 }
 
 class SubroutineDeclaration extends Statement {
-    name:SimpleName;
+    name: SimpleName;
     statements: Statement[];
 }
 
@@ -48,13 +48,31 @@ class SubroutineDeclaration extends Statement {
 
 
 class ExpressionStatement extends Statement {
-    expression:Expression;
+    expression: Expression;
 }
 class UseStatement extends Statement {
-    packageName: PackageName;
+    packageName: MemberExpression;
 }
 
-class PackageName extends AstNode {
+class MemberExpression extends Expression {
     name: string;
+    prev: Expression;
+    arrow:boolean;
 }
 
+class InvocationExpression extends Expression {
+    target: Expression;
+    arguments: Expression[];
+}
+
+class QwExpression extends Expression {
+    items: ValueExpression[];
+}
+class ValueExpression extends Expression {
+    value: any;
+}
+
+class ReturnStatement extends Statement {
+    value: any;
+    expression: Expression;
+}

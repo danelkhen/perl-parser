@@ -10,8 +10,10 @@ function main() {
         tok.pos = 0;
         tok.main();
         let parser = new Parser();
-        parser.tokenizer = tok;
-        parser.tokens = tok.tokens;
+        parser.logger = new Logger();
+        parser.reader = new TokenReader();
+        parser.reader.logger = parser.logger;
+        parser.reader.tokens = tok.tokens;
         var statements = parser.doParse();
         console.log(statements);
         $.create("pre").text(stringifyNodes(statements)).appendTo("body")

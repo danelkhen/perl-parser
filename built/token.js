@@ -20,11 +20,18 @@ var Token = (function () {
     Token.prototype.toString = function () {
         return this.type.name + " " + this.value;
     };
-    Token.prototype.is = function (type) {
-        return this.type.name == type.name;
+    Token.prototype.is = function (type, value) {
+        if (this.type.name != type.name)
+            return false;
+        if (value != null && this.value != value)
+            return false;
+        return true;
     };
-    Token.prototype.isKeyword = function (keyword) {
-        return this.is(TokenTypes.keyword) && this.value == keyword;
+    Token.prototype.isKeyword = function (value) {
+        return this.is(TokenTypes.keyword, value);
+    };
+    Token.prototype.isIdentifier = function (value) {
+        return this.is(TokenTypes.identifier, value);
     };
     return Token;
 }());
@@ -46,7 +53,7 @@ var TokenTypes = (function () {
     };
     TokenTypes.identifierRegex = /[a-zA-Z_][a-zA-Z_0-9]*/;
     TokenTypes.qq = new TokenType(/qq\|.*\|/);
-    TokenTypes.keyword = new TokenType(/package|use|my|sub/);
+    TokenTypes.keyword = new TokenType(/package|use|my|sub|return|if/);
     TokenTypes.end = new TokenType(/__END__/);
     TokenTypes.whitespace = new TokenType(/[ \t\r\n]+/);
     TokenTypes.packageSeparator = new TokenType(/\:\:/);
