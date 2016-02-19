@@ -14,6 +14,7 @@ var Logger = (function () {
         for (var _i = 0; _i < arguments.length; _i++) {
             args[_i - 0] = arguments[_i];
         }
+        throw new Error();
         this.errors++;
         if (this.errors > 10)
             throw new Error();
@@ -25,13 +26,9 @@ var TokenReader = (function () {
     function TokenReader() {
         this.tokenIndex = -1;
     }
-    Object.defineProperty(TokenReader.prototype, "context", {
+    Object.defineProperty(TokenReader.prototype, "currentLineText", {
         get: function () {
-            var index = this.token.range.index;
-            var src = this.token.range.src;
-            var start = src.lastIndexOf("\n", index) || 0;
-            var end = src.indexOf("\n", index) || index + 30;
-            return src.substring(start, end);
+            return this.token.range.file.getLineText(this.token.range.start.line);
         },
         enumerable: true,
         configurable: true
@@ -63,6 +60,10 @@ var TokenReader = (function () {
         if (!this.token.is(type, value))
             this.onUnexpectedToken();
     };
+    TokenReader.prototype.expectAny = function (types) {
+        if (!this.token.isAny(types))
+            this.onUnexpectedToken();
+    };
     TokenReader.prototype.onUnexpectedToken = function () {
         this.logger.error("unexecpted token type", this.token);
         return null;
@@ -81,6 +82,9 @@ var ParserBase = (function () {
     };
     ParserBase.prototype.expectKeyword = function (value) {
         return this.reader.expectKeyword(value);
+    };
+    ParserBase.prototype.expectAny = function (types) {
+        return this.reader.expectAny(types);
     };
     ParserBase.prototype.expect = function (type, value) {
         return this.reader.expect(type, value);
@@ -104,9 +108,18 @@ var ParserBase = (function () {
         enumerable: true,
         configurable: true
     });
-    Object.defineProperty(ParserBase.prototype, "currentLine", {
+    Object.defineProperty(ParserBase.prototype, "currentRangeText", {
         get: function () {
-            return this.reader.context;
+            if (this.token == null)
+                return null;
+            return this.token.range.text;
+        },
+        enumerable: true,
+        configurable: true
+    });
+    Object.defineProperty(ParserBase.prototype, "currentLineText", {
+        get: function () {
+            return this.reader.currentLineText;
         },
         enumerable: true,
         configurable: true

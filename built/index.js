@@ -5,9 +5,9 @@ function main() {
     console.log(filename);
     //fs.readFile(filename, "utf8", (e, data) => { this.src = data; this.pos = 0; this.main2(); });
     $.get(filename).then(function (data) {
+        var file = new File2(filename, data);
         var tok = new Tokenizer();
-        tok.src = data;
-        tok.pos = 0;
+        tok.file = file;
         tok.main();
         var parser = new Parser();
         parser.logger = new Logger();

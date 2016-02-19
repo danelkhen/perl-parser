@@ -5,6 +5,7 @@ class Logger {
     }
     errors = 0;
     error(...args) {
+        throw new Error();
         this.errors++;
         if (this.errors > 10)
             throw new Error();
@@ -16,12 +17,8 @@ class TokenReader {
     token: Token;
     tokenIndex = -1;
     logger: Logger;
-    get context(): string {
-        let index = this.token.range.index;
-        let src = this.token.range.src;
-        var start = src.lastIndexOf("\n", index) || 0;
-        var end = src.indexOf("\n", index) || index + 30;
-        return src.substring(start, end);
+    get currentLineText(): string {
+        return this.token.range.file.getLineText(this.token.range.start.line);
     }
     getPrevToken() {
         return this.tokens[this.tokenIndex-1];
@@ -50,6 +47,10 @@ class TokenReader {
         if (!this.token.is(type, value))
             this.onUnexpectedToken();
     }
+    expectAny(types: TokenType[]) {
+        if (!this.token.isAny(types))
+            this.onUnexpectedToken();
+    }
     onUnexpectedToken(): any {
         this.logger.error("unexecpted token type", this.token);
         return null;
@@ -68,6 +69,9 @@ class ParserBase {
     expectKeyword(value?: string) {
         return this.reader.expectKeyword(value);
     }
+    expectAny(types: TokenType[]) {
+        return this.reader.expectAny(types);
+    }
     expect(type: TokenType, value?: string) {
         return this.reader.expect(type, value);
     }
@@ -80,8 +84,13 @@ class ParserBase {
     logger: Logger;
     reader: TokenReader;
     get token(): Token { return this.reader.token; }
-    get currentLine(): string {
-        return this.reader.context;
+    get currentRangeText(): string {
+        if(this.token==null)
+            return null;
+        return this.token.range.text;
+    }
+    get currentLineText(): string {
+        return this.reader.currentLineText;
     }
     getPrevToken() {
         return this.reader.getPrevToken();

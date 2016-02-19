@@ -16,10 +16,14 @@
                 return this.parseArrayRefDeclaration();
             else if (this.token.isIdentifier("qw"))
                 return this.parseQw();
-            else if (this.token.is(TokenTypes.parenOpen) && lastExpression == null) {
-                return this.parseList();
+            else if (this.token.is(TokenTypes.braceOpen)) {
+                if (lastExpression == null)
+                    return this.parseHashRefCreation();
+                return this.parseHashRefCreation(); //TODO: hash member access
             }
-            else if (this.token.is(TokenTypes.parenOpen) && lastExpression != null) {
+            else if (this.token.is(TokenTypes.parenOpen)) {
+                if (lastExpression == null)
+                    return this.parseList();
                 let node = this.parseInvocationExpression();
                 node.target = lastExpression;
                 lastExpression = node;
@@ -34,7 +38,7 @@
                 node.prev = lastExpression;
                 lastExpression = node;
             }
-            else if (this.token.is(TokenTypes.integer)) {
+            else if (this.token.isAny([TokenTypes.integer, TokenTypes.interpolatedString])) {
                 let node = new ValueExpression();
                 node.token = this.token;
                 node.value = this.token.value;//TODO:
@@ -53,6 +57,18 @@
                 let node = this._parseExpression(lastExpression);
                 return node;
             }
+            else if (this.token.isAny([TokenTypes.equals, TokenTypes.dot])) {
+                if (lastExpression == null)
+                    throw new Error();
+                let exp = new BinaryExpression();
+                exp.token = this.token;
+                exp.left = lastExpression;
+                exp.operator = new Operator();
+                exp.operator.value = this.token.value;
+                this.nextNonWhitespaceToken();
+                exp.right = this.parseExpression();
+                return exp;
+            }
             else if (lastExpression != null)
                 return lastExpression;
             else
@@ -62,6 +78,14 @@
             //this.nextToken();
             //return node;
         }
+    }
+    parseHashRefCreation(): HashRefCreationExpression {
+        this.expect(TokenTypes.braceOpen);
+        this.nextNonWhitespaceToken();
+        let exp = new HashRefCreationExpression();
+        exp.token = this.token;
+        exp.items = this.parseItems(TokenTypes.braceOpen, TokenTypes.braceClose);
+        return exp;
     }
     parseMemberExpression(): MemberExpression {
         console.log("parseMemberExpression", this.token);
@@ -85,40 +109,45 @@
         this.expect(TokenTypes.bracketOpen);
         let node = new ArrayRefDeclaration();
         node.token = this.token;
-        node.items = [];
-        this.nextNonWhitespaceToken();
-        while (this.token != null) {
-            node.items.push(this.parseExpression());
-            this.skipWhitespaceAndComments();
-            if (this.token.is(TokenTypes.bracketClose))
-                break;
-            this.expect(TokenTypes.comma);
-            this.nextNonWhitespaceToken();
-            if (this.token.is(TokenTypes.bracketClose))
-                break;
-        }
-        this.nextToken();
+        node.items = this.parseItems(TokenTypes.bracketOpen, TokenTypes.bracketClose);
+        //this.nextNonWhitespaceToken();
+        //while (this.token != null) {
+        //    node.items.push(this.parseExpression());
+        //    this.skipWhitespaceAndComments();
+        //    if (this.token.is(TokenTypes.bracketClose))
+        //        break;
+        //    this.expect(TokenTypes.comma);
+        //    this.nextNonWhitespaceToken();
+        //    if (this.token.is(TokenTypes.bracketClose))
+        //        break;
+        //}
+        //this.nextToken();
         return node;
     }
     parseList(): ListDeclaration {
-        console.log("parseList", this.token);
-        this.expect(TokenTypes.parenOpen);
         let node = new ListDeclaration();
         node.token = this.token;
-        node.items = [];
+        node.items = this.parseItems(TokenTypes.parenOpen, TokenTypes.parenClose);
+        return node;
+    }
+    parseItems(opener: TokenType, closer: TokenType): Expression[] {
+        console.log("parseList", this.token);
+        this.expect(opener);
+        let items: Expression[] = [];
         this.nextNonWhitespaceToken();
         while (this.token != null) {
             if (this.token.is(TokenTypes.parenClose))
                 break;
-            node.items.push(this.parseExpression());
+            items.push(this.parseExpression());
             this.skipWhitespaceAndComments();
-            if (this.token.is(TokenTypes.parenClose))
+            if (this.token.is(closer))
                 break;
-            this.expect(TokenTypes.comma);
+            this.expectAny([TokenTypes.comma, TokenTypes.fatArrow]);
             this.nextNonWhitespaceToken();
         }
+        this.expect(closer);
         this.nextToken();
-        return node;
+        return items;
     }
 
     parseQw(): QwExpression {

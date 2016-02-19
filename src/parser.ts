@@ -10,16 +10,16 @@
     parseStatementsUntil(stopAtTokenType?: TokenType): Statement[] {
         let i = 0;
         this.log("parseStatements");
-        this.skipWhitespaceAndComments();
         let statements: Statement[] = [];
         while (true) {
             i++;
+            this.skipWhitespaceAndComments();
+            if (stopAtTokenType && this.token.is(stopAtTokenType))
+                break;
             let node = this.parseStatement();
             if (node == null)
                 break;
             statements.push(node);
-            if (stopAtTokenType && this.token.is(stopAtTokenType))
-                break;
         };
         return statements;
     }
@@ -85,7 +85,7 @@
         this.expect(TokenTypes.braceOpen);
         this.nextNonWhitespaceToken();
         node.statements = this.parseStatementsUntil(TokenTypes.braceClose);
-        this.expect(TokenTypes.bracketClose);
+        this.expect(TokenTypes.braceClose);
         this.nextToken();
         return node;
     }
@@ -108,7 +108,7 @@
         this.skipWhitespaceAndComments();
         node.variables = this.parseExpression();
         this.skipWhitespaceAndComments();
-        if (this.token.is(TokenTypes.equals)) {
+        if (this.token.is(TokenTypes.equals)) {   //TODO: doesn't work, variables are evaluated to a binary expression (assignment)
             this.nextToken();
             this.skipWhitespaceAndComments();
             node.initializer = this.parseExpression();

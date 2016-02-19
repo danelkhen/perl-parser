@@ -128,3 +128,22 @@ var ReturnStatement = (function (_super) {
     }
     return ReturnStatement;
 }(Statement));
+var BinaryExpression = (function (_super) {
+    __extends(BinaryExpression, _super);
+    function BinaryExpression() {
+        _super.apply(this, arguments);
+    }
+    return BinaryExpression;
+}(Expression));
+var Operator = (function () {
+    function Operator() {
+    }
+    return Operator;
+}());
+var HashRefCreationExpression = (function (_super) {
+    __extends(HashRefCreationExpression, _super);
+    function HashRefCreationExpression() {
+        _super.apply(this, arguments);
+    }
+    return HashRefCreationExpression;
+}(Expression));

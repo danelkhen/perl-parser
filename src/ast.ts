@@ -57,7 +57,7 @@ class UseStatement extends Statement {
 class MemberExpression extends Expression {
     name: string;
     prev: Expression;
-    arrow:boolean;
+    arrow: boolean;
 }
 
 class InvocationExpression extends Expression {
@@ -75,4 +75,19 @@ class ValueExpression extends Expression {
 class ReturnStatement extends Statement {
     value: any;
     expression: Expression;
+}
+
+class BinaryExpression extends Expression {
+    left: Expression;
+    operator: Operator;
+    right: Expression;
+}
+
+class Operator {
+    value: string;
+
+}
+
+class HashRefCreationExpression extends Expression {
+    items: Expression[];
 }

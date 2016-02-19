@@ -84,6 +84,7 @@ interface Array<T> {
     toArray(): any;
     insert(index: any, item: any): any;
     insertRange(index: any, items: any): any;
+    last(): T;
     last(predicate: any): any;
     toObject(selector: any): any;
     toObjectKeys(defaultValue: any): any;
@@ -93,7 +94,7 @@ interface Array<T> {
     removeFirst(): any;
     removeRange(items: any): any;
     containsAny(items: any): any;
-    any(predicate: any): any;
+    any(predicate?: (item: T, index?: number) => boolean): boolean;
     forEachAsyncProgressive(actionWithCallback: any, finalCallback: any): any;
     whereEq(selector: any, value: any): any;
     whereNotEq(selector: any, value: any): any;

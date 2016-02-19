@@ -15,16 +15,16 @@ var Parser = (function (_super) {
     Parser.prototype.parseStatementsUntil = function (stopAtTokenType) {
         var i = 0;
         this.log("parseStatements");
-        this.skipWhitespaceAndComments();
         var statements = [];
         while (true) {
             i++;
+            this.skipWhitespaceAndComments();
+            if (stopAtTokenType && this.token.is(stopAtTokenType))
+                break;
             var node = this.parseStatement();
             if (node == null)
                 break;
             statements.push(node);
-            if (stopAtTokenType && this.token.is(stopAtTokenType))
-                break;
         }
         ;
         return statements;
@@ -91,7 +91,7 @@ var Parser = (function (_super) {
         this.expect(TokenTypes.braceOpen);
         this.nextNonWhitespaceToken();
         node.statements = this.parseStatementsUntil(TokenTypes.braceClose);
-        this.expect(TokenTypes.bracketClose);
+        this.expect(TokenTypes.braceClose);
         this.nextToken();
         return node;
     };
