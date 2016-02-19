@@ -62,13 +62,14 @@ class TokenTypes {
 
     }
     static qq = new TokenType(/qq\|.*\|/);
-    static keyword = new TokenType(/package\b|use\b|my\b|sub\b|return\b|if\b/);
+    static keyword = new TokenType(new RegExp(["package","use","my","sub","return","if","defined","ref","exists"].map(t=>t+="\\b").join("|"))); //\b|use\b|my\b|sub\b|return\b|if\b|defined\b/
     static end = new TokenType(/__END__/);
     static whitespace = new TokenType(/[ \t\r\n]+/);
     static packageSeparator = new TokenType(/\:\:/);
     static semicolon = new TokenType(/;/);
     static sigiledIdentifier = new TokenType(new RegExp("[\\$@]" + TokenTypes.identifierRegex.source));
     static comment = new TokenType(/\#.*/);
+    static regExpEquals = new TokenType(/=\~/);
     static equals = new TokenType(/=/);
     static comma = new TokenType(/\,/);
     static integer = new TokenType(/[0-9]+/);
@@ -87,7 +88,8 @@ class TokenTypes {
     static string = new TokenType(/\'.*\'/);
     static divDiv = new TokenType(/\/\//);
     static tilda = new TokenType(/\~/);
-    static regex = new TokenType(/\/.*\/\/[g]*/);
+    static regex = new TokenType(/\/.*\/[a-z]*/);
+    static regexSubstitute = new TokenType(/s\/.*\/.*\/[a-z]*/);  // s/abc/def/mg
     static or = new TokenType(/\|\|/);
     static and = new TokenType(/\&\&/);
     static minus = new TokenType(/\-/);

@@ -50,6 +50,9 @@ var Parser = (function (_super) {
         else if (this.token.isKeyword("return")) {
             return this.parseReturnStatement();
         }
+        else if (this.token.isKeyword("if")) {
+            throw new Error("implement");
+        }
         return this.parseExpressionStatement();
         this.error("not implemented - parseStatement", this.token);
         return null;

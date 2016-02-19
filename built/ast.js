@@ -79,6 +79,13 @@ var SubroutineDeclaration = (function (_super) {
     }
     return SubroutineDeclaration;
 }(Statement));
+var RegexExpression = (function (_super) {
+    __extends(RegexExpression, _super);
+    function RegexExpression() {
+        _super.apply(this, arguments);
+    }
+    return RegexExpression;
+}(Expression));
 var ExpressionStatement = (function (_super) {
     __extends(ExpressionStatement, _super);
     function ExpressionStatement() {
@@ -100,12 +107,26 @@ var MemberExpression = (function (_super) {
     }
     return MemberExpression;
 }(Expression));
+var HashMemberAccessExpression = (function (_super) {
+    __extends(HashMemberAccessExpression, _super);
+    function HashMemberAccessExpression() {
+        _super.apply(this, arguments);
+    }
+    return HashMemberAccessExpression;
+}(Expression));
 var InvocationExpression = (function (_super) {
     __extends(InvocationExpression, _super);
     function InvocationExpression() {
         _super.apply(this, arguments);
     }
     return InvocationExpression;
+}(Expression));
+var BarewordExpression = (function (_super) {
+    __extends(BarewordExpression, _super);
+    function BarewordExpression() {
+        _super.apply(this, arguments);
+    }
+    return BarewordExpression;
 }(Expression));
 var QwExpression = (function (_super) {
     __extends(QwExpression, _super);

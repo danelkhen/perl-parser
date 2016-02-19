@@ -14,6 +14,15 @@ var ExpressionParser = (function (_super) {
         console.log("parseExpression Finished", this.token, node);
         return node;
     };
+    ExpressionParser.prototype.toListDeclaration = function (exp) {
+        var list;
+        if (exp instanceof ListDeclaration)
+            return exp;
+        list = new ListDeclaration();
+        list.token = exp.token;
+        list.items = [exp];
+        return list;
+    };
     ExpressionParser.prototype._parseExpression = function (lastExpression) {
         var i = 0;
         while (true) {
@@ -27,14 +36,22 @@ var ExpressionParser = (function (_super) {
             else if (this.token.is(TokenTypes.braceOpen)) {
                 if (lastExpression == null)
                     return this.parseHashRefCreation();
-                return this.parseHashRefCreation(); //TODO: hash member access
+                return this.parseHashMemberAccess(); //TODO: hash member access
             }
             else if (this.token.is(TokenTypes.parenOpen)) {
                 if (lastExpression == null)
-                    return this.parseList();
+                    return this.parseParenthesizedList();
                 var node = this.parseInvocationExpression();
                 node.target = lastExpression;
                 lastExpression = node;
+            }
+            else if (this.token.is(TokenTypes.comma)) {
+                if (lastExpression == null)
+                    throw new Error();
+                var list = this.toListDeclaration(lastExpression);
+                var items = this.parseItems2();
+                list.items.addRange(items);
+                return list;
             }
             else if (this.token.isIdentifier()) {
                 var node = this.parseMemberExpression();
@@ -53,6 +70,13 @@ var ExpressionParser = (function (_super) {
                 lastExpression = node;
                 this.nextToken();
             }
+            else if (this.token.isAny([TokenTypes.regex, TokenTypes.regexSubstitute])) {
+                var node = new RegexExpression();
+                node.token = this.token;
+                node.value = this.token.value; //TODO:
+                lastExpression = node;
+                this.nextToken();
+            }
             else if (this.token.is(TokenTypes.arrow) || this.token.is(TokenTypes.packageSeparator)) {
                 var arrow = this.token.is(TokenTypes.arrow);
                 if (arrow) {
@@ -65,7 +89,7 @@ var ExpressionParser = (function (_super) {
                 var node = this._parseExpression(lastExpression);
                 return node;
             }
-            else if (this.token.isAny([TokenTypes.equals, TokenTypes.dot])) {
+            else if (this.token.isAny([TokenTypes.equals, TokenTypes.dot, TokenTypes.divDiv, TokenTypes.regExpEquals])) {
                 if (lastExpression == null)
                     throw new Error();
                 var exp = new BinaryExpression();
@@ -75,17 +99,30 @@ var ExpressionParser = (function (_super) {
                 exp.operator.value = this.token.value;
                 this.nextNonWhitespaceToken();
                 exp.right = this.parseExpression();
-                return exp;
+                lastExpression = exp;
             }
             else if (lastExpression != null)
                 return lastExpression;
             else
-                throw new Error();
+                return null;
         }
     };
+    ExpressionParser.prototype.parseHashMemberAccess = function () {
+        var exp = new HashMemberAccessExpression();
+        exp.token = this.token;
+        var exp2 = this.parseHashRefCreation();
+        exp.name = exp2.items[0].token.value; //TODO:
+        return exp;
+    };
+    //parseBareword(): BarewordExpression {
+    //    this.expectIdentifier();
+    //    let exp = new BarewordExpression();
+    //    exp.token = this.token;
+    //    exp.value = this.token.value;
+    //    return exp;
+    //}
     ExpressionParser.prototype.parseHashRefCreation = function () {
         this.expect(TokenTypes.braceOpen);
-        this.nextNonWhitespaceToken();
         var exp = new HashRefCreationExpression();
         exp.token = this.token;
         exp.items = this.parseItems(TokenTypes.braceOpen, TokenTypes.braceClose);
@@ -103,7 +140,7 @@ var ExpressionParser = (function (_super) {
         console.log("parseInvocationExpression", this.token);
         var node = new InvocationExpression();
         node.token = this.token;
-        node.arguments = this.parseList().items;
+        node.arguments = this.parseParenthesizedList().items;
         return node;
     };
     ExpressionParser.prototype.parseArrayRefDeclaration = function () {
@@ -126,14 +163,14 @@ var ExpressionParser = (function (_super) {
         //this.nextToken();
         return node;
     };
-    ExpressionParser.prototype.parseList = function () {
+    ExpressionParser.prototype.parseParenthesizedList = function () {
         var node = new ListDeclaration();
         node.token = this.token;
         node.items = this.parseItems(TokenTypes.parenOpen, TokenTypes.parenClose);
         return node;
     };
     ExpressionParser.prototype.parseItems = function (opener, closer) {
-        console.log("parseList", this.token);
+        console.log("parseItems", this.token);
         this.expect(opener);
         var items = [];
         this.nextNonWhitespaceToken();
@@ -149,6 +186,22 @@ var ExpressionParser = (function (_super) {
         }
         this.expect(closer);
         this.nextToken();
+        return items;
+    };
+    ExpressionParser.prototype.parseItems2 = function () {
+        console.log("parseItems", this.token);
+        var items = [];
+        this.nextNonWhitespaceToken();
+        while (this.token != null) {
+            var exp = this.parseExpression();
+            if (exp == null)
+                break;
+            items.push(exp);
+            this.skipWhitespaceAndComments();
+            if (!this.token.isAny([TokenTypes.comma, TokenTypes.fatArrow]))
+                break;
+            this.nextNonWhitespaceToken();
+        }
         return items;
     };
     ExpressionParser.prototype.parseQw = function () {

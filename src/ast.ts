@@ -43,7 +43,9 @@ class SubroutineDeclaration extends Statement {
     statements: Statement[];
 }
 
-
+class RegexExpression extends Expression {
+    value:string;
+}
 
 
 
@@ -60,9 +62,19 @@ class MemberExpression extends Expression {
     arrow: boolean;
 }
 
+class HashMemberAccessExpression extends Expression {
+    name: string;
+    prev: Expression;
+    arrow: boolean;
+}
+
 class InvocationExpression extends Expression {
     target: Expression;
     arguments: Expression[];
+}
+
+class BarewordExpression extends Expression {
+    value: string;
 }
 
 class QwExpression extends Expression {

@@ -57,13 +57,14 @@ var TokenTypes = (function () {
     };
     TokenTypes.identifierRegex = /[a-zA-Z_][a-zA-Z_0-9]*/;
     TokenTypes.qq = new TokenType(/qq\|.*\|/);
-    TokenTypes.keyword = new TokenType(/package\b|use\b|my\b|sub\b|return\b|if\b/);
+    TokenTypes.keyword = new TokenType(new RegExp(["package", "use", "my", "sub", "return", "if", "defined", "ref", "exists"].map(function (t) { return t += "\\b"; }).join("|"))); //\b|use\b|my\b|sub\b|return\b|if\b|defined\b/
     TokenTypes.end = new TokenType(/__END__/);
     TokenTypes.whitespace = new TokenType(/[ \t\r\n]+/);
     TokenTypes.packageSeparator = new TokenType(/\:\:/);
     TokenTypes.semicolon = new TokenType(/;/);
     TokenTypes.sigiledIdentifier = new TokenType(new RegExp("[\\$@]" + TokenTypes.identifierRegex.source));
     TokenTypes.comment = new TokenType(/\#.*/);
+    TokenTypes.regExpEquals = new TokenType(/=\~/);
     TokenTypes.equals = new TokenType(/=/);
     TokenTypes.comma = new TokenType(/\,/);
     TokenTypes.integer = new TokenType(/[0-9]+/);
@@ -82,7 +83,8 @@ var TokenTypes = (function () {
     TokenTypes.string = new TokenType(/\'.*\'/);
     TokenTypes.divDiv = new TokenType(/\/\//);
     TokenTypes.tilda = new TokenType(/\~/);
-    TokenTypes.regex = new TokenType(/\/.*\/\/[g]*/);
+    TokenTypes.regex = new TokenType(/\/.*\/[a-z]*/);
+    TokenTypes.regexSubstitute = new TokenType(/s\/.*\/.*\/[a-z]*/); // s/abc/def/mg
     TokenTypes.or = new TokenType(/\|\|/);
     TokenTypes.and = new TokenType(/\&\&/);
     TokenTypes.minus = new TokenType(/\-/);
