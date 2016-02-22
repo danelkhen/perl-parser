@@ -1,13 +1,14 @@
 "use strict";
 var TokenType = (function () {
-    function TokenType(regex) {
-        this.regex = regex;
+    function TokenType() {
     }
+    //regex: RegExp;
     TokenType.prototype.create = function (range) {
         return new Token(range, this);
     };
     TokenType.prototype.match = function (cursor) {
-        return cursor.next(this.regex);
+        return this.matcher(cursor);
+        //return cursor.next(this.regex);
     };
     return TokenType;
 }());
@@ -55,43 +56,75 @@ var TokenTypes = (function () {
             _this.all.push(tt);
         });
     };
+    TokenTypes._r = function (regex) {
+        var tt = new TokenType();
+        tt.matcher = function (cursor) { return cursor.next(regex); };
+        return tt;
+    };
+    TokenTypes._custom = function (matcher) {
+        var tt = new TokenType();
+        tt.matcher = matcher;
+        return tt;
+    };
+    TokenTypes._matchPod = function (cursor) {
+        if (cursor.get(4) != "=pod")
+            return null;
+        var start = cursor.index;
+        var cut = /=cut/.execFrom(cursor.index, cursor.src);
+        if (cut == null)
+            throw new Error("can't find pod end '=cut'");
+        var end = cut.index + 4;
+        //cursor.pos.index = end;
+        var range = new TextRange2(cursor.file, cursor.file.getPos(start), cursor.file.getPos(end));
+        return range;
+    };
     TokenTypes.identifierRegex = /[a-zA-Z_][a-zA-Z_0-9]*/;
-    TokenTypes.qq = new TokenType(/qq\|.*\|/);
-    TokenTypes.keyword = new TokenType(new RegExp(["package", "use", "my", "sub", "return", "if", "defined", "ref", "exists"].map(function (t) { return t += "\\b"; }).join("|"))); //\b|use\b|my\b|sub\b|return\b|if\b|defined\b/
-    TokenTypes.end = new TokenType(/__END__/);
-    TokenTypes.whitespace = new TokenType(/[ \t\r\n]+/);
-    TokenTypes.packageSeparator = new TokenType(/\:\:/);
-    TokenTypes.semicolon = new TokenType(/;/);
-    TokenTypes.sigiledIdentifier = new TokenType(new RegExp("[\\$@]" + TokenTypes.identifierRegex.source));
-    TokenTypes.comment = new TokenType(/\#.*/);
-    TokenTypes.regExpEquals = new TokenType(/=\~/);
-    TokenTypes.equals = new TokenType(/=/);
-    TokenTypes.comma = new TokenType(/\,/);
-    TokenTypes.integer = new TokenType(/[0-9]+/);
-    TokenTypes.parenOpen = new TokenType(/\(/);
-    TokenTypes.parenClose = new TokenType(/\)/);
-    TokenTypes.braceOpen = new TokenType(/\{/);
-    TokenTypes.braceClose = new TokenType(/\}/);
-    TokenTypes.bracketOpen = new TokenType(/\[/);
-    TokenTypes.bracketClose = new TokenType(/\]/);
-    TokenTypes.smallerThan = new TokenType(/\</);
-    TokenTypes.greaterThan = new TokenType(/\>/);
-    TokenTypes.arrow = new TokenType(/\-\>/);
-    TokenTypes.fatArrow = new TokenType(/\=\>/);
-    TokenTypes.dot = new TokenType(/\./);
-    TokenTypes.interpolatedString = new TokenType(/\".*\"/);
-    TokenTypes.string = new TokenType(/\'.*\'/);
-    TokenTypes.divDiv = new TokenType(/\/\//);
-    TokenTypes.tilda = new TokenType(/\~/);
-    TokenTypes.regex = new TokenType(/\/.*\/[a-z]*/);
-    TokenTypes.regexSubstitute = new TokenType(/s\/.*\/.*\/[a-z]*/); // s/abc/def/mg
-    TokenTypes.or = new TokenType(/\|\|/);
-    TokenTypes.and = new TokenType(/\&\&/);
-    TokenTypes.minus = new TokenType(/\-/);
-    TokenTypes.mul = new TokenType(/\*/);
-    TokenTypes.plus = new TokenType(/\+/);
-    TokenTypes.identifier = new TokenType(TokenTypes.identifierRegex);
-    TokenTypes.pod = new TokenType(/\=pod.*/);
+    TokenTypes.qq = TokenTypes._r(/qq\|.*\|/);
+    TokenTypes.pod = TokenTypes._custom(TokenTypes._matchPod);
+    //static pod = TokenTypes._r(/=pod.*=cut/m);
+    TokenTypes.keyword = TokenTypes._r(new RegExp(["package", "use", "my", "sub", "return", "if", "elsif", "else", "defined", "ref", "exists", "__END__"].map(function (t) { return t += "\\b"; }).join("|"))); //\b|use\b|my\b|sub\b|return\b|if\b|defined\b/
+    TokenTypes.end = TokenTypes._r(/__END__/);
+    TokenTypes.whitespace = TokenTypes._r(/[ \t\r\n]+/);
+    TokenTypes.packageSeparator = TokenTypes._r(/\:\:/);
+    TokenTypes.semicolon = TokenTypes._r(/;/);
+    TokenTypes.sigiledIdentifier = TokenTypes._r(new RegExp("[\\$@]" + TokenTypes.identifierRegex.source));
+    TokenTypes.comment = TokenTypes._r(/\#.*/);
+    TokenTypes.regExpEquals = TokenTypes._r(/=\~/);
+    TokenTypes.equals = TokenTypes._r(/==/);
+    TokenTypes.concatAssign = TokenTypes._r(/\.=/);
+    TokenTypes.addAssign = TokenTypes._r(/\+=/);
+    TokenTypes.subtractAssign = TokenTypes._r(/\-=/);
+    TokenTypes.multiplyAssign = TokenTypes._r(/\+=/);
+    TokenTypes.divideAssign = TokenTypes._r(/\/=/);
+    TokenTypes.comma = TokenTypes._r(/\,/);
+    TokenTypes.integer = TokenTypes._r(/[0-9]+/);
+    TokenTypes.parenOpen = TokenTypes._r(/\(/);
+    TokenTypes.parenClose = TokenTypes._r(/\)/);
+    TokenTypes.braceOpen = TokenTypes._r(/\{/);
+    TokenTypes.braceClose = TokenTypes._r(/\}/);
+    TokenTypes.bracketOpen = TokenTypes._r(/\[/);
+    TokenTypes.bracketClose = TokenTypes._r(/\]/);
+    TokenTypes.smallerOrEqualsThan = TokenTypes._r(/\<=/);
+    TokenTypes.greaterOrEqualsThan = TokenTypes._r(/\>=/);
+    TokenTypes.smallerThan = TokenTypes._r(/\</);
+    TokenTypes.greaterThan = TokenTypes._r(/\>/);
+    TokenTypes.arrow = TokenTypes._r(/\-\>/);
+    TokenTypes.fatComma = TokenTypes._r(/\=\>/);
+    TokenTypes.assignment = TokenTypes._r(/=/);
+    TokenTypes.concat = TokenTypes._r(/\./);
+    TokenTypes.interpolatedString = TokenTypes._r(/\".*\"/);
+    TokenTypes.string = TokenTypes._r(/\'.*\'/);
+    TokenTypes.divDiv = TokenTypes._r(/\/\//);
+    TokenTypes.tilda = TokenTypes._r(/\~/);
+    TokenTypes.regex = TokenTypes._r(/\/.*\/[a-z]*/);
+    TokenTypes.regexSubstitute = TokenTypes._r(/s\/.*\/.*\/[a-z]*/); // s/abc/def/mg
+    TokenTypes.or = TokenTypes._r(/\|\|/);
+    TokenTypes.and = TokenTypes._r(/\&\&/);
+    TokenTypes.minus = TokenTypes._r(/\-/);
+    TokenTypes.multiply = TokenTypes._r(/\*/);
+    TokenTypes.plus = TokenTypes._r(/\+/);
+    TokenTypes.multiplyString = TokenTypes._r(/x/);
+    TokenTypes.identifier = TokenTypes._r(TokenTypes.identifierRegex);
     return TokenTypes;
 }());
 ;
@@ -224,7 +257,7 @@ var Cursor = (function () {
         return this.src.substr(this.index, length);
     };
     Cursor.prototype.next = function (regex) {
-        var regex2 = new RegExp(regex.source, "g");
+        var regex2 = new RegExp(regex.source, (regex.multiline ? "m" : "") + "g");
         regex2.lastIndex = this.index;
         var res = regex2.exec(this.src);
         if (res == null)

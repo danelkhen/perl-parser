@@ -138,3 +138,13 @@ var ParserBase = (function () {
     };
     return ParserBase;
 }());
+RegExp.prototype.execFrom = function (index, s) {
+    var re = this;
+    re.lastIndex = index;
+    return re.exec(s);
+};
+RegExp.prototype.testFrom = function (index, s) {
+    var re = this;
+    re.lastIndex = index;
+    return re.test(s);
+};

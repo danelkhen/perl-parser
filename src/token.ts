@@ -1,22 +1,27 @@
 ﻿"use strict";
 class TokenType {
-    constructor(regex: RegExp) {
-        this.regex = regex;
-    }
+    //constructor(regex: RegExp) {
+    //    this.regex = regex;
+    //}
 
     name: string;
+    matcher: TokenMatcher;
 
-    regex: RegExp;
+    //regex: RegExp;
 
     create(range: TextRange2) {
         return new Token(range, this);
     }
 
-    match(cursor: Cursor) {
-        return cursor.next(this.regex);
+    match(cursor: Cursor): TextRange2 {
+        return this.matcher(cursor);
+        //return cursor.next(this.regex);
     }
 }
 
+interface TokenMatcher {
+    (cursor: Cursor): TextRange2;
+}
 
 class Token {
     constructor(public range: TextRange2, public type: TokenType) {
@@ -61,42 +66,76 @@ class TokenTypes {
         });
 
     }
-    static qq = new TokenType(/qq\|.*\|/);
-    static keyword = new TokenType(new RegExp(["package","use","my","sub","return","if","defined","ref","exists"].map(t=>t+="\\b").join("|"))); //\b|use\b|my\b|sub\b|return\b|if\b|defined\b/
-    static end = new TokenType(/__END__/);
-    static whitespace = new TokenType(/[ \t\r\n]+/);
-    static packageSeparator = new TokenType(/\:\:/);
-    static semicolon = new TokenType(/;/);
-    static sigiledIdentifier = new TokenType(new RegExp("[\\$@]" + TokenTypes.identifierRegex.source));
-    static comment = new TokenType(/\#.*/);
-    static regExpEquals = new TokenType(/=\~/);
-    static equals = new TokenType(/=/);
-    static comma = new TokenType(/\,/);
-    static integer = new TokenType(/[0-9]+/);
-    static parenOpen = new TokenType(/\(/);
-    static parenClose = new TokenType(/\)/);
-    static braceOpen = new TokenType(/\{/);
-    static braceClose = new TokenType(/\}/);
-    static bracketOpen = new TokenType(/\[/);
-    static bracketClose = new TokenType(/\]/);
-    static smallerThan = new TokenType(/\</);
-    static greaterThan = new TokenType(/\>/);
-    static arrow = new TokenType(/\-\>/);
-    static fatArrow = new TokenType(/\=\>/);
-    static dot = new TokenType(/\./);
-    static interpolatedString = new TokenType(/\".*\"/);
-    static string = new TokenType(/\'.*\'/);
-    static divDiv = new TokenType(/\/\//);
-    static tilda = new TokenType(/\~/);
-    static regex = new TokenType(/\/.*\/[a-z]*/);
-    static regexSubstitute = new TokenType(/s\/.*\/.*\/[a-z]*/);  // s/abc/def/mg
-    static or = new TokenType(/\|\|/);
-    static and = new TokenType(/\&\&/);
-    static minus = new TokenType(/\-/);
-    static mul = new TokenType(/\*/);
-    static plus = new TokenType(/\+/);
-    static identifier = new TokenType(TokenTypes.identifierRegex);
-    static pod = new TokenType(/\=pod.*/);
+
+    static _r(regex: RegExp): TokenType {
+        let tt = new TokenType();
+        tt.matcher = cursor => cursor.next(regex);
+        return tt;
+    }
+    static _custom(matcher: TokenMatcher): TokenType {
+        let tt = new TokenType();
+        tt.matcher = matcher;
+        return tt;
+    }
+    static qq = TokenTypes._r(/qq\|.*\|/);
+    static pod = TokenTypes._custom(TokenTypes._matchPod);
+    //static pod = TokenTypes._r(/=pod.*=cut/m);
+    static keyword = TokenTypes._r(new RegExp(["package", "use", "my", "sub", "return", "if", "elsif", "else", "defined", "ref", "exists", "__END__"].map(t=> t += "\\b").join("|"))); //\b|use\b|my\b|sub\b|return\b|if\b|defined\b/
+    static end = TokenTypes._r(/__END__/);
+    static whitespace = TokenTypes._r(/[ \t\r\n]+/);
+    static packageSeparator = TokenTypes._r(/\:\:/);
+    static semicolon = TokenTypes._r(/;/);
+    static sigiledIdentifier = TokenTypes._r(new RegExp("[\\$@]" + TokenTypes.identifierRegex.source));
+    static comment = TokenTypes._r(/\#.*/);
+    static regExpEquals = TokenTypes._r(/=\~/);
+    static equals = TokenTypes._r(/==/);
+    static concatAssign = TokenTypes._r(/\.=/);
+    static addAssign = TokenTypes._r(/\+=/);
+    static subtractAssign = TokenTypes._r(/\-=/);
+    static multiplyAssign = TokenTypes._r(/\+=/);
+    static divideAssign = TokenTypes._r(/\/=/);
+    static comma = TokenTypes._r(/\,/);
+    static integer = TokenTypes._r(/[0-9]+/);
+    static parenOpen = TokenTypes._r(/\(/);
+    static parenClose = TokenTypes._r(/\)/);
+    static braceOpen = TokenTypes._r(/\{/);
+    static braceClose = TokenTypes._r(/\}/);
+    static bracketOpen = TokenTypes._r(/\[/);
+    static bracketClose = TokenTypes._r(/\]/);
+    static smallerOrEqualsThan = TokenTypes._r(/\<=/);
+    static greaterOrEqualsThan = TokenTypes._r(/\>=/);
+    static smallerThan = TokenTypes._r(/\</);
+    static greaterThan = TokenTypes._r(/\>/);
+    static arrow = TokenTypes._r(/\-\>/);
+    static fatComma = TokenTypes._r(/\=\>/);
+    static assignment = TokenTypes._r(/=/);
+    static concat = TokenTypes._r(/\./);
+    static interpolatedString = TokenTypes._r(/\".*\"/);
+    static string = TokenTypes._r(/\'.*\'/);
+    static divDiv = TokenTypes._r(/\/\//);
+    static tilda = TokenTypes._r(/\~/);
+    static regex = TokenTypes._r(/\/.*\/[a-z]*/);
+    static regexSubstitute = TokenTypes._r(/s\/.*\/.*\/[a-z]*/);  // s/abc/def/mg
+    static or = TokenTypes._r(/\|\|/);
+    static and = TokenTypes._r(/\&\&/);
+    static minus = TokenTypes._r(/\-/);
+    static multiply = TokenTypes._r(/\*/);
+    static plus = TokenTypes._r(/\+/);
+    static multiplyString = TokenTypes._r(/x/);
+    static identifier = TokenTypes._r(TokenTypes.identifierRegex);
+
+    static _matchPod(cursor: Cursor): TextRange2 {
+        if(cursor.get(4)!="=pod")
+            return null;
+        let start = cursor.index;
+        let cut = /=cut/.execFrom(cursor.index, cursor.src);
+        if(cut==null)
+            throw new Error("can't find pod end '=cut'");
+        let end = cut.index+4;
+        //cursor.pos.index = end;
+        let range = new TextRange2(cursor.file, cursor.file.getPos(start), cursor.file.getPos(end));
+        return range;
+    }
 };
 
 
@@ -206,7 +245,7 @@ class Cursor {
         return this.src.substr(this.index, length);
     }
     next(regex: RegExp): TextRange2 {
-        let regex2 = new RegExp(regex.source, "g");
+        let regex2 = new RegExp(regex.source, (regex.multiline ? "m" : "") + "g");
         regex2.lastIndex = this.index;
         var res = regex2.exec(this.src);
         if (res == null)

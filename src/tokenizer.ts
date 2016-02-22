@@ -9,7 +9,7 @@
 class Tokenizer {
     //src: string;
     //pos: number;
-    file:File2;
+    file: File2;
 
     main() {
         TokenTypes.init();
@@ -17,6 +17,9 @@ class Tokenizer {
         var tokenTypes = TokenTypes.all;
         var cursor = new Cursor(this.file.startPos);
         while (cursor.index < this.file.text.length) {
+            if (cursor.pos.line == 482) {
+                console.log(492);
+            }
             var range: TextRange2;
             var tokenType2: TokenType;
             tokenTypes.first(tokenType => {

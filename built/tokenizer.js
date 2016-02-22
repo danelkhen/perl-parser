@@ -12,6 +12,9 @@ var Tokenizer = (function () {
         var tokenTypes = TokenTypes.all;
         var cursor = new Cursor(this.file.startPos);
         while (cursor.index < this.file.text.length) {
+            if (cursor.pos.line == 482) {
+                console.log(492);
+            }
             var range;
             var tokenType2;
             tokenTypes.first(function (tokenType) {

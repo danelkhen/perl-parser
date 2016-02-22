@@ -21,7 +21,7 @@ class TokenReader {
         return this.token.range.file.getLineText(this.token.range.start.line);
     }
     getPrevToken() {
-        return this.tokens[this.tokenIndex-1];
+        return this.tokens[this.tokenIndex - 1];
     }
     nextToken() {
         this.tokenIndex++;
@@ -85,7 +85,7 @@ class ParserBase {
     reader: TokenReader;
     get token(): Token { return this.reader.token; }
     get currentRangeText(): string {
-        if(this.token==null)
+        if (this.token == null)
             return null;
         return this.token.range.text;
     }
@@ -106,3 +106,22 @@ class ParserBase {
     }
 
 }
+
+
+interface RegExp {
+    execFrom(index: number, s:string):RegExpExecArray;
+    testFrom(index: number, s:string):boolean;
+}
+
+RegExp.prototype.execFrom = function (index: number, s:string):RegExpExecArray {
+    let re:RegExp = this;
+    re.lastIndex = index;
+    return re.exec(s);
+}
+RegExp.prototype.testFrom = function (index: number, s:string):boolean{
+    let re:RegExp = this;
+    re.lastIndex = index;
+    return re.test(s);
+}
+
+

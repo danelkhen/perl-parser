@@ -114,6 +114,13 @@ var HashMemberAccessExpression = (function (_super) {
     }
     return HashMemberAccessExpression;
 }(Expression));
+var ArrayMemberAccessExpression = (function (_super) {
+    __extends(ArrayMemberAccessExpression, _super);
+    function ArrayMemberAccessExpression() {
+        _super.apply(this, arguments);
+    }
+    return ArrayMemberAccessExpression;
+}(Expression));
 var InvocationExpression = (function (_super) {
     __extends(InvocationExpression, _super);
     function InvocationExpression() {
@@ -148,6 +155,34 @@ var ReturnStatement = (function (_super) {
         _super.apply(this, arguments);
     }
     return ReturnStatement;
+}(Statement));
+var EndStatement = (function (_super) {
+    __extends(EndStatement, _super);
+    function EndStatement() {
+        _super.apply(this, arguments);
+    }
+    return EndStatement;
+}(Statement));
+var IfStatement = (function (_super) {
+    __extends(IfStatement, _super);
+    function IfStatement() {
+        _super.apply(this, arguments);
+    }
+    return IfStatement;
+}(Statement));
+var ElsifStatement = (function (_super) {
+    __extends(ElsifStatement, _super);
+    function ElsifStatement() {
+        _super.apply(this, arguments);
+    }
+    return ElsifStatement;
+}(IfStatement));
+var ElseStatement = (function (_super) {
+    __extends(ElseStatement, _super);
+    function ElseStatement() {
+        _super.apply(this, arguments);
+    }
+    return ElseStatement;
 }(Statement));
 var BinaryExpression = (function (_super) {
     __extends(BinaryExpression, _super);

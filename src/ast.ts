@@ -44,7 +44,7 @@ class SubroutineDeclaration extends Statement {
 }
 
 class RegexExpression extends Expression {
-    value:string;
+    value: string;
 }
 
 
@@ -64,7 +64,13 @@ class MemberExpression extends Expression {
 
 class HashMemberAccessExpression extends Expression {
     name: string;
-    prev: Expression;
+    target: Expression;
+    arrow: boolean;
+}
+
+class ArrayMemberAccessExpression extends Expression {
+    expression: Expression;
+    target: Expression;
     arrow: boolean;
 }
 
@@ -88,6 +94,22 @@ class ReturnStatement extends Statement {
     value: any;
     expression: Expression;
 }
+class EndStatement extends Statement {
+}
+class IfStatement extends Statement {
+    value: any;
+    expression: Expression;
+    statements: Statement[];
+    else: Statement;
+}
+
+class ElsifStatement extends IfStatement {
+}
+class ElseStatement extends Statement {
+    statements: Statement[];
+}
+
+
 
 class BinaryExpression extends Expression {
     left: Expression;
