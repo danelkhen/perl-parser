@@ -13,10 +13,10 @@ var Parser = (function (_super) {
         return this.parseStatementsUntil();
     };
     Parser.prototype.parseBracedStatements = function (node) {
-        this.expect(TokenTypes.braceOpen);
+        this.expect(TokenTypes.braceOpen, node);
         this.nextNonWhitespaceToken(node);
         var statements = this.parseStatementsUntil(TokenTypes.braceClose);
-        this.expect(TokenTypes.braceClose);
+        this.expect(TokenTypes.braceClose, node);
         this.nextNonWhitespaceToken(node);
         return statements;
     };
@@ -91,13 +91,13 @@ var Parser = (function (_super) {
         else
             throw new Error();
         this.nextNonWhitespaceToken(node);
-        this.expect(TokenTypes.parenOpen);
+        this.expect(TokenTypes.parenOpen, node);
         this.nextNonWhitespaceToken(node);
         node.expression = this.parseExpression();
-        this.expect(TokenTypes.parenClose);
+        this.expect(TokenTypes.parenClose, node);
         this.nextNonWhitespaceToken(node);
         node.statements = this.parseBracedStatements(node);
-        this.skipWhitespaceAndComments();
+        this.skipWhitespaceAndComments(node);
         if (this.token.isKeyword("elsif") || this.token.isKeyword("else"))
             node.else = this.parseStatement();
         return node;
@@ -109,7 +109,7 @@ var Parser = (function (_super) {
         node.statements = this.parseBracedStatements(node);
         return node;
     };
-    Parser.prototype.parseStatementEnd = function () {
+    Parser.prototype.parseStatementEnd = function (node) {
         this.skipWhitespaceAndComments();
         if (this.token.is(TokenTypes.braceClose))
             return;
@@ -122,7 +122,7 @@ var Parser = (function (_super) {
         var node = this.create(ReturnStatement);
         this.nextNonWhitespaceToken(node);
         node.expression = this.parseExpression();
-        this.parseStatementEnd();
+        this.parseStatementEnd(node);
         return node;
     };
     Parser.prototype.parseExpressionStatement = function () {
@@ -140,17 +140,17 @@ var Parser = (function (_super) {
             node.name = this.parseSimpleName();
             this.nextNonWhitespaceToken(node);
         }
-        this.expect(TokenTypes.braceOpen);
+        this.expect(TokenTypes.braceOpen, node);
         this.nextNonWhitespaceToken(node);
         node.statements = this.parseStatementsUntil(TokenTypes.braceClose);
-        this.expect(TokenTypes.braceClose);
+        this.expect(TokenTypes.braceClose, node);
         this.nextToken();
         return node;
     };
     Parser.prototype.parseVariableDeclarationStatement = function () {
         var node = this.create(VariableDeclarationStatement);
         node.declaration = this.parseVariableDeclarationExpression();
-        this.expect(TokenTypes.semicolon);
+        this.expect(TokenTypes.semicolon, node);
         this.nextToken();
         return node;
     };

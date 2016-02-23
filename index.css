@@ -28,19 +28,16 @@ body{
 .tree ul ul{
     padding-left:20px;
 }
-.tree .node .self {
+.tree .node > .self:before{
+    content:"@";
+    width:15px;
     display:inline-block;
-    padding-left:10px;
 }
-.tree .node.expanded .self:before{
+.tree .node.expanded > .self:before{
     content:"-";
-    width:15px;
-    display:inline-block;
 }
-.tree .node.collapsed .self:before{
+.tree .node.collapsed > .self:before{
     content:"+";
-    width:15px;
-    display:inline-block;
 }
 
 

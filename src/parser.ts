@@ -7,10 +7,10 @@
 
 
     parseBracedStatements(node:AstNode): Statement[] {
-        this.expect(TokenTypes.braceOpen);
+        this.expect(TokenTypes.braceOpen, node);
         this.nextNonWhitespaceToken(node);
         let statements = this.parseStatementsUntil(TokenTypes.braceClose);
-        this.expect(TokenTypes.braceClose);
+        this.expect(TokenTypes.braceClose, node);
         this.nextNonWhitespaceToken(node);
         return statements;
     }
@@ -87,13 +87,13 @@
         else
             throw new Error();
         this.nextNonWhitespaceToken(node);
-        this.expect(TokenTypes.parenOpen);
+        this.expect(TokenTypes.parenOpen, node);
         this.nextNonWhitespaceToken(node);
         node.expression = this.parseExpression();
-        this.expect(TokenTypes.parenClose);
+        this.expect(TokenTypes.parenClose, node);
         this.nextNonWhitespaceToken(node);
         node.statements = this.parseBracedStatements(node);
-        this.skipWhitespaceAndComments();
+        this.skipWhitespaceAndComments(node);
         if (this.token.isKeyword("elsif") || this.token.isKeyword("else"))
             node.else = this.parseStatement();
         return node;
@@ -106,7 +106,7 @@
         node.statements = this.parseBracedStatements(node);
         return node;
     }
-    parseStatementEnd() {
+    parseStatementEnd(node:Statement) {
         this.skipWhitespaceAndComments();
         if (this.token.is(TokenTypes.braceClose))   //last statement doesn't have to have semicolon
             return;
@@ -119,7 +119,7 @@
         let node = this.create(ReturnStatement);
         this.nextNonWhitespaceToken(node);
         node.expression = this.parseExpression();
-        this.parseStatementEnd();
+        this.parseStatementEnd(node);
         return node;
     }
     parseExpressionStatement(): ExpressionStatement {
@@ -137,17 +137,17 @@
             node.name = this.parseSimpleName();
             this.nextNonWhitespaceToken(node);
         }
-        this.expect(TokenTypes.braceOpen);
+        this.expect(TokenTypes.braceOpen, node);
         this.nextNonWhitespaceToken(node);
         node.statements = this.parseStatementsUntil(TokenTypes.braceClose);
-        this.expect(TokenTypes.braceClose);
+        this.expect(TokenTypes.braceClose, node);
         this.nextToken();
         return node;
     }
     parseVariableDeclarationStatement() {
         let node = this.create(VariableDeclarationStatement);
         node.declaration = this.parseVariableDeclarationExpression();
-        this.expect(TokenTypes.semicolon);
+        this.expect(TokenTypes.semicolon, node);
         this.nextToken();
         return node;
     }

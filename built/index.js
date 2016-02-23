@@ -51,12 +51,12 @@ var IndexPage = (function () {
         //span.getAppend(".icon");
         //span.getAppend(".text")
         span.mouseover(function (e) { return _this.onMouseOverNode(e, node); });
-        span.mousedown(function (e) { li.toggleClass("collapsed"); li.toggleClass("expanded"); });
         var childNodes = node.getChildNodes();
         if (childNodes.length > 0) {
             li.addClass("collapsed");
             ul.append(childNodes.select(function (t) { return _this.createTree(t); }));
             li.append(ul);
+            span.mousedown(function (e) { li.toggleClass("collapsed"); li.toggleClass("expanded"); });
         }
         return li[0];
     };

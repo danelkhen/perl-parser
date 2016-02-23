@@ -54,12 +54,12 @@ class IndexPage {
         //span.getAppend(".icon");
         //span.getAppend(".text")
         span.mouseover(e=> this.onMouseOverNode(e, node));
-        span.mousedown(e=> { li.toggleClass("collapsed"); li.toggleClass("expanded"); });
         let childNodes = node.getChildNodes();
         if (childNodes.length > 0) {
             li.addClass("collapsed");
             ul.append(childNodes.select(t=> this.createTree(t)));
             li.append(ul);
+            span.mousedown(e=> { li.toggleClass("collapsed"); li.toggleClass("expanded"); });
         }
         return li[0];
     }

@@ -108,7 +108,7 @@
                 exp.left = lastExpression;
                 exp.operator = new Operator();
                 exp.operator.value = this.token.value;
-                this.nextNonWhitespaceToken();
+                this.nextNonWhitespaceToken(exp);
                 exp.right = this.parseExpression();
                 lastExpression = exp;
             }
@@ -127,10 +127,10 @@
     parseArrayMemberAccess(target: Expression): ArrayMemberAccessExpression {
         this.expect(TokenTypes.bracketOpen);
         let node = this.create(ArrayMemberAccessExpression);
-        this.nextNonWhitespaceToken();
+        this.nextNonWhitespaceToken(node);
         node.expression = this.parseExpression();
         node.target = target;
-        this.expect(TokenTypes.bracketClose);
+        this.expect(TokenTypes.bracketClose, node);
         this.nextToken();
         return node;
     }
@@ -151,7 +151,7 @@
     parseHashRefCreation(): HashRefCreationExpression {
         this.expect(TokenTypes.braceOpen);
         let exp = this.create(HashRefCreationExpression);
-        exp.items = this.parseBracedCommaSeparatedExpressions(TokenTypes.braceOpen, TokenTypes.braceClose);
+        exp.items = this.parseBracedCommaSeparatedExpressions(TokenTypes.braceOpen, TokenTypes.braceClose, exp);
         return exp;
     }
     parseMemberExpression(): MemberExpression {
@@ -177,7 +177,7 @@
         this.log("parseArrayRefDeclaration", this.token);
         this.expect(TokenTypes.bracketOpen);
         let node = this.create(ArrayRefDeclaration);
-        node.items = this.parseBracedCommaSeparatedExpressions(TokenTypes.bracketOpen, TokenTypes.bracketClose);
+        node.items = this.parseBracedCommaSeparatedExpressions(TokenTypes.bracketOpen, TokenTypes.bracketClose, node);
         //this.nextNonWhitespaceToken();
         //while (this.token != null) {
         //    node.items.push(this.parseExpression());
@@ -194,25 +194,26 @@
     }
     parseParenthesizedList(): ListDeclaration {
         let node = this.create(ListDeclaration);
-        node.items = this.parseBracedCommaSeparatedExpressions(TokenTypes.parenOpen, TokenTypes.parenClose);
+        node.items = this.parseBracedCommaSeparatedExpressions(TokenTypes.parenOpen, TokenTypes.parenClose, node);
         return node;
     }
-    parseBracedCommaSeparatedExpressions(opener: TokenType, closer: TokenType): Expression[] {
+    parseBracedCommaSeparatedExpressions(opener: TokenType, closer: TokenType, node:AstNode): Expression[] {
         this.log("parseBracedCommaSeparatedExpressions", this.token);
-        this.expect(opener);
+        this.expect(opener, node);
         let items: Expression[] = [];
-        this.nextNonWhitespaceToken();
+        this.nextNonWhitespaceToken(node);
         while (this.token != null) {
             if (this.token.is(TokenTypes.parenClose))
                 break;
-            items.push(this.parseExpression());
-            this.skipWhitespaceAndComments();
+            let exp  = this.parseExpression();
+            items.push(exp);
+            this.skipWhitespaceAndComments(exp);
             if (this.token.is(closer))
                 break;
             this.expectAny([TokenTypes.comma, TokenTypes.fatComma]);
-            this.nextNonWhitespaceToken();
+            this.nextNonWhitespaceToken(node);
         }
-        this.expect(closer);
+        this.expect(closer, node);
         this.nextToken();
         return items;
     }
@@ -240,18 +241,18 @@
         let node = this.create(QwExpression);
         node.items = [];
         this.nextToken();
-        this.expect(TokenTypes.smallerThan);
+        this.expect(TokenTypes.smallerThan, node);
         this.nextToken();
         while (true) {
-            this.expect(TokenTypes.identifier);
+            this.expect(TokenTypes.identifier, node);
             let item = this.create(ValueExpression);
             item.value = this.token.value;
             node.items.push(item);
             this.nextToken();
             if (this.token.is(TokenTypes.greaterThan))
                 break;
-            this.expect(TokenTypes.whitespace);
-            this.nextNonWhitespaceToken();
+            this.expect(TokenTypes.whitespace, node);
+            this.nextNonWhitespaceToken(node);
         }
         this.nextToken();
         return node;
