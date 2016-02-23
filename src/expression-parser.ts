@@ -1,26 +1,24 @@
 ﻿class ExpressionParser extends ParserBase {
 
     parseExpression(): Expression {
-        console.log("parseExpression", this.token);
+        this.log("parseExpression", this.token);
         let node = this._parseExpression();
-        console.log("parseExpression Finished", this.token, node);
+        this.log("parseExpression Finished", this.token, node);
         return node;
     }
 
     toListDeclaration(exp: Expression): ListDeclaration {
-        let list: ListDeclaration;
         if (exp instanceof ListDeclaration)
             return exp;
-        list = new ListDeclaration();
-        list.token = exp.token;
-        list.items = [exp];
-        return list;
+        let node = this.create(ListDeclaration);
+        node.items = [exp];
+        return node;
     }
     _parseExpression(lastExpression?: Expression): Expression {
         let i = 0;
         while (true) {
             i++;
-            console.log("parseExpression", i, this.token, lastExpression);
+            this.log("parseExpression", i, this.token, lastExpression);
             this.skipWhitespaceAndComments();
             if (this.token.is(TokenTypes.bracketOpen)) {
                 if (lastExpression == null)
@@ -45,22 +43,11 @@
                 }
             }
             else if (this.token.isAny([TokenTypes.comma, TokenTypes.semicolon])) {
-                //throw new Error();
                 if (lastExpression == null)
                     throw new Error();
                 return lastExpression;
-                //let list = this.toListDeclaration(lastExpression);
-                //this.nextNonWhitespaceToken();
-                //let items = this.parseCommaSeparatedExpressions();
-                //list.items.addRange(items);
-                //return list;
             }
             else if (this.token.isIdentifier() || this.token.isKeyword()) { //defined exists ref etc...
-                //    let node = this.parseMemberExpression();
-                //    node.prev = lastExpression;
-                //    lastExpression = node;
-                //}
-                //else if (this.token.isKeyword()) {   //
                 let node = this.parseMemberExpression();
                 node.prev = lastExpression;
                 lastExpression = node;
@@ -79,15 +66,13 @@
                 lastExpression = node;
             }
             else if (this.token.isAny([TokenTypes.integer, TokenTypes.interpolatedString, TokenTypes.qq, TokenTypes.string])) {
-                let node = new ValueExpression();
-                node.token = this.token;
+                let node = this.create(ValueExpression);
                 node.value = this.token.value;//TODO:
                 lastExpression = node;
                 this.nextToken();
             }
             else if (this.token.isAny([TokenTypes.regex, TokenTypes.regexSubstitute])) {
-                let node = new RegexExpression();
-                node.token = this.token;
+                let node = this.create(RegexExpression);
                 node.value = this.token.value;//TODO:
                 lastExpression = node;
                 this.nextToken();
@@ -118,7 +103,7 @@
             ])) {
                 if (lastExpression == null)
                     throw new Error();
-                let exp = new BinaryExpression();
+                let exp = this.create(BinaryExpression);
                 exp.token = this.token;
                 exp.left = lastExpression;
                 exp.operator = new Operator();
@@ -141,8 +126,7 @@
     }
     parseArrayMemberAccess(target: Expression): ArrayMemberAccessExpression {
         this.expect(TokenTypes.bracketOpen);
-        let node = new ArrayMemberAccessExpression();
-        node.token = this.token;
+        let node = this.create(ArrayMemberAccessExpression);
         this.nextNonWhitespaceToken();
         node.expression = this.parseExpression();
         node.target = target;
@@ -151,8 +135,7 @@
         return node;
     }
     parseHashMemberAccess(target: Expression): HashMemberAccessExpression {
-        let exp = new HashMemberAccessExpression();
-        exp.token = this.token;
+        let exp = this.create(HashMemberAccessExpression);
         let exp2 = this.parseHashRefCreation();
         exp.name = exp2.items[0].token.value; //TODO:
         exp.target = target;
@@ -167,14 +150,13 @@
     //}
     parseHashRefCreation(): HashRefCreationExpression {
         this.expect(TokenTypes.braceOpen);
-        let exp = new HashRefCreationExpression();
-        exp.token = this.token;
+        let exp = this.create(HashRefCreationExpression);
         exp.items = this.parseBracedCommaSeparatedExpressions(TokenTypes.braceOpen, TokenTypes.braceClose);
         return exp;
     }
     parseMemberExpression(): MemberExpression {
-        console.log("parseMemberExpression", this.token);
-        let node = new MemberExpression();
+        this.log("parseMemberExpression", this.token);
+        let node = this.create(MemberExpression);
         node.token = this.token;
         node.name = this.token.value;
         this.nextToken();
@@ -183,9 +165,8 @@
 
 
     parseInvocationExpression(): InvocationExpression {
-        console.log("parseInvocationExpression", this.token);
-        let node = new InvocationExpression();
-        node.token = this.token;
+        this.log("parseInvocationExpression", this.token);
+        let node = this.create(InvocationExpression);
         if (this.token.is(TokenTypes.parenOpen))
             node.arguments = this.parseParenthesizedList().items;
         else
@@ -193,10 +174,9 @@
         return node;
     }
     parseArrayRefDeclaration(): ArrayRefDeclaration {
-        console.log("parseArrayRefDeclaration", this.token);
+        this.log("parseArrayRefDeclaration", this.token);
         this.expect(TokenTypes.bracketOpen);
-        let node = new ArrayRefDeclaration();
-        node.token = this.token;
+        let node = this.create(ArrayRefDeclaration);
         node.items = this.parseBracedCommaSeparatedExpressions(TokenTypes.bracketOpen, TokenTypes.bracketClose);
         //this.nextNonWhitespaceToken();
         //while (this.token != null) {
@@ -213,13 +193,12 @@
         return node;
     }
     parseParenthesizedList(): ListDeclaration {
-        let node = new ListDeclaration();
-        node.token = this.token;
+        let node = this.create(ListDeclaration);
         node.items = this.parseBracedCommaSeparatedExpressions(TokenTypes.parenOpen, TokenTypes.parenClose);
         return node;
     }
     parseBracedCommaSeparatedExpressions(opener: TokenType, closer: TokenType): Expression[] {
-        console.log("parseBracedCommaSeparatedExpressions", this.token);
+        this.log("parseBracedCommaSeparatedExpressions", this.token);
         this.expect(opener);
         let items: Expression[] = [];
         this.nextNonWhitespaceToken();
@@ -238,7 +217,7 @@
         return items;
     }
     parseCommaSeparatedExpressions(): Expression[] {
-        console.log("parseCommaSeparatedExpressions", this.token);
+        this.log("parseCommaSeparatedExpressions", this.token);
         let items: Expression[] = [];
         this.skipWhitespaceAndComments();
         //this.nextNonWhitespaceToken();
@@ -256,18 +235,16 @@
     }
 
     parseQw(): QwExpression {
-        console.log("parseQw", this.token);
-        this.expect(TokenTypes.identifier, "qw");
-        let node = new QwExpression();
-        node.token = this.token;
+        this.log("parseQw", this.token);
+        this.expectValue(TokenTypes.identifier, "qw");
+        let node = this.create(QwExpression);
         node.items = [];
         this.nextToken();
         this.expect(TokenTypes.smallerThan);
         this.nextToken();
         while (true) {
             this.expect(TokenTypes.identifier);
-            let item = new ValueExpression();
-            item.token = this.token;
+            let item = this.create(ValueExpression);
             item.value = this.token.value;
             node.items.push(item);
             this.nextToken();

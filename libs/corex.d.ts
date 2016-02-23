@@ -141,7 +141,7 @@ interface Array<T> {
     selectManyRecursive(selector: any, recursiveFunc: any): any;
     peek(predicate: any): any;
     removeLast(): any;
-    add(): any;
+    add(item:T): any;
     forEachWith(list: any, action: any): any;
     selectWith(list: any, func: any): any;
     crossJoin(list2: any, selector: any): any;

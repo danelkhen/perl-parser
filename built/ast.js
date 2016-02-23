@@ -6,7 +6,22 @@ var __extends = (this && this.__extends) || function (d, b) {
 };
 var AstNode = (function () {
     function AstNode() {
+        this.tokens = [];
     }
+    AstNode.prototype.getChildNodes = function () {
+        var _this = this;
+        var list = [];
+        Object.keys(this).forEach(function (key) {
+            var value = _this[key];
+            if (value == null)
+                return;
+            if (value instanceof AstNode)
+                list.add(value);
+            else if (value instanceof Array)
+                list.addRange(value.where(function (t) { return t instanceof AstNode; }));
+        });
+        return list;
+    };
     return AstNode;
 }());
 var Statement = (function (_super) {

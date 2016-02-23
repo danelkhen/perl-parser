@@ -1,0 +1,105 @@
+﻿html{
+    padding:0;
+    margin:0;
+    height:100%;
+}
+body{
+    padding:0;
+    margin:0;
+    height:100%;
+}
+.tree{
+    float:left;
+    width:50%;
+    box-sizing:border-box;
+    height:100%;
+    overflow:scroll;
+    font-family:Tahoma; 
+    font-size:11px;
+    cursor:default;
+}
+.tree ul{
+    margin:0;
+    padding:0;
+}
+.tree li{
+    list-style:none;
+}
+.tree ul ul{
+    padding-left:20px;
+}
+.tree .node .self {
+    display:inline-block;
+    padding-left:10px;
+}
+.tree .node.expanded .self:before{
+    content:"-";
+    width:15px;
+    display:inline-block;
+}
+.tree .node.collapsed .self:before{
+    content:"+";
+    width:15px;
+    display:inline-block;
+}
+
+
+.code {    
+    white-space:pre;    
+    font-family:'Courier New'; 
+    font-size:11px;
+    height:100%;
+    overflow:scroll;
+}
+.selected{
+    background-color:pink;
+}
+
+.tree .node.collapsed > .children{
+    display:none;
+}
+.code .qq{color:red;}
+.code .pod{color:darkgreen;}
+.code .keyword{color:blue;}
+.code .end{color:blue;}
+.code .whitespace{color:inherit;}
+.code .packageSeparator{color:inherit;}
+.code .semicolon{color:inherit;}
+.code .sigiledIdentifier{color:red;}
+.code .comment{color:green;}
+.code .regExpEquals{color:inherit;}
+.code .equals{color:inherit;}
+.code .concatAssign{color:inherit;}
+.code .addAssign{color:inherit;}
+.code .subtractAssign{color:inherit;}
+.code .multiplyAssign{color:inherit;}
+.code .divideAssign{color:inherit;}
+.code .comma{color:inherit;}
+.code .integer{color:red;}
+.code .parenOpen{color:inherit;}
+.code .parenClose{color:inherit;}
+.code .braceOpen{color:inherit;}
+.code .braceClose{color:inherit;}
+.code .bracketOpen{color:inherit;}
+.code .bracketClose{color:inherit;}
+.code .smallerOrEqualsThan{color:inherit;}
+.code .greaterOrEqualsThan{color:inherit;}
+.code .smallerThan{color:inherit;}
+.code .greaterThan{color:inherit;}
+.code .arrow{color:inherit;}
+.code .fatComma{color:inherit;}
+.code .assignment{color:inherit;}
+.code .concat{color:inherit;}
+.code .interpolatedString{color:brown;}
+.code .string{color:brown;}
+.code .divDiv{color:inherit;}
+.code .tilda{color:inherit;}
+.code .regex{color:inherit;}
+.code .regexSubstitute{color:inherit;}
+.code .or{color:inherit;}
+.code .and{color:inherit;}
+.code .minus{color:inherit;}
+.code .multiply{color:inherit;}
+.code .plus{color:inherit;}
+.code .multiplyString{color:inherit;}
+.code .identifier{color:inherit;}

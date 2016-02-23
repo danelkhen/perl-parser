@@ -1,15 +1,15 @@
 ﻿
 class Logger {
     log(...args) {
-        console.log.apply(console, args);
+        //console.log.apply(console, args);
     }
     errors = 0;
     error(...args) {
         throw new Error();
-        this.errors++;
-        if (this.errors > 10)
-            throw new Error();
-        console.error.apply(console, args);
+        //this.errors++;
+        //if (this.errors > 10)
+        //    throw new Error();
+        //console.error.apply(console, args);
     }
 }
 class TokenReader {
@@ -29,13 +29,17 @@ class TokenReader {
         if (this.token != null)
             this.logger.log(this.token.value);
     }
-    nextNonWhitespaceToken() {
+    nextNonWhitespaceToken(): Token[] {
         this.nextToken();
-        this.skipWhitespaceAndComments();
+        return this.skipWhitespaceAndComments();
     }
-    skipWhitespaceAndComments() {
-        while (this.token != null && (this.token.is(TokenTypes.whitespace) || this.token.is(TokenTypes.comment)))
+    skipWhitespaceAndComments(): Token[] {
+        let skipped: Token[] = [];
+        while (this.token != null && (this.token.is(TokenTypes.whitespace) || this.token.is(TokenTypes.comment))) {
+            skipped.push(this.token);
             this.nextToken();
+        }
+        return skipped;
     }
     expectIdentifier(value?: string) {
         return this.expect(TokenTypes.identifier, value);
@@ -44,12 +48,16 @@ class TokenReader {
         return this.expect(TokenTypes.keyword, value);
     }
     expect(type: TokenType, value?: string) {
-        if (!this.token.is(type, value))
+        let res = this.token.is(type, value);
+        if (!res)
             this.onUnexpectedToken();
+        return res;
     }
-    expectAny(types: TokenType[]) {
-        if (!this.token.isAny(types))
+    expectAny(types: TokenType[]):boolean {
+        let res = this.token.isAny(types);
+        if (!res)
             this.onUnexpectedToken();
+        return res;
     }
     onUnexpectedToken(): any {
         this.logger.error("unexecpted token type", this.token);
@@ -58,68 +66,19 @@ class TokenReader {
 }
 
 
-class ParserBase {
-    onUnexpectedToken(): any {
-        this.reader.onUnexpectedToken();
-        return null;
-    }
-    expectIdentifier(value?: string) {
-        return this.reader.expectIdentifier(value);
-    }
-    expectKeyword(value?: string) {
-        return this.reader.expectKeyword(value);
-    }
-    expectAny(types: TokenType[]) {
-        return this.reader.expectAny(types);
-    }
-    expect(type: TokenType, value?: string) {
-        return this.reader.expect(type, value);
-    }
-    log(...args) {
-        this.logger.log(args);
-    }
-    error(...args) {
-        this.logger.error(args);
-    }
-    logger: Logger;
-    reader: TokenReader;
-    get token(): Token { return this.reader.token; }
-    get currentRangeText(): string {
-        if (this.token == null)
-            return null;
-        return this.token.range.text;
-    }
-    get currentLineText(): string {
-        return this.reader.currentLineText;
-    }
-    getPrevToken() {
-        return this.reader.getPrevToken();
-    }
-    nextToken() {
-        return this.reader.nextToken();
-    }
-    nextNonWhitespaceToken() {
-        return this.reader.nextNonWhitespaceToken();
-    }
-    skipWhitespaceAndComments() {
-        return this.reader.skipWhitespaceAndComments();
-    }
-
-}
-
 
 interface RegExp {
-    execFrom(index: number, s:string):RegExpExecArray;
-    testFrom(index: number, s:string):boolean;
+    execFrom(index: number, s: string): RegExpExecArray;
+    testFrom(index: number, s: string): boolean;
 }
 
-RegExp.prototype.execFrom = function (index: number, s:string):RegExpExecArray {
-    let re:RegExp = this;
+RegExp.prototype.execFrom = function (index: number, s: string): RegExpExecArray {
+    let re: RegExp = this;
     re.lastIndex = index;
     return re.exec(s);
 }
-RegExp.prototype.testFrom = function (index: number, s:string):boolean{
-    let re:RegExp = this;
+RegExp.prototype.testFrom = function (index: number, s: string): boolean {
+    let re: RegExp = this;
     re.lastIndex = index;
     return re.test(s);
 }

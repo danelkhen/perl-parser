@@ -2,6 +2,20 @@
 
 class AstNode {
     token: Token;
+    tokens: Token[] = [];
+    getChildNodes(): AstNode[] {
+        let list: AstNode[] = [];
+        Object.keys(this).forEach(key=> {
+            let value = this[key];
+            if(value==null)
+                return;
+            if(value instanceof AstNode)
+                list.add(value);
+            else if(value instanceof Array)
+                list.addRange(value.where(t=> t instanceof AstNode));
+        });
+        return list;
+    }
 }
 class Statement extends AstNode {
 

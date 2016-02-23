@@ -95,16 +95,16 @@ declare class jQueryHelper {
 }
 declare function jQueryHelper2(): void;
 interface JQueryStatic {
-    create(selector: string): any;
-    fromArray$(list: JQuery[]): any;
+    create(selector: string): JQuery;
+    fromArray$(list: JQuery[]): JQuery;
     whenAll(list: any): any;
 }
 interface JQuery {
-    bindChildrenToList<T>(selector: string, list: Array<T>, action: (el: JQuery, obj: T) => void): any;
-    getAppend(selector: string): any;
+    bindChildrenToList<T>(selector: string, list: Array<T>, action: (el: JQuery, obj: T) => void): JQuery;
+    getAppend(selector: string): JQuery;
     isotope(opts: any): any;
     toArray$(): Array<JQuery>;
-    getAppendRemoveForEach<T>(selector: string, list: Array<T>, action: (el: JQuery, obj: T) => void): any;
+    getAppendRemoveForEach<T>(selector: string, list: Array<T>, action: (el: JQuery, obj: T) => void): JQuery;
     val2(value?: any): any;
     generator<T>(func: (obj: T) => JQuery): JQuery;
     generator<T>(): (obj: T) => JQuery;

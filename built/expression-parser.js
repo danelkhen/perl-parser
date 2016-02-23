@@ -9,25 +9,23 @@ var ExpressionParser = (function (_super) {
         _super.apply(this, arguments);
     }
     ExpressionParser.prototype.parseExpression = function () {
-        console.log("parseExpression", this.token);
+        this.log("parseExpression", this.token);
         var node = this._parseExpression();
-        console.log("parseExpression Finished", this.token, node);
+        this.log("parseExpression Finished", this.token, node);
         return node;
     };
     ExpressionParser.prototype.toListDeclaration = function (exp) {
-        var list;
         if (exp instanceof ListDeclaration)
             return exp;
-        list = new ListDeclaration();
-        list.token = exp.token;
-        list.items = [exp];
-        return list;
+        var node = this.create(ListDeclaration);
+        node.items = [exp];
+        return node;
     };
     ExpressionParser.prototype._parseExpression = function (lastExpression) {
         var i = 0;
         while (true) {
             i++;
-            console.log("parseExpression", i, this.token, lastExpression);
+            this.log("parseExpression", i, this.token, lastExpression);
             this.skipWhitespaceAndComments();
             if (this.token.is(TokenTypes.bracketOpen)) {
                 if (lastExpression == null)
@@ -52,17 +50,11 @@ var ExpressionParser = (function (_super) {
                 }
             }
             else if (this.token.isAny([TokenTypes.comma, TokenTypes.semicolon])) {
-                //throw new Error();
                 if (lastExpression == null)
                     throw new Error();
                 return lastExpression;
             }
             else if (this.token.isIdentifier() || this.token.isKeyword()) {
-                //    let node = this.parseMemberExpression();
-                //    node.prev = lastExpression;
-                //    lastExpression = node;
-                //}
-                //else if (this.token.isKeyword()) {   //
                 var node = this.parseMemberExpression();
                 node.prev = lastExpression;
                 lastExpression = node;
@@ -81,15 +73,13 @@ var ExpressionParser = (function (_super) {
                 lastExpression = node;
             }
             else if (this.token.isAny([TokenTypes.integer, TokenTypes.interpolatedString, TokenTypes.qq, TokenTypes.string])) {
-                var node = new ValueExpression();
-                node.token = this.token;
+                var node = this.create(ValueExpression);
                 node.value = this.token.value; //TODO:
                 lastExpression = node;
                 this.nextToken();
             }
             else if (this.token.isAny([TokenTypes.regex, TokenTypes.regexSubstitute])) {
-                var node = new RegexExpression();
-                node.token = this.token;
+                var node = this.create(RegexExpression);
                 node.value = this.token.value; //TODO:
                 lastExpression = node;
                 this.nextToken();
@@ -116,7 +106,7 @@ var ExpressionParser = (function (_super) {
             ])) {
                 if (lastExpression == null)
                     throw new Error();
-                var exp = new BinaryExpression();
+                var exp = this.create(BinaryExpression);
                 exp.token = this.token;
                 exp.left = lastExpression;
                 exp.operator = new Operator();
@@ -133,8 +123,7 @@ var ExpressionParser = (function (_super) {
     };
     ExpressionParser.prototype.parseArrayMemberAccess = function (target) {
         this.expect(TokenTypes.bracketOpen);
-        var node = new ArrayMemberAccessExpression();
-        node.token = this.token;
+        var node = this.create(ArrayMemberAccessExpression);
         this.nextNonWhitespaceToken();
         node.expression = this.parseExpression();
         node.target = target;
@@ -143,8 +132,7 @@ var ExpressionParser = (function (_super) {
         return node;
     };
     ExpressionParser.prototype.parseHashMemberAccess = function (target) {
-        var exp = new HashMemberAccessExpression();
-        exp.token = this.token;
+        var exp = this.create(HashMemberAccessExpression);
         var exp2 = this.parseHashRefCreation();
         exp.name = exp2.items[0].token.value; //TODO:
         exp.target = target;
@@ -159,23 +147,21 @@ var ExpressionParser = (function (_super) {
     //}
     ExpressionParser.prototype.parseHashRefCreation = function () {
         this.expect(TokenTypes.braceOpen);
-        var exp = new HashRefCreationExpression();
-        exp.token = this.token;
+        var exp = this.create(HashRefCreationExpression);
         exp.items = this.parseBracedCommaSeparatedExpressions(TokenTypes.braceOpen, TokenTypes.braceClose);
         return exp;
     };
     ExpressionParser.prototype.parseMemberExpression = function () {
-        console.log("parseMemberExpression", this.token);
-        var node = new MemberExpression();
+        this.log("parseMemberExpression", this.token);
+        var node = this.create(MemberExpression);
         node.token = this.token;
         node.name = this.token.value;
         this.nextToken();
         return node;
     };
     ExpressionParser.prototype.parseInvocationExpression = function () {
-        console.log("parseInvocationExpression", this.token);
-        var node = new InvocationExpression();
-        node.token = this.token;
+        this.log("parseInvocationExpression", this.token);
+        var node = this.create(InvocationExpression);
         if (this.token.is(TokenTypes.parenOpen))
             node.arguments = this.parseParenthesizedList().items;
         else
@@ -183,10 +169,9 @@ var ExpressionParser = (function (_super) {
         return node;
     };
     ExpressionParser.prototype.parseArrayRefDeclaration = function () {
-        console.log("parseArrayRefDeclaration", this.token);
+        this.log("parseArrayRefDeclaration", this.token);
         this.expect(TokenTypes.bracketOpen);
-        var node = new ArrayRefDeclaration();
-        node.token = this.token;
+        var node = this.create(ArrayRefDeclaration);
         node.items = this.parseBracedCommaSeparatedExpressions(TokenTypes.bracketOpen, TokenTypes.bracketClose);
         //this.nextNonWhitespaceToken();
         //while (this.token != null) {
@@ -203,13 +188,12 @@ var ExpressionParser = (function (_super) {
         return node;
     };
     ExpressionParser.prototype.parseParenthesizedList = function () {
-        var node = new ListDeclaration();
-        node.token = this.token;
+        var node = this.create(ListDeclaration);
         node.items = this.parseBracedCommaSeparatedExpressions(TokenTypes.parenOpen, TokenTypes.parenClose);
         return node;
     };
     ExpressionParser.prototype.parseBracedCommaSeparatedExpressions = function (opener, closer) {
-        console.log("parseBracedCommaSeparatedExpressions", this.token);
+        this.log("parseBracedCommaSeparatedExpressions", this.token);
         this.expect(opener);
         var items = [];
         this.nextNonWhitespaceToken();
@@ -228,7 +212,7 @@ var ExpressionParser = (function (_super) {
         return items;
     };
     ExpressionParser.prototype.parseCommaSeparatedExpressions = function () {
-        console.log("parseCommaSeparatedExpressions", this.token);
+        this.log("parseCommaSeparatedExpressions", this.token);
         var items = [];
         this.skipWhitespaceAndComments();
         //this.nextNonWhitespaceToken();
@@ -245,18 +229,16 @@ var ExpressionParser = (function (_super) {
         return items;
     };
     ExpressionParser.prototype.parseQw = function () {
-        console.log("parseQw", this.token);
-        this.expect(TokenTypes.identifier, "qw");
-        var node = new QwExpression();
-        node.token = this.token;
+        this.log("parseQw", this.token);
+        this.expectValue(TokenTypes.identifier, "qw");
+        var node = this.create(QwExpression);
         node.items = [];
         this.nextToken();
         this.expect(TokenTypes.smallerThan);
         this.nextToken();
         while (true) {
             this.expect(TokenTypes.identifier);
-            var item = new ValueExpression();
-            item.token = this.token;
+            var item = this.create(ValueExpression);
             item.value = this.token.value;
             node.items.push(item);
             this.nextToken();
