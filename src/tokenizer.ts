@@ -17,10 +17,6 @@ class Tokenizer {
         var tokenTypes = TokenTypes.all;
         var cursor = new Cursor(this.file.startPos);
         while (cursor.index < this.file.text.length) {
-            console.log(cursor.pos.line, cursor.pos.column);
-            if (cursor.pos.line == 415) {
-                //debugger;
-            }
             var range: TextRange2;
             var tokenType2: TokenType;
             tokenTypes.first(tokenType => {

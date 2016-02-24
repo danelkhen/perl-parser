@@ -45,7 +45,16 @@ var IndexPage = (function () {
         node.tokens.forEach(function (token) { return $(_this.tokenToElement.get(token)).addClass("selected"); });
         var el = this.tokenToElement.get(node.token);
         if (el != null) {
-            el.scrollIntoView(false);
+            var div = $(".code")[0];
+            var top_1 = div.scrollTop;
+            var bottom = div.scrollTop + div.scrollHeight;
+            var top2 = el.offsetTop;
+            var bottom2 = el.offsetTop + el.offsetHeight;
+            console.log({ top: top_1, bottom: bottom, top2: top2, bottom2: bottom2 });
+            if (top2 < top_1)
+                div.scrollTop = top2;
+            else if (bottom2 > bottom)
+                div.scrollTop = top2;
         }
     };
     IndexPage.prototype.createTree = function (node) {

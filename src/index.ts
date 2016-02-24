@@ -45,7 +45,16 @@ class IndexPage {
         node.tokens.forEach(token => $(this.tokenToElement.get(token)).addClass("selected"));
         let el = this.tokenToElement.get(node.token);
         if (el != null) {
-            el.scrollIntoView(false);
+            let div = $(".code")[0];
+            let top = div.scrollTop;
+            let bottom = div.scrollTop+div.scrollHeight;
+            let top2 = el.offsetTop;
+            let bottom2 = el.offsetTop+el.offsetHeight;
+            console.log({top, bottom, top2, bottom2});
+            if(top2<top)
+                div.scrollTop = top2;
+            else if(bottom2>bottom)
+                div.scrollTop = top2;
             //let code = $(".code")[0];
             //code.scrollTop += Math.floor(code.offsetHeight/2);
         }

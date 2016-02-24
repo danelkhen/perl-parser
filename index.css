@@ -7,13 +7,19 @@ body{
     padding:0;
     margin:0;
     height:100%;
+    overflow:hidden;
 }
-.bar{
-    position:fixed;
-    left:20%;
+
+.layout{
+    width:100%;
+    height:100%;
+}
+.layout > tbody > tr:nth-child(2) {
+    height:100%;
+
 }
 .bar input{
-    width:300px;
+    width:100%;
 }
 .tree{
     float:left;
