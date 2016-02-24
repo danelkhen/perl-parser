@@ -6,14 +6,17 @@
     }
 
 
-    parseBracedStatements(node:AstNode): Statement[] {
+    parseBracedStatements(node: AstNode, skipLastOptionalSemicolon?:boolean): Statement[] {
         this.expect(TokenTypes.braceOpen, node);
         this.nextNonWhitespaceToken(node);
         let statements = this.parseStatementsUntil(TokenTypes.braceClose);
         this.expect(TokenTypes.braceClose, node);
         this.nextNonWhitespaceToken(node);
+        if(skipLastOptionalSemicolon && this.token.is(TokenTypes.semicolon))    //auto-skip semicolon after braced statements
+            this.nextNonWhitespaceToken(node);
         return statements;
     }
+
 
     parseStatementsUntil(stopAtTokenType?: TokenType): Statement[] {
         let i = 0;
@@ -53,6 +56,15 @@
             return this.parseElsifStatement();
         else if (this.token.isKeyword("else"))
             return this.parseElseStatement();
+        else if (this.token.is(TokenTypes.identifier) && this.reader.getNextNonWhitespaceToken().is(TokenTypes.colon)) {
+            let label = this.parseLabel();
+            let st = this.parseStatement();
+            let st2:any = st;
+            st2.label = label; //TODO:
+            return st2;
+        }
+        else if (this.token.isKeyword("foreach"))
+            return this.parseForEachStatement();
         else if (this.token.isKeyword("__END__"))
             return this.parseEndStatement();
         else if (this.token.is(TokenTypes.pod))
@@ -64,6 +76,26 @@
     //    node.token = this.token;
     //    return node;
     //}
+
+    parseLabel(): SimpleName {
+        //let node = this.create(SimpleName);
+        //node.name = this.token.value.substr(0, this.token.value.length-1).trim();
+        let node = this.parseSimpleName();
+        this.expect(TokenTypes.colon, node);
+        this.nextToken();
+        return node;
+    }
+    parseForEachStatement(): ForEachStatement {
+        let node = this.create(ForEachStatement);
+        if (this.token.isKeyword("my")) //TODO:
+            this.nextNonWhitespaceToken(node);
+        node.variable = this.createExpressionParser().parseNonBinaryExpression();
+        this.skipWhitespaceAndComments(node);
+        node.list = this.createExpressionParser().parseParenthesizedList();
+        this.skipWhitespaceAndComments(node);
+        node.statements = this.parseBracedStatements(node);
+        return node;
+    }
 
     parseEndStatement() {
         this.expectKeyword("__END__");
@@ -92,7 +124,7 @@
         node.expression = this.parseExpression();
         this.expect(TokenTypes.parenClose, node);
         this.nextNonWhitespaceToken(node);
-        node.statements = this.parseBracedStatements(node);
+        node.statements = this.parseBracedStatements(node, true);
         this.skipWhitespaceAndComments(node);
         if (this.token.isKeyword("elsif") || this.token.isKeyword("else"))
             node.else = this.parseStatement();
@@ -106,9 +138,11 @@
         node.statements = this.parseBracedStatements(node);
         return node;
     }
-    parseStatementEnd(node:Statement) {
+    parseStatementEnd(node: Statement, semicolonIsOptional?: boolean) {
         this.skipWhitespaceAndComments();
         if (this.token.is(TokenTypes.braceClose))   //last statement doesn't have to have semicolon
+            return;
+        if (!this.token.is(TokenTypes.semicolon) && semicolonIsOptional)  //allow scope blocks to end with a closing brace but without semicolon
             return;
         this.expect(TokenTypes.semicolon);
         this.nextToken();
@@ -118,7 +152,8 @@
         this.expectKeyword("return");
         let node = this.create(ReturnStatement);
         this.nextNonWhitespaceToken(node);
-        node.expression = this.parseExpression();
+        if (!this.token.is(TokenTypes.semicolon))
+            node.expression = this.parseExpression();
         this.parseStatementEnd(node);
         return node;
     }
@@ -126,7 +161,7 @@
         console.log("parseExpressionStatement", this.token);
         let node = this.create(ExpressionStatement);
         node.expression = this.parseExpression();
-        this.parseStatementEnd(node);
+        this.parseStatementEnd(node, node.expression instanceof BlockExpression);
         return node;
     }
     parseSubroutineDeclaration(): SubroutineDeclaration {
@@ -135,6 +170,11 @@
         this.nextNonWhitespaceToken(node);
         if (this.token.is(TokenTypes.identifier)) {
             node.name = this.parseSimpleName();
+            this.nextNonWhitespaceToken(node);
+        }
+        if (this.token.is(TokenTypes.colon)) { //subroutine attributes: sub foo : method { ... }
+            this.nextNonWhitespaceToken(node);
+            node.attribute = this.parseSimpleName();
             this.nextNonWhitespaceToken(node);
         }
         this.expect(TokenTypes.braceOpen, node);
@@ -202,7 +242,9 @@
         this.nextToken();
         this.expect(TokenTypes.whitespace);
         this.nextToken();
-        node.packageName = this.parseMemberExpression();
+        node.module = this.createExpressionParser().parseNonBinaryExpression();// this.parseMemberExpression();
+        if (!this.token.is(TokenTypes.semicolon))
+            node.list = this.parseExpression();
         this.expect(TokenTypes.semicolon);
         this.nextToken();
         return node;
@@ -219,6 +261,7 @@
         let parser = new ExpressionParser();
         parser.logger = this.logger;
         parser.reader = this.reader;
+        parser.parser = this;
         return parser;
     }
 

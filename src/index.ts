@@ -9,9 +9,13 @@ class IndexPage {
     tokenToElement: Map<Token, HTMLElement> = new Map<Token, HTMLElement>();
 
     main() {
-        let filename = "https://raw.githubusercontent.com/mickeyn/PONAPI/master/Server/lib/PONAPI/Builder.pm";
-        console.log(filename);
-        //fs.readFile(filename, "utf8", (e, data) => { this.src = data; this.pos = 0; this.main2(); });
+        $("#tbUrl").change(e=> this.update());
+        this.update();
+    }
+    update() {
+        let filename = $("#tbUrl").val();
+        if (filename.length == 0)
+            return;
         $.get(filename).then(data => {
             let file = new File2(filename, data);
             let tok = new Tokenizer();
@@ -22,14 +26,14 @@ class IndexPage {
             parser.reader = new TokenReader();
             parser.reader.logger = parser.logger;
             parser.reader.tokens = tok.tokens;
-            let codeEl = $.create(".code").appendTo("body")
+            let codeEl = $(".code").empty();
             tok.tokens.forEach(token=> {
                 let span = $.create("span").addClass(token.type.name).text(token.value).appendTo(codeEl)[0];
                 this.tokenToElement.set(token, span);
             });
             var statements = parser.doParse();
             console.log(statements);
-            $("body").getAppend(".tree").getAppend("ul").append(this.createTree(statements[0]));
+            $(".tree").empty().getAppend("ul").append(this.createTree(statements[0]));
             //$.create("pre").text(stringifyNodes(statements)).appendTo("body")
 
         });

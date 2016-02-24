@@ -8,6 +8,13 @@ body{
     margin:0;
     height:100%;
 }
+.bar{
+    position:fixed;
+    left:20%;
+}
+.bar input{
+    width:300px;
+}
 .tree{
     float:left;
     width:50%;
@@ -42,6 +49,9 @@ body{
 
 
 .code {    
+    float:left;
+    width:50%;
+    box-sizing:border-box;
     white-space:pre;    
     font-family:'Courier New'; 
     font-size:11px;

@@ -31,6 +31,9 @@ class Token {
     toString() {
         return this.type.name + " " + this.value;
     }
+    isAnyKeyword(values: string[]): boolean {
+        return this.is(TokenTypes.keyword) && values.contains(this.value);
+    }
     isAny(types: TokenType[]): boolean {
         return types.any(t=> this.is(t));
     }
@@ -78,16 +81,17 @@ class TokenTypes {
         return tt;
     }
     static qq = TokenTypes._r(/qq\|.*\|/);
+    static qw = TokenTypes._r(/qw\/.*\/|qw<.*>/);
     static pod = TokenTypes._custom(TokenTypes._matchPod);
     //static pod = TokenTypes._r(/=pod.*=cut/m);
-    static keyword = TokenTypes._r(new RegExp(["package", "use", "my", "sub", "return", "if", "elsif", "else", "defined", "ref", "exists", "__END__"].map(t=> t += "\\b").join("|"))); //\b|use\b|my\b|sub\b|return\b|if\b|defined\b/
+    static keyword = TokenTypes._r(new RegExp(["package", "use", "my", "sub", "return", "if", "elsif", "else", "defined", "ref", "exists", "unless", "__END__"].map(t=> t += "\\b").join("|"))); //\b|use\b|my\b|sub\b|return\b|if\b|defined\b/
     static end = TokenTypes._r(/__END__/);
     static whitespace = TokenTypes._r(/[ \t\r\n]+/);
     static packageSeparator = TokenTypes._r(/\:\:/);
     static semicolon = TokenTypes._r(/;/);
-    static sigiledIdentifier = TokenTypes._r(new RegExp("[\\$@]" + TokenTypes.identifierRegex.source));
+    static sigiledIdentifier = TokenTypes._r(new RegExp("[\\$@%]" + TokenTypes.identifierRegex.source));
+    static evalErrorVar = TokenTypes._r(/\$@/);
     static comment = TokenTypes._r(/\#.*/);
-    static regExpEquals = TokenTypes._r(/=\~/);
     static equals = TokenTypes._r(/==/);
     static concatAssign = TokenTypes._r(/\.=/);
     static addAssign = TokenTypes._r(/\+=/);
@@ -104,35 +108,53 @@ class TokenTypes {
     static bracketClose = TokenTypes._r(/\]/);
     static smallerOrEqualsThan = TokenTypes._r(/\<=/);
     static greaterOrEqualsThan = TokenTypes._r(/\>=/);
+    static interpolatedString = TokenTypes._r(/\".*\"/);
+    static string = TokenTypes._r(/\'[^\']*\'/);
+    static regex = TokenTypes._r(/\/.*\/[a-z]*/);
+    static regexSubstitute = TokenTypes._r(/s\/.*\/.*\/[a-z]*/);  // s/abc/def/mg
+
+    static colon = TokenTypes._r(/\:/);
+    static question = TokenTypes._r(/\?/);
+    
+    //unary:
+    static inc = TokenTypes._r(/\+\+/);
+    static dec = TokenTypes._r(/\-\-/);
+    
+    //binary
+    static regExpEquals = TokenTypes._r(/=\~/);
+    static regExpNotEquals = TokenTypes._r(/\!\~/);
     static smallerThan = TokenTypes._r(/\</);
     static greaterThan = TokenTypes._r(/\>/);
     static arrow = TokenTypes._r(/\-\>/);
     static fatComma = TokenTypes._r(/\=\>/);
     static assignment = TokenTypes._r(/=/);
     static concat = TokenTypes._r(/\./);
-    static interpolatedString = TokenTypes._r(/\".*\"/);
-    static string = TokenTypes._r(/\'.*\'/);
     static divDiv = TokenTypes._r(/\/\//);
     static tilda = TokenTypes._r(/\~/);
-    static regex = TokenTypes._r(/\/.*\/[a-z]*/);
-    static regexSubstitute = TokenTypes._r(/s\/.*\/.*\/[a-z]*/);  // s/abc/def/mg
     static or = TokenTypes._r(/\|\|/);
     static and = TokenTypes._r(/\&\&/);
     static minus = TokenTypes._r(/\-/);
     static multiply = TokenTypes._r(/\*/);
     static plus = TokenTypes._r(/\+/);
-    static not = TokenTypes._r(/\!/);
     static multiplyString = TokenTypes._r(/x/);
+    
+    
+    //static label = TokenTypes._r(new RegExp(TokenTypes.identifierRegex.source+"[\t\r\n ]*\:"));
     static identifier = TokenTypes._r(TokenTypes.identifierRegex);
+    
+
+    static deref = TokenTypes._r(/\\/);
+    static not = TokenTypes._r(/\!/);
+    static sigil = TokenTypes._r(/[\$@%]/);
 
     static _matchPod(cursor: Cursor): TextRange2 {
-        if(cursor.get(4)!="=pod")
+        if (!cursor.startsWith("=pod") && !cursor.startsWith("=encoding"))
             return null;
         let start = cursor.index;
         let cut = /=cut/.execFrom(cursor.index, cursor.src);
-        if(cut==null)
+        if (cut == null)
             throw new Error("can't find pod end '=cut'");
-        let end = cut.index+4;
+        let end = cut.index + 4;
         //cursor.pos.index = end;
         let range = new TextRange2(cursor.file, cursor.file.getPos(start), cursor.file.getPos(end));
         return range;
@@ -242,6 +264,9 @@ class Cursor {
     get file(): File2 { return this.pos.file; }
     get src(): string { return this.file.text; }
     get index(): number { return this.pos.index; }
+    startsWith(s: string): boolean {
+        return this.get(s.length)==s;
+    }
     get(length) {
         return this.src.substr(this.index, length);
     }

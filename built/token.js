@@ -21,6 +21,9 @@ var Token = (function () {
     Token.prototype.toString = function () {
         return this.type.name + " " + this.value;
     };
+    Token.prototype.isAnyKeyword = function (values) {
+        return this.is(TokenTypes.keyword) && values.contains(this.value);
+    };
     Token.prototype.isAny = function (types) {
         var _this = this;
         return types.any(function (t) { return _this.is(t); });
@@ -67,7 +70,7 @@ var TokenTypes = (function () {
         return tt;
     };
     TokenTypes._matchPod = function (cursor) {
-        if (cursor.get(4) != "=pod")
+        if (!cursor.startsWith("=pod") && !cursor.startsWith("=encoding"))
             return null;
         var start = cursor.index;
         var cut = /=cut/.execFrom(cursor.index, cursor.src);
@@ -80,16 +83,17 @@ var TokenTypes = (function () {
     };
     TokenTypes.identifierRegex = /[a-zA-Z_][a-zA-Z_0-9]*/;
     TokenTypes.qq = TokenTypes._r(/qq\|.*\|/);
+    TokenTypes.qw = TokenTypes._r(/qw\/.*\/|qw<.*>/);
     TokenTypes.pod = TokenTypes._custom(TokenTypes._matchPod);
     //static pod = TokenTypes._r(/=pod.*=cut/m);
-    TokenTypes.keyword = TokenTypes._r(new RegExp(["package", "use", "my", "sub", "return", "if", "elsif", "else", "defined", "ref", "exists", "__END__"].map(function (t) { return t += "\\b"; }).join("|"))); //\b|use\b|my\b|sub\b|return\b|if\b|defined\b/
+    TokenTypes.keyword = TokenTypes._r(new RegExp(["package", "use", "my", "sub", "return", "if", "elsif", "else", "defined", "ref", "exists", "unless", "__END__"].map(function (t) { return t += "\\b"; }).join("|"))); //\b|use\b|my\b|sub\b|return\b|if\b|defined\b/
     TokenTypes.end = TokenTypes._r(/__END__/);
     TokenTypes.whitespace = TokenTypes._r(/[ \t\r\n]+/);
     TokenTypes.packageSeparator = TokenTypes._r(/\:\:/);
     TokenTypes.semicolon = TokenTypes._r(/;/);
-    TokenTypes.sigiledIdentifier = TokenTypes._r(new RegExp("[\\$@]" + TokenTypes.identifierRegex.source));
+    TokenTypes.sigiledIdentifier = TokenTypes._r(new RegExp("[\\$@%]" + TokenTypes.identifierRegex.source));
+    TokenTypes.evalErrorVar = TokenTypes._r(/\$@/);
     TokenTypes.comment = TokenTypes._r(/\#.*/);
-    TokenTypes.regExpEquals = TokenTypes._r(/=\~/);
     TokenTypes.equals = TokenTypes._r(/==/);
     TokenTypes.concatAssign = TokenTypes._r(/\.=/);
     TokenTypes.addAssign = TokenTypes._r(/\+=/);
@@ -106,26 +110,37 @@ var TokenTypes = (function () {
     TokenTypes.bracketClose = TokenTypes._r(/\]/);
     TokenTypes.smallerOrEqualsThan = TokenTypes._r(/\<=/);
     TokenTypes.greaterOrEqualsThan = TokenTypes._r(/\>=/);
+    TokenTypes.interpolatedString = TokenTypes._r(/\".*\"/);
+    TokenTypes.string = TokenTypes._r(/\'[^\']*\'/);
+    TokenTypes.regex = TokenTypes._r(/\/.*\/[a-z]*/);
+    TokenTypes.regexSubstitute = TokenTypes._r(/s\/.*\/.*\/[a-z]*/); // s/abc/def/mg
+    TokenTypes.colon = TokenTypes._r(/\:/);
+    TokenTypes.question = TokenTypes._r(/\?/);
+    //unary:
+    TokenTypes.inc = TokenTypes._r(/\+\+/);
+    TokenTypes.dec = TokenTypes._r(/\-\-/);
+    //binary
+    TokenTypes.regExpEquals = TokenTypes._r(/=\~/);
+    TokenTypes.regExpNotEquals = TokenTypes._r(/\!\~/);
     TokenTypes.smallerThan = TokenTypes._r(/\</);
     TokenTypes.greaterThan = TokenTypes._r(/\>/);
     TokenTypes.arrow = TokenTypes._r(/\-\>/);
     TokenTypes.fatComma = TokenTypes._r(/\=\>/);
     TokenTypes.assignment = TokenTypes._r(/=/);
     TokenTypes.concat = TokenTypes._r(/\./);
-    TokenTypes.interpolatedString = TokenTypes._r(/\".*\"/);
-    TokenTypes.string = TokenTypes._r(/\'.*\'/);
     TokenTypes.divDiv = TokenTypes._r(/\/\//);
     TokenTypes.tilda = TokenTypes._r(/\~/);
-    TokenTypes.regex = TokenTypes._r(/\/.*\/[a-z]*/);
-    TokenTypes.regexSubstitute = TokenTypes._r(/s\/.*\/.*\/[a-z]*/); // s/abc/def/mg
     TokenTypes.or = TokenTypes._r(/\|\|/);
     TokenTypes.and = TokenTypes._r(/\&\&/);
     TokenTypes.minus = TokenTypes._r(/\-/);
     TokenTypes.multiply = TokenTypes._r(/\*/);
     TokenTypes.plus = TokenTypes._r(/\+/);
-    TokenTypes.not = TokenTypes._r(/\!/);
     TokenTypes.multiplyString = TokenTypes._r(/x/);
+    //static label = TokenTypes._r(new RegExp(TokenTypes.identifierRegex.source+"[\t\r\n ]*\:"));
     TokenTypes.identifier = TokenTypes._r(TokenTypes.identifierRegex);
+    TokenTypes.deref = TokenTypes._r(/\\/);
+    TokenTypes.not = TokenTypes._r(/\!/);
+    TokenTypes.sigil = TokenTypes._r(/[\$@%]/);
     return TokenTypes;
 }());
 ;
@@ -254,6 +269,9 @@ var Cursor = (function () {
         enumerable: true,
         configurable: true
     });
+    Cursor.prototype.startsWith = function (s) {
+        return this.get(s.length) == s;
+    };
     Cursor.prototype.get = function (length) {
         return this.src.substr(this.index, length);
     };

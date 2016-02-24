@@ -17,13 +17,18 @@ class Tokenizer {
         var tokenTypes = TokenTypes.all;
         var cursor = new Cursor(this.file.startPos);
         while (cursor.index < this.file.text.length) {
-            if (cursor.pos.line == 482) {
-                console.log(492);
+            console.log(cursor.pos.line, cursor.pos.column);
+            if (cursor.pos.line == 415) {
+                //debugger;
             }
             var range: TextRange2;
             var tokenType2: TokenType;
             tokenTypes.first(tokenType => {
                 range = tokenType.match(cursor);
+                if (range != null && range.length == 0) {
+                    range = tokenType.match(cursor);
+                    throw new Error();
+                }
                 tokenType2 = tokenType;
                 return range != null;
             });

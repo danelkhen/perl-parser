@@ -38,6 +38,13 @@ var Expression = (function (_super) {
     }
     return Expression;
 }(AstNode));
+var BlockExpression = (function (_super) {
+    __extends(BlockExpression, _super);
+    function BlockExpression() {
+        _super.apply(this, arguments);
+    }
+    return BlockExpression;
+}(Expression));
 var ListDeclaration = (function (_super) {
     __extends(ListDeclaration, _super);
     function ListDeclaration() {
@@ -206,12 +213,26 @@ var PrefixUnaryExpression = (function (_super) {
     }
     return PrefixUnaryExpression;
 }(Expression));
+var PostfixUnaryExpression = (function (_super) {
+    __extends(PostfixUnaryExpression, _super);
+    function PostfixUnaryExpression() {
+        _super.apply(this, arguments);
+    }
+    return PostfixUnaryExpression;
+}(Expression));
 var BinaryExpression = (function (_super) {
     __extends(BinaryExpression, _super);
     function BinaryExpression() {
         _super.apply(this, arguments);
     }
     return BinaryExpression;
+}(Expression));
+var TrinaryExpression = (function (_super) {
+    __extends(TrinaryExpression, _super);
+    function TrinaryExpression() {
+        _super.apply(this, arguments);
+    }
+    return TrinaryExpression;
 }(Expression));
 var MultiBinaryExpression = (function (_super) {
     __extends(MultiBinaryExpression, _super);
@@ -232,3 +253,14 @@ var HashRefCreationExpression = (function (_super) {
     }
     return HashRefCreationExpression;
 }(Expression));
+/*  LABEL foreach (EXPR; EXPR; EXPR) BLOCK
+    LABEL foreach VAR (LIST) BLOCK
+    LABEL foreach VAR (LIST) BLOCK continue BLOCK
+*/
+var ForEachStatement = (function (_super) {
+    __extends(ForEachStatement, _super);
+    function ForEachStatement() {
+        _super.apply(this, arguments);
+    }
+    return ForEachStatement;
+}(Statement));

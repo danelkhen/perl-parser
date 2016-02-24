@@ -23,6 +23,39 @@ class TokenReader {
     getPrevToken() {
         return this.tokens[this.tokenIndex - 1];
     }
+    getNextToken() {
+        return this.tokens[this.tokenIndex + 1];
+    }
+    getNextNonWhitespaceToken() {
+        let r = this.clone();
+        r.nextNonWhitespaceToken();
+        return r.token;
+    }
+    getRange(start: number, end: number): Token[] {
+        return this.tokens.slice(start, end);
+    }
+    findClosingBraceIndex(open: TokenType, close: TokenType): number {
+        this.expect(open);
+        let depth = 1;
+        while (depth > 0) {
+            this.nextToken();
+            if (this.token == null)
+                return -1;
+            if (this.token.is(open))
+                depth++;
+            else if (this.token.is(close))
+                depth--;
+        }
+        return this.tokenIndex;
+    }
+    clone(): TokenReader {
+        let r = new TokenReader();
+        r.tokens = this.tokens;
+        r.token = this.token;
+        r.tokenIndex = this.tokenIndex;
+        r.logger = this.logger;
+        return r;
+    }
     nextToken() {
         this.tokenIndex++;
         this.token = this.tokens[this.tokenIndex];
@@ -53,7 +86,7 @@ class TokenReader {
             this.onUnexpectedToken();
         return res;
     }
-    expectAny(types: TokenType[]):boolean {
+    expectAny(types: TokenType[]): boolean {
         let res = this.token.isAny(types);
         if (!res)
             this.onUnexpectedToken();

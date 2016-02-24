@@ -21,8 +21,13 @@ class Statement extends AstNode {
 
 }
 
+
 class Expression extends AstNode {
 
+}
+
+class BlockExpression extends Expression {
+    statements: Statement[];
 }
 
 class ListDeclaration extends Expression {
@@ -55,6 +60,7 @@ class VariableDeclarationExpression extends Expression {
 class SubroutineDeclaration extends Statement {
     name: SimpleName;
     statements: Statement[];
+    attribute: SimpleName;
 }
 
 class RegexExpression extends Expression {
@@ -67,7 +73,8 @@ class ExpressionStatement extends Statement {
     expression: Expression;
 }
 class UseStatement extends Statement {
-    packageName: MemberExpression;
+    module: Expression;
+    list: Expression;
 }
 
 class MemberExpression extends Expression {
@@ -77,7 +84,7 @@ class MemberExpression extends Expression {
 }
 
 class HashMemberAccessExpression extends Expression {
-    name: string;
+    member: Expression;
     target: Expression;
     arrow: boolean;
 }
@@ -128,11 +135,21 @@ class PrefixUnaryExpression extends Expression {
     operator: Operator;
     expression: Expression;
 }
+class PostfixUnaryExpression extends Expression {
+    expression: Expression;
+    operator: Operator;
+}
 
 class BinaryExpression extends Expression {
     left: Expression;
     operator: Operator;
     right: Expression;
+}
+
+class TrinaryExpression extends Expression {
+    condition: Expression;
+    trueExpression: Expression;
+    falseExpression: Expression;
 }
 
 class MultiBinaryExpression extends Expression {
@@ -148,3 +165,14 @@ class Operator {
 class HashRefCreationExpression extends Expression {
     items: Expression[];
 }
+/*  LABEL foreach (EXPR; EXPR; EXPR) BLOCK
+    LABEL foreach VAR (LIST) BLOCK
+    LABEL foreach VAR (LIST) BLOCK continue BLOCK
+*/
+class ForEachStatement extends Statement {
+    label:SimpleName;
+    variable:Expression;
+    list:Expression;
+    statements:Statement[];
+}
+

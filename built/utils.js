@@ -36,6 +36,39 @@ var TokenReader = (function () {
     TokenReader.prototype.getPrevToken = function () {
         return this.tokens[this.tokenIndex - 1];
     };
+    TokenReader.prototype.getNextToken = function () {
+        return this.tokens[this.tokenIndex + 1];
+    };
+    TokenReader.prototype.getNextNonWhitespaceToken = function () {
+        var r = this.clone();
+        r.nextNonWhitespaceToken();
+        return r.token;
+    };
+    TokenReader.prototype.getRange = function (start, end) {
+        return this.tokens.slice(start, end);
+    };
+    TokenReader.prototype.findClosingBraceIndex = function (open, close) {
+        this.expect(open);
+        var depth = 1;
+        while (depth > 0) {
+            this.nextToken();
+            if (this.token == null)
+                return -1;
+            if (this.token.is(open))
+                depth++;
+            else if (this.token.is(close))
+                depth--;
+        }
+        return this.tokenIndex;
+    };
+    TokenReader.prototype.clone = function () {
+        var r = new TokenReader();
+        r.tokens = this.tokens;
+        r.token = this.token;
+        r.tokenIndex = this.tokenIndex;
+        r.logger = this.logger;
+        return r;
+    };
     TokenReader.prototype.nextToken = function () {
         this.tokenIndex++;
         this.token = this.tokens[this.tokenIndex];

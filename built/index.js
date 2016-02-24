@@ -9,9 +9,14 @@ var IndexPage = (function () {
     }
     IndexPage.prototype.main = function () {
         var _this = this;
-        var filename = "https://raw.githubusercontent.com/mickeyn/PONAPI/master/Server/lib/PONAPI/Builder.pm";
-        console.log(filename);
-        //fs.readFile(filename, "utf8", (e, data) => { this.src = data; this.pos = 0; this.main2(); });
+        $("#tbUrl").change(function (e) { return _this.update(); });
+        this.update();
+    };
+    IndexPage.prototype.update = function () {
+        var _this = this;
+        var filename = $("#tbUrl").val();
+        if (filename.length == 0)
+            return;
         $.get(filename).then(function (data) {
             var file = new File2(filename, data);
             var tok = new Tokenizer();
@@ -22,14 +27,14 @@ var IndexPage = (function () {
             parser.reader = new TokenReader();
             parser.reader.logger = parser.logger;
             parser.reader.tokens = tok.tokens;
-            var codeEl = $.create(".code").appendTo("body");
+            var codeEl = $(".code").empty();
             tok.tokens.forEach(function (token) {
                 var span = $.create("span").addClass(token.type.name).text(token.value).appendTo(codeEl)[0];
                 _this.tokenToElement.set(token, span);
             });
             var statements = parser.doParse();
             console.log(statements);
-            $("body").getAppend(".tree").getAppend("ul").append(_this.createTree(statements[0]));
+            $(".tree").empty().getAppend("ul").append(_this.createTree(statements[0]));
             //$.create("pre").text(stringifyNodes(statements)).appendTo("body")
         });
     };
