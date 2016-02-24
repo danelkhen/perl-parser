@@ -121,6 +121,7 @@ class TokenTypes {
     static minus = TokenTypes._r(/\-/);
     static multiply = TokenTypes._r(/\*/);
     static plus = TokenTypes._r(/\+/);
+    static not = TokenTypes._r(/\!/);
     static multiplyString = TokenTypes._r(/x/);
     static identifier = TokenTypes._r(TokenTypes.identifierRegex);
 

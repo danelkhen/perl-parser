@@ -9,7 +9,7 @@ class IndexPage {
     tokenToElement: Map<Token, HTMLElement> = new Map<Token, HTMLElement>();
 
     main() {
-        let filename = "DateTime.pm";
+        let filename = "https://raw.githubusercontent.com/mickeyn/PONAPI/master/Server/lib/PONAPI/Builder.pm";
         console.log(filename);
         //fs.readFile(filename, "utf8", (e, data) => { this.src = data; this.pos = 0; this.main2(); });
         $.get(filename).then(data => {
@@ -22,14 +22,14 @@ class IndexPage {
             parser.reader = new TokenReader();
             parser.reader.logger = parser.logger;
             parser.reader.tokens = tok.tokens;
+            let codeEl = $.create(".code").appendTo("body")
+            tok.tokens.forEach(token=> {
+                let span = $.create("span").addClass(token.type.name).text(token.value).appendTo(codeEl)[0];
+                this.tokenToElement.set(token, span);
+            });
             var statements = parser.doParse();
             console.log(statements);
             $("body").getAppend(".tree").getAppend("ul").append(this.createTree(statements[0]));
-            let div = $.create(".code").appendTo("body")
-            tok.tokens.forEach(token=> {
-                let span = $.create("span").addClass(token.type.name).text(token.value).appendTo(div)[0];
-                this.tokenToElement.set(token, span);
-            });
             //$.create("pre").text(stringifyNodes(statements)).appendTo("body")
 
         });

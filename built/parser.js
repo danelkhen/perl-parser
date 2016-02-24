@@ -129,7 +129,7 @@ var Parser = (function (_super) {
         console.log("parseExpressionStatement", this.token);
         var node = this.create(ExpressionStatement);
         node.expression = this.parseExpression();
-        this.parseStatementEnd();
+        this.parseStatementEnd(node);
         return node;
     };
     Parser.prototype.parseSubroutineDeclaration = function () {

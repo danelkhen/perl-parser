@@ -123,6 +123,7 @@ var TokenTypes = (function () {
     TokenTypes.minus = TokenTypes._r(/\-/);
     TokenTypes.multiply = TokenTypes._r(/\*/);
     TokenTypes.plus = TokenTypes._r(/\+/);
+    TokenTypes.not = TokenTypes._r(/\!/);
     TokenTypes.multiplyString = TokenTypes._r(/x/);
     TokenTypes.identifier = TokenTypes._r(TokenTypes.identifierRegex);
     return TokenTypes;

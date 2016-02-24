@@ -54,6 +54,14 @@ var ExpressionParser = (function (_super) {
                     throw new Error();
                 return lastExpression;
             }
+            else if (this.token.is(TokenTypes.not)) {
+                var node = this.create(PrefixUnaryExpression);
+                node.operator = new Operator();
+                node.operator.value = this.token.value;
+                this.nextNonWhitespaceToken(node);
+                node.expression = this.parseExpression();
+                lastExpression = node;
+            }
             else if (this.token.isIdentifier() || this.token.isKeyword()) {
                 var node = this.parseMemberExpression();
                 node.prev = lastExpression;

@@ -9,7 +9,7 @@ var IndexPage = (function () {
     }
     IndexPage.prototype.main = function () {
         var _this = this;
-        var filename = "DateTime.pm";
+        var filename = "https://raw.githubusercontent.com/mickeyn/PONAPI/master/Server/lib/PONAPI/Builder.pm";
         console.log(filename);
         //fs.readFile(filename, "utf8", (e, data) => { this.src = data; this.pos = 0; this.main2(); });
         $.get(filename).then(function (data) {
@@ -22,14 +22,14 @@ var IndexPage = (function () {
             parser.reader = new TokenReader();
             parser.reader.logger = parser.logger;
             parser.reader.tokens = tok.tokens;
+            var codeEl = $.create(".code").appendTo("body");
+            tok.tokens.forEach(function (token) {
+                var span = $.create("span").addClass(token.type.name).text(token.value).appendTo(codeEl)[0];
+                _this.tokenToElement.set(token, span);
+            });
             var statements = parser.doParse();
             console.log(statements);
             $("body").getAppend(".tree").getAppend("ul").append(_this.createTree(statements[0]));
-            var div = $.create(".code").appendTo("body");
-            tok.tokens.forEach(function (token) {
-                var span = $.create("span").addClass(token.type.name).text(token.value).appendTo(div)[0];
-                _this.tokenToElement.set(token, span);
-            });
             //$.create("pre").text(stringifyNodes(statements)).appendTo("body")
         });
     };

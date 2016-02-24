@@ -126,7 +126,7 @@
         console.log("parseExpressionStatement", this.token);
         let node = this.create(ExpressionStatement);
         node.expression = this.parseExpression();
-        this.parseStatementEnd();
+        this.parseStatementEnd(node);
         return node;
     }
     parseSubroutineDeclaration(): SubroutineDeclaration {

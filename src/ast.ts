@@ -124,6 +124,10 @@ class ElseStatement extends Statement {
 }
 
 
+class PrefixUnaryExpression extends Expression {
+    operator: Operator;
+    expression: Expression;
+}
 
 class BinaryExpression extends Expression {
     left: Expression;

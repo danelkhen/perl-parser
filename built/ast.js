@@ -199,6 +199,13 @@ var ElseStatement = (function (_super) {
     }
     return ElseStatement;
 }(Statement));
+var PrefixUnaryExpression = (function (_super) {
+    __extends(PrefixUnaryExpression, _super);
+    function PrefixUnaryExpression() {
+        _super.apply(this, arguments);
+    }
+    return PrefixUnaryExpression;
+}(Expression));
 var BinaryExpression = (function (_super) {
     __extends(BinaryExpression, _super);
     function BinaryExpression() {

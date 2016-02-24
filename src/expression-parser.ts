@@ -47,6 +47,14 @@
                     throw new Error();
                 return lastExpression;
             }
+            else if (this.token.is(TokenTypes.not)) {
+                let node = this.create(PrefixUnaryExpression);
+                node.operator = new Operator();
+                node.operator.value = this.token.value;
+                this.nextNonWhitespaceToken(node);
+                node.expression = this.parseExpression();
+                lastExpression = node;
+            }
             else if (this.token.isIdentifier() || this.token.isKeyword()) { //defined exists ref etc...
                 let node = this.parseMemberExpression();
                 node.prev = lastExpression;
