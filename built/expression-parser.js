@@ -23,6 +23,37 @@ var ExpressionParser = (function (_super) {
     };
     ExpressionParser.prototype._parseExpression = function (lastExpression) {
         var i = 0;
+        var mbe = this.create(MultiBinaryExpression);
+        while (true) {
+            i++;
+            var left = this.parseNonBinaryExpression();
+            if (this.token.isAny([
+                TokenTypes.assignment, TokenTypes.concat, TokenTypes.divDiv, TokenTypes.regExpEquals,
+                TokenTypes.equals, TokenTypes.and, TokenTypes.or, TokenTypes.greaterOrEqualsThan,
+                TokenTypes.greaterThan, TokenTypes.smallerOrEqualsThan, TokenTypes.smallerThan,
+                TokenTypes.concatAssign, TokenTypes.divideAssign, TokenTypes.subtractAssign,
+                TokenTypes.addAssign, TokenTypes.multiplyAssign, TokenTypes.plus, TokenTypes.minus, TokenTypes.multiply, TokenTypes.multiplyString
+            ])) {
+                if (left == null)
+                    throw new Error();
+                var operator = new Operator();
+                operator.value = this.token.value;
+                mbe.operators.push(operator);
+                var exp = this.create(BinaryExpression);
+                exp.token = this.token;
+                exp.left = lastExpression;
+                this.nextNonWhitespaceToken(exp);
+                exp.right = this.parseExpression();
+                lastExpression = exp;
+            }
+            else if (lastExpression != null)
+                return lastExpression;
+            else
+                return null;
+        }
+    };
+    ExpressionParser.prototype.parseNonBinaryExpression = function (lastExpression) {
+        var i = 0;
         while (true) {
             i++;
             this.log("parseExpression", i, this.token, lastExpression);
@@ -104,24 +135,6 @@ var ExpressionParser = (function (_super) {
                 this.nextToken();
                 var node = this._parseExpression(lastExpression);
                 return node;
-            }
-            else if (this.token.isAny([
-                TokenTypes.assignment, TokenTypes.concat, TokenTypes.divDiv, TokenTypes.regExpEquals,
-                TokenTypes.equals, TokenTypes.and, TokenTypes.or, TokenTypes.greaterOrEqualsThan,
-                TokenTypes.greaterThan, TokenTypes.smallerOrEqualsThan, TokenTypes.smallerThan,
-                TokenTypes.concatAssign, TokenTypes.divideAssign, TokenTypes.subtractAssign,
-                TokenTypes.addAssign, TokenTypes.multiplyAssign, TokenTypes.plus, TokenTypes.minus, TokenTypes.multiply, TokenTypes.multiplyString
-            ])) {
-                if (lastExpression == null)
-                    throw new Error();
-                var exp = this.create(BinaryExpression);
-                exp.token = this.token;
-                exp.left = lastExpression;
-                exp.operator = new Operator();
-                exp.operator.value = this.token.value;
-                this.nextNonWhitespaceToken(exp);
-                exp.right = this.parseExpression();
-                lastExpression = exp;
             }
             else if (lastExpression != null)
                 return lastExpression;

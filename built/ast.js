@@ -213,6 +213,13 @@ var BinaryExpression = (function (_super) {
     }
     return BinaryExpression;
 }(Expression));
+var MultiBinaryExpression = (function (_super) {
+    __extends(MultiBinaryExpression, _super);
+    function MultiBinaryExpression() {
+        _super.apply(this, arguments);
+    }
+    return MultiBinaryExpression;
+}(Expression));
 var Operator = (function () {
     function Operator() {
     }

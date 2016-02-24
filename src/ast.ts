@@ -7,11 +7,11 @@ class AstNode {
         let list: AstNode[] = [];
         Object.keys(this).forEach(key=> {
             let value = this[key];
-            if(value==null)
+            if (value == null)
                 return;
-            if(value instanceof AstNode)
+            if (value instanceof AstNode)
                 list.add(value);
-            else if(value instanceof Array)
+            else if (value instanceof Array)
                 list.addRange(value.where(t=> t instanceof AstNode));
         });
         return list;
@@ -133,6 +133,11 @@ class BinaryExpression extends Expression {
     left: Expression;
     operator: Operator;
     right: Expression;
+}
+
+class MultiBinaryExpression extends Expression {
+    expressions: Expression[];
+    operators: Operator[];
 }
 
 class Operator {

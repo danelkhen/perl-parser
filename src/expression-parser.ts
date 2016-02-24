@@ -16,6 +16,41 @@
     }
     _parseExpression(lastExpression?: Expression): Expression {
         let i = 0;
+        let mbe = this.create(MultiBinaryExpression);
+        while (true) {
+            i++;
+            let left = this.parseNonBinaryExpression();
+            if (this.token.isAny([
+                TokenTypes.assignment, TokenTypes.concat, TokenTypes.divDiv, TokenTypes.regExpEquals,
+                TokenTypes.equals, TokenTypes.and, TokenTypes.or, TokenTypes.greaterOrEqualsThan,
+                TokenTypes.greaterThan, TokenTypes.smallerOrEqualsThan, TokenTypes.smallerThan,
+                TokenTypes.concatAssign, TokenTypes.divideAssign, TokenTypes.subtractAssign,
+                TokenTypes.addAssign, TokenTypes.multiplyAssign, TokenTypes.plus, TokenTypes.minus, TokenTypes.multiply, TokenTypes.multiplyString
+            ])) {
+                if (left == null)
+                    throw new Error();
+                let operator = new Operator();
+                operator.value = this.token.value;
+                mbe.operators.push(operator);
+                
+                let exp = this.create(BinaryExpression);
+                exp.token = this.token;
+                exp.left = lastExpression;
+                
+
+                this.nextNonWhitespaceToken(exp);
+                exp.right = this.parseExpression();
+                lastExpression = exp;
+            }
+            else if (lastExpression != null)
+                return lastExpression;
+            else
+                return null;
+        }
+    }
+    
+    parseNonBinaryExpression(lastExpression?: Expression): Expression {
+        let i = 0;
         while (true) {
             i++;
             this.log("parseExpression", i, this.token, lastExpression);
@@ -102,24 +137,24 @@
             //    this.parseInvocationExpression();
 
             //}
-            else if (this.token.isAny([
-                TokenTypes.assignment, TokenTypes.concat, TokenTypes.divDiv, TokenTypes.regExpEquals,
-                TokenTypes.equals, TokenTypes.and, TokenTypes.or, TokenTypes.greaterOrEqualsThan,
-                TokenTypes.greaterThan, TokenTypes.smallerOrEqualsThan, TokenTypes.smallerThan,
-                TokenTypes.concatAssign, TokenTypes.divideAssign, TokenTypes.subtractAssign,
-                TokenTypes.addAssign, TokenTypes.multiplyAssign, TokenTypes.plus, TokenTypes.minus, TokenTypes.multiply, TokenTypes.multiplyString
-            ])) {
-                if (lastExpression == null)
-                    throw new Error();
-                let exp = this.create(BinaryExpression);
-                exp.token = this.token;
-                exp.left = lastExpression;
-                exp.operator = new Operator();
-                exp.operator.value = this.token.value;
-                this.nextNonWhitespaceToken(exp);
-                exp.right = this.parseExpression();
-                lastExpression = exp;
-            }
+            //else if (this.token.isAny([
+            //    TokenTypes.assignment, TokenTypes.concat, TokenTypes.divDiv, TokenTypes.regExpEquals,
+            //    TokenTypes.equals, TokenTypes.and, TokenTypes.or, TokenTypes.greaterOrEqualsThan,
+            //    TokenTypes.greaterThan, TokenTypes.smallerOrEqualsThan, TokenTypes.smallerThan,
+            //    TokenTypes.concatAssign, TokenTypes.divideAssign, TokenTypes.subtractAssign,
+            //    TokenTypes.addAssign, TokenTypes.multiplyAssign, TokenTypes.plus, TokenTypes.minus, TokenTypes.multiply, TokenTypes.multiplyString
+            //])) {
+            //    if (lastExpression == null)
+            //        throw new Error();
+            //    let exp = this.create(BinaryExpression);
+            //    exp.token = this.token;
+            //    exp.left = lastExpression;
+            //    exp.operator = new Operator();
+            //    exp.operator.value = this.token.value;
+            //    this.nextNonWhitespaceToken(exp);
+            //    exp.right = this.parseExpression();
+            //    lastExpression = exp;
+            //}
             else if (lastExpression != null)
                 return lastExpression;
             else
@@ -132,6 +167,8 @@
             //return node;
         }
     }
+    
+    
     parseArrayMemberAccess(target: Expression): ArrayMemberAccessExpression {
         this.expect(TokenTypes.bracketOpen);
         let node = this.create(ArrayMemberAccessExpression);
