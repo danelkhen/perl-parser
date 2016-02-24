@@ -144,15 +144,17 @@
             }
             else if (this.token.is(TokenTypes.arrow) || this.token.is(TokenTypes.packageSeparator)) {
                 let arrow = this.token.is(TokenTypes.arrow);
-                if (arrow) {
-                    if (!(lastExpression instanceof MemberExpression)) {
-                        console.warn("can't set arrow");
-                    }
-                    let me = <MemberExpression>lastExpression;
-                    me.arrow = arrow;
-                }
+                //if (arrow) {
+                //    if (!(lastExpression instanceof MemberExpression)) {
+                //        console.warn("can't set arrow");
+                //    }
+                //    let me = <MemberExpression>lastExpression;
+                //    me.arrow = arrow;
+                //}
                 this.nextToken();
                 let node = this.parseNonBinaryExpression(lastExpression);
+                let node2:HasArrow = <any>node;
+                node2.arrow = arrow;
                 return node;
             }
             //else if (this.token.is(TokenTypes.keyword) && ["defined", "exists", "ref"].contains(this.token.value)) {

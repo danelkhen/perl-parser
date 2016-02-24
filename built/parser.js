@@ -66,7 +66,7 @@ var Parser = (function (_super) {
             var st = this.parseStatement();
             var st2 = st;
             st2.label = label; //TODO:
-            return st2;
+            return st;
         }
         else if (this.token.isKeyword("foreach"))
             return this.parseForEachStatement();

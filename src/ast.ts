@@ -170,9 +170,15 @@ class HashRefCreationExpression extends Expression {
     LABEL foreach VAR (LIST) BLOCK continue BLOCK
 */
 class ForEachStatement extends Statement {
-    label:SimpleName;
-    variable:Expression;
-    list:Expression;
-    statements:Statement[];
+    label: SimpleName;
+    variable: Expression;
+    list: Expression;
+    statements: Statement[];
 }
 
+interface HasLabel {
+    label: SimpleName;
+}
+interface HasArrow {
+    arrow:boolean;
+}

@@ -59,9 +59,9 @@
         else if (this.token.is(TokenTypes.identifier) && this.reader.getNextNonWhitespaceToken().is(TokenTypes.colon)) {
             let label = this.parseLabel();
             let st = this.parseStatement();
-            let st2:any = st;
+            let st2:HasLabel = <any>st;
             st2.label = label; //TODO:
-            return st2;
+            return st;
         }
         else if (this.token.isKeyword("foreach"))
             return this.parseForEachStatement();

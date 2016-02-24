@@ -147,15 +147,17 @@ var ExpressionParser = (function (_super) {
             }
             else if (this.token.is(TokenTypes.arrow) || this.token.is(TokenTypes.packageSeparator)) {
                 var arrow = this.token.is(TokenTypes.arrow);
-                if (arrow) {
-                    if (!(lastExpression instanceof MemberExpression)) {
-                        console.warn("can't set arrow");
-                    }
-                    var me = lastExpression;
-                    me.arrow = arrow;
-                }
+                //if (arrow) {
+                //    if (!(lastExpression instanceof MemberExpression)) {
+                //        console.warn("can't set arrow");
+                //    }
+                //    let me = <MemberExpression>lastExpression;
+                //    me.arrow = arrow;
+                //}
                 this.nextToken();
                 var node = this.parseNonBinaryExpression(lastExpression);
+                var node2 = node;
+                node2.arrow = arrow;
                 return node;
             }
             else if (lastExpression != null)

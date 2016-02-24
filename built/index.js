@@ -47,10 +47,9 @@ var IndexPage = (function () {
         if (el != null) {
             var div = $(".code")[0];
             var top_1 = div.scrollTop;
-            var bottom = div.scrollTop + div.scrollHeight;
+            var bottom = div.scrollTop + div.offsetHeight;
             var top2 = el.offsetTop;
             var bottom2 = el.offsetTop + el.offsetHeight;
-            console.log({ top: top_1, bottom: bottom, top2: top2, bottom2: bottom2 });
             if (top2 < top_1)
                 div.scrollTop = top2;
             else if (bottom2 > bottom)

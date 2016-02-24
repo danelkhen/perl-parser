@@ -47,18 +47,16 @@ class IndexPage {
         if (el != null) {
             let div = $(".code")[0];
             let top = div.scrollTop;
-            let bottom = div.scrollTop+div.scrollHeight;
+            let bottom = div.scrollTop + div.offsetHeight;
             let top2 = el.offsetTop;
-            let bottom2 = el.offsetTop+el.offsetHeight;
-            console.log({top, bottom, top2, bottom2});
-            if(top2<top)
+            let bottom2 = el.offsetTop + el.offsetHeight;
+            if (top2 < top)
                 div.scrollTop = top2;
-            else if(bottom2>bottom)
+            else if (bottom2 > bottom)
                 div.scrollTop = top2;
-            //let code = $(".code")[0];
-            //code.scrollTop += Math.floor(code.offsetHeight/2);
         }
     }
+
 
     createTree(node: AstNode): HTMLElement {
         let li = $.create("li.node");
