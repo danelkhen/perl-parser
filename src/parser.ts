@@ -6,13 +6,13 @@
     }
 
 
-    parseBracedStatements(node: AstNode, skipLastOptionalSemicolon?:boolean): Statement[] {
+    parseBracedStatements(node: AstNode, skipLastOptionalSemicolon?: boolean): Statement[] {
         this.expect(TokenTypes.braceOpen, node);
         this.nextNonWhitespaceToken(node);
         let statements = this.parseStatementsUntil(TokenTypes.braceClose);
         this.expect(TokenTypes.braceClose, node);
         this.nextNonWhitespaceToken(node);
-        if(skipLastOptionalSemicolon && this.token.is(TokenTypes.semicolon))    //auto-skip semicolon after braced statements
+        if (skipLastOptionalSemicolon && this.token.is(TokenTypes.semicolon))    //auto-skip semicolon after braced statements
             this.nextNonWhitespaceToken(node);
         return statements;
     }
@@ -42,6 +42,8 @@
         this.skipWhitespaceAndComments();
         if (this.token.isKeyword("package"))
             return this.parsePackageDeclaration();
+        else if (this.token.isKeyword("BEGIN"))
+            return this.parseBegin();
         else if (this.token.isKeyword("use"))
             return this.parseUse();
         else if (this.token.isKeyword("my"))
@@ -59,7 +61,7 @@
         else if (this.token.is(TokenTypes.identifier) && this.reader.getNextNonWhitespaceToken().is(TokenTypes.colon)) {
             let label = this.parseLabel();
             let st = this.parseStatement();
-            let st2:HasLabel = <any>st;
+            let st2: HasLabel = <any>st;
             st2.label = label; //TODO:
             return st;
         }
@@ -77,6 +79,13 @@
     //    return node;
     //}
 
+    parseBegin(): BeginBlock {
+        this.expectIdentifier();
+        let node = this.create(BeginBlock);
+        this.nextNonWhitespaceToken();
+        node.statements = this.parseBracedStatements(node, true);
+        return node;
+    }
     parseLabel(): SimpleName {
         //let node = this.create(SimpleName);
         //node.name = this.token.value.substr(0, this.token.value.length-1).trim();
@@ -86,11 +95,15 @@
         return node;
     }
     parseForEachStatement(): ForEachStatement {
+        this.expectKeyword("foreach");
         let node = this.create(ForEachStatement);
+        this.nextNonWhitespaceToken(node);
         if (this.token.isKeyword("my")) //TODO:
             this.nextNonWhitespaceToken(node);
-        node.variable = this.createExpressionParser().parseNonBinaryExpression();
-        this.skipWhitespaceAndComments(node);
+        if (this.token.is(TokenTypes.sigiledIdentifier)) {
+            node.variable = this.createExpressionParser().parseMemberExpression();// .parseNonBinaryExpression();
+            this.nextNonWhitespaceToken(node);
+        }
         node.list = this.createExpressionParser().parseParenthesizedList();
         this.skipWhitespaceAndComments(node);
         node.statements = this.parseBracedStatements(node);
@@ -161,6 +174,8 @@
         console.log("parseExpressionStatement", this.token);
         let node = this.create(ExpressionStatement);
         node.expression = this.parseExpression();
+        if (node.expression == null)
+            throw new Error();
         this.parseStatementEnd(node, node.expression instanceof BlockExpression);
         return node;
     }

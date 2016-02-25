@@ -47,6 +47,8 @@ var Parser = (function (_super) {
         this.skipWhitespaceAndComments();
         if (this.token.isKeyword("package"))
             return this.parsePackageDeclaration();
+        else if (this.token.isKeyword("BEGIN"))
+            return this.parseBegin();
         else if (this.token.isKeyword("use"))
             return this.parseUse();
         else if (this.token.isKeyword("my"))
@@ -81,6 +83,13 @@ var Parser = (function (_super) {
     //    node.token = this.token;
     //    return node;
     //}
+    Parser.prototype.parseBegin = function () {
+        this.expectIdentifier();
+        var node = this.create(BeginBlock);
+        this.nextNonWhitespaceToken();
+        node.statements = this.parseBracedStatements(node, true);
+        return node;
+    };
     Parser.prototype.parseLabel = function () {
         //let node = this.create(SimpleName);
         //node.name = this.token.value.substr(0, this.token.value.length-1).trim();
@@ -90,11 +99,15 @@ var Parser = (function (_super) {
         return node;
     };
     Parser.prototype.parseForEachStatement = function () {
+        this.expectKeyword("foreach");
         var node = this.create(ForEachStatement);
+        this.nextNonWhitespaceToken(node);
         if (this.token.isKeyword("my"))
             this.nextNonWhitespaceToken(node);
-        node.variable = this.createExpressionParser().parseNonBinaryExpression();
-        this.skipWhitespaceAndComments(node);
+        if (this.token.is(TokenTypes.sigiledIdentifier)) {
+            node.variable = this.createExpressionParser().parseMemberExpression(); // .parseNonBinaryExpression();
+            this.nextNonWhitespaceToken(node);
+        }
         node.list = this.createExpressionParser().parseParenthesizedList();
         this.skipWhitespaceAndComments(node);
         node.statements = this.parseBracedStatements(node);
@@ -162,6 +175,8 @@ var Parser = (function (_super) {
         console.log("parseExpressionStatement", this.token);
         var node = this.create(ExpressionStatement);
         node.expression = this.parseExpression();
+        if (node.expression == null)
+            throw new Error();
         this.parseStatementEnd(node, node.expression instanceof BlockExpression);
         return node;
     };

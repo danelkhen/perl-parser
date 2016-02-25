@@ -17,19 +17,27 @@ class Tokenizer {
         var tokenTypes = TokenTypes.all;
         var cursor = new Cursor(this.file.startPos);
         while (cursor.index < this.file.text.length) {
+            console.log(cursor.pos.line, cursor.pos.column);
             var range: TextRange2;
             var tokenType2: TokenType;
             tokenTypes.first(tokenType => {
                 range = tokenType.match(cursor);
-                if (range != null && range.length == 0) {
-                    range = tokenType.match(cursor);
+                if (range != null && range.length == 0)
                     throw new Error();
+                if (range!=null && range.length > 100) {
+                    console.log("a");
                 }
                 tokenType2 = tokenType;
                 return range != null;
             });
-            if (range == null)
+            if (range == null) {
+                tokenTypes.first(tokenType => {
+                    range = tokenType.match(cursor);
+                    tokenType2 = tokenType;
+                    return range != null;
+                });
                 throw new Error("unknown token " + JSON.stringify(cursor.get(30)));
+            }
             this.tokens.push(tokenType2.create(range));
             if (tokenType2 == TokenTypes.end)
                 break;

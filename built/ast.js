@@ -8,20 +8,6 @@ var AstNode = (function () {
     function AstNode() {
         this.tokens = [];
     }
-    AstNode.prototype.getChildNodes = function () {
-        var _this = this;
-        var list = [];
-        Object.keys(this).forEach(function (key) {
-            var value = _this[key];
-            if (value == null)
-                return;
-            if (value instanceof AstNode)
-                list.add(value);
-            else if (value instanceof Array)
-                list.addRange(value.where(function (t) { return t instanceof AstNode; }));
-        });
-        return list;
-    };
     return AstNode;
 }());
 var Statement = (function (_super) {
@@ -263,4 +249,11 @@ var ForEachStatement = (function (_super) {
         _super.apply(this, arguments);
     }
     return ForEachStatement;
+}(Statement));
+var BeginBlock = (function (_super) {
+    __extends(BeginBlock, _super);
+    function BeginBlock() {
+        _super.apply(this, arguments);
+    }
+    return BeginBlock;
 }(Statement));

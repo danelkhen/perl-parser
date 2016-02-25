@@ -80,11 +80,12 @@ class TokenTypes {
         tt.matcher = matcher;
         return tt;
     }
-    static qq = TokenTypes._r(/qq\|.*\|/);
-    static qw = TokenTypes._r(/qw\/.*\/|qw<.*>/);
+    static qq = TokenTypes._r(/qq\|[^|]*\|/);
+    static qw = TokenTypes._r(/qw\/[^\/]*\/|qw<[^>]*>|qw\([^\(]*\)/m);
     static pod = TokenTypes._custom(TokenTypes._matchPod);
     //static pod = TokenTypes._r(/=pod.*=cut/m);
-    static keyword = TokenTypes._r(new RegExp(["package", "use", "my", "sub", "return", "if", "elsif", "else", "defined", "ref", "exists", "unless", "__END__"].map(t=> t += "\\b").join("|"))); //\b|use\b|my\b|sub\b|return\b|if\b|defined\b/
+    static keyword = TokenTypes._r(new RegExp(["BEGIN", "package", "foreach", "use", "my", "sub", "return", "if", "elsif", "else", "unless", "__END__"].map(t=> t += "\\b").join("|"))); //\b|use\b|my\b|sub\b|return\b|if\b|defined\b/
+    //, "defined", "ref", "exists"
     static end = TokenTypes._r(/__END__/);
     static whitespace = TokenTypes._r(/[ \t\r\n]+/);
     static packageSeparator = TokenTypes._r(/\:\:/);
@@ -110,7 +111,7 @@ class TokenTypes {
     static greaterOrEqualsThan = TokenTypes._r(/\>=/);
     static interpolatedString = TokenTypes._r(/\".*\"/);
     static string = TokenTypes._r(/\'[^\']*\'/);
-    static regex = TokenTypes._r(/\/.*\/[a-z]*/);
+    static regex = TokenTypes._custom(TokenTypes._matchRegex);//_r(/\/.*\/[a-z]*/);
     static regexSubstitute = TokenTypes._r(/s\/.*\/.*\/[a-z]*/);  // s/abc/def/mg
 
     static colon = TokenTypes._r(/\:/);
@@ -135,13 +136,14 @@ class TokenTypes {
     static and = TokenTypes._r(/\&\&/);
     static minus = TokenTypes._r(/\-/);
     static multiply = TokenTypes._r(/\*/);
+    static div = TokenTypes._r(/\//);
     static plus = TokenTypes._r(/\+/);
     static multiplyString = TokenTypes._r(/x/);
     
     
     //static label = TokenTypes._r(new RegExp(TokenTypes.identifierRegex.source+"[\t\r\n ]*\:"));
     static identifier = TokenTypes._r(TokenTypes.identifierRegex);
-    
+
 
     static deref = TokenTypes._r(/\\/);
     static not = TokenTypes._r(/\!/);
@@ -159,6 +161,23 @@ class TokenTypes {
         let range = new TextRange2(cursor.file, cursor.file.getPos(start), cursor.file.getPos(end));
         return range;
     }
+
+    static _matchRegex(cursor: Cursor): TextRange2 { //figure out how to distinguish between regex and two divisions. a / b / c, is it a(/b/c), or (a / b) / c ?
+        let pattern = /\/.*\/[a-z]*/;
+        let res = cursor.next(pattern);
+        if (res == null)
+            return null;
+        let code = res.text.substring(0, res.text.lastIndexOf("/") + 1);
+        try {
+            let func = new Function("return " + code + ";");
+            let res2 = func();
+            return res;
+        }
+        catch (e) {
+            return null;
+        }
+    }
+
 };
 
 
@@ -265,7 +284,7 @@ class Cursor {
     get src(): string { return this.file.text; }
     get index(): number { return this.pos.index; }
     startsWith(s: string): boolean {
-        return this.get(s.length)==s;
+        return this.get(s.length) == s;
     }
     get(length) {
         return this.src.substr(this.index, length);

@@ -9,38 +9,57 @@ var IndexPage = (function () {
     }
     IndexPage.prototype.main = function () {
         var _this = this;
-        $("#tbUrl").change(function (e) { return _this.update(); });
+        this.tbUrl = $("#tbUrl");
+        this.urlKey = "perl-parser\turl";
+        var lastUrl = localStorage[this.urlKey];
+        if (lastUrl != null)
+            this.tbUrl.val(lastUrl);
+        this.tbUrl.change(function (e) { return _this.update(); });
         this.update();
     };
     IndexPage.prototype.update = function () {
         var _this = this;
-        var filename = $("#tbUrl").val();
+        var filename = this.tbUrl.val();
+        localStorage[this.urlKey] = filename;
         if (filename.length == 0)
             return;
-        $.get(filename).then(function (data) {
-            var file = new File2(filename, data);
-            var tok = new Tokenizer();
-            tok.file = file;
-            tok.main();
-            var parser = new Parser();
-            parser.logger = new Logger();
-            parser.reader = new TokenReader();
-            parser.reader.logger = parser.logger;
-            parser.reader.tokens = tok.tokens;
-            var codeEl = $(".code").empty();
-            tok.tokens.forEach(function (token) {
-                var span = $.create("span").addClass(token.type.name).text(token.value).appendTo(codeEl)[0];
-                _this.tokenToElement.set(token, span);
+        if (filename.startsWith("http")) {
+            $.get(filename).then(function (data) {
+                _this.parse(filename, data);
             });
-            var statements = parser.doParse();
-            console.log(statements);
-            $(".tree").empty().getAppend("ul").append(_this.createTree(statements[0]));
-            //$.create("pre").text(stringifyNodes(statements)).appendTo("body")
+            return;
+        }
+        this.parse("noname.pm", filename);
+    };
+    IndexPage.prototype.parse = function (filename, data) {
+        var _this = this;
+        var codeEl = $(".code").empty().text(data);
+        var file = new File2(filename, data);
+        var tok = new Tokenizer();
+        tok.file = file;
+        tok.main();
+        var parser = new Parser();
+        parser.logger = new Logger();
+        parser.reader = new TokenReader();
+        parser.reader.logger = parser.logger;
+        parser.reader.tokens = tok.tokens;
+        codeEl.empty();
+        tok.tokens.forEach(function (token) {
+            var span = $.create("span").addClass(token.type.name).text(token.value).appendTo(codeEl)[0];
+            _this.tokenToElement.set(token, span);
         });
+        var statements = parser.doParse();
+        console.log(statements);
+        var unit = new Unit();
+        unit.statements = statements;
+        $(".tree").empty().getAppend("ul").append(this.createTree(this.createInstanceNode(unit)));
+        //$.create("pre").text(stringifyNodes(statements)).appendTo("body")
     };
     IndexPage.prototype.onMouseOverNode = function (e, node) {
         var _this = this;
         $(".selected").removeClass("selected");
+        if (node == null)
+            return;
         $(e.target).closest(".self").addClass("selected");
         node.tokens.forEach(function (token) { return $(_this.tokenToElement.get(token)).addClass("selected"); });
         var el = this.tokenToElement.get(node.token);
@@ -56,18 +75,61 @@ var IndexPage = (function () {
                 div.scrollTop = top2;
         }
     };
+    //toAstNodeProp(prop: string, node: AstNode): AstNodeProp {
+    //    let anp: AstNodeProp = { text: null, node: node, prop: prop, children: [] };
+    //    if (node != null)
+    //        anp.text = node.constructor.name
+    //    else if (prop != null)
+    //        anp.text = prop;
+    //    else
+    //        throw new Error();
+    //    return anp;
+    //}
+    IndexPage.prototype.createInstanceNode = function (node) {
+        var _this = this;
+        var anp = { text: node.constructor.name, node: node, children: [] };
+        anp.children = Object.keys(node).select(function (prop) { return _this.createPropertyNode(node, prop); }).exceptNulls();
+        return anp;
+    };
+    IndexPage.prototype.createPropertyNode = function (parentNode, prop) {
+        var _this = this;
+        var anp = { prop: prop, text: prop, node: null, children: [] };
+        var value = parentNode[prop];
+        if (value == null)
+            return anp;
+        if (value instanceof AstNode) {
+            anp.children = [this.createInstanceNode(value)];
+        }
+        else if (value instanceof Array) {
+            anp.children = value.where(function (t) { return t instanceof AstNode; }).select(function (t) { return _this.createInstanceNode(t); });
+        }
+        return anp;
+    };
+    //getChildNodes(node: AstNode): AstNodeProp[] {
+    //    let list: AstNodeProp[] = [];
+    //    Object.keys(node).forEach(key=> {
+    //        let value = node[key];
+    //        if (value == null)
+    //            return;
+    //        if (value instanceof AstNode) {
+    //            let anp: AstNodeProp = this.toAstNodeProp(key, value);
+    //            list.add(anp);
+    //        }
+    //        else if (value instanceof Array) {
+    //            list.addRange(value.where(t=> t instanceof AstNode).select(t=> this.toAstNodeProp(key, t)));
+    //        }
+    //    });
+    //    return list;
+    //}
     IndexPage.prototype.createTree = function (node) {
         var _this = this;
         var li = $.create("li.node");
         var ul = $.create("ul.children");
-        var span = li.getAppend("span.self").text(node.constructor.name);
-        //span.getAppend(".icon");
-        //span.getAppend(".text")
-        span.mouseover(function (e) { return _this.onMouseOverNode(e, node); });
-        var childNodes = node.getChildNodes();
-        if (childNodes.length > 0) {
+        var span = li.getAppend("span.self").text(node.text);
+        span.mouseover(function (e) { return _this.onMouseOverNode(e, node.node); });
+        if (node.children.length > 0) {
             li.addClass("collapsed");
-            ul.append(childNodes.select(function (t) { return _this.createTree(t); }));
+            ul.append(node.children.select(function (t) { return _this.createTree(t); }));
             li.append(ul);
             span.mousedown(function (e) { li.toggleClass("collapsed"); li.toggleClass("expanded"); });
         }

@@ -22,13 +22,14 @@
         mbe.operators = [];
         while (true) {
             i++;
-            mbe.expressions.push(this.parseNonBinaryExpression());
+            let exp = this.parseNonBinaryExpression();
+            mbe.expressions.push(exp);
             if (this.token.isAny([
                 TokenTypes.assignment, TokenTypes.concat, TokenTypes.divDiv, TokenTypes.regExpEquals, TokenTypes.regExpNotEquals,
                 TokenTypes.equals, TokenTypes.and, TokenTypes.or, TokenTypes.greaterOrEqualsThan,
                 TokenTypes.greaterThan, TokenTypes.smallerOrEqualsThan, TokenTypes.smallerThan,
                 TokenTypes.concatAssign, TokenTypes.divideAssign, TokenTypes.subtractAssign,
-                TokenTypes.addAssign, TokenTypes.multiplyAssign, TokenTypes.plus, TokenTypes.minus, TokenTypes.multiply, TokenTypes.multiplyString
+                TokenTypes.addAssign, TokenTypes.multiplyAssign, TokenTypes.plus, TokenTypes.minus, TokenTypes.multiply, TokenTypes.multiplyString, TokenTypes.div
             ]) || this.token.isAnyKeyword(["if","unless"])) {
                 let operator = new Operator();
                 operator.value = this.token.value;
@@ -100,7 +101,7 @@
                 this.nextNonWhitespaceToken(node);
                 lastExpression = node;
             }
-            else if (this.token.isIdentifier() || this.token.isKeyword()) { //defined exists ref etc...
+            else if (this.token.isIdentifier()) { //defined exists ref etc... // || this.token.isKeyword()
                 let node = this.parseMemberExpression();
                 node.prev = lastExpression;
                 lastExpression = node;
@@ -204,8 +205,12 @@
         return node;
     }
     parseHashMemberAccess(target: Expression): HashMemberAccessExpression {
+        this.expect(TokenTypes.braceOpen);
         let exp = this.create(HashMemberAccessExpression);
+        this.nextNonWhitespaceToken(exp);
         exp.member = this.parseExpression();
+        this.expect(TokenTypes.braceClose, exp);
+        this.nextToken();
         exp.target = target;
         return exp;
     }

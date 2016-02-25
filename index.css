@@ -18,8 +18,9 @@ body{
     height:100%;
 
 }
-.bar input{
+.bar textarea{
     width:100%;
+    height:50px;
 }
 .tree{
     float:left;
@@ -42,7 +43,7 @@ body{
     padding-left:20px;
 }
 .tree .node > .self:before{
-    content:"@";
+    content:" ";
     width:15px;
     display:inline-block;
 }
@@ -107,8 +108,8 @@ body{
 .code .string{color:brown;}
 .code .divDiv{color:inherit;}
 .code .tilda{color:inherit;}
-.code .regex{color:inherit;}
-.code .regexSubstitute{color:inherit;}
+.code .regex{color:greenyellow;}
+.code .regexSubstitute{color:greenyellow;}
 .code .or{color:inherit;}
 .code .and{color:inherit;}
 .code .minus{color:inherit;}

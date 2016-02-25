@@ -81,12 +81,28 @@ var TokenTypes = (function () {
         var range = new TextRange2(cursor.file, cursor.file.getPos(start), cursor.file.getPos(end));
         return range;
     };
+    TokenTypes._matchRegex = function (cursor) {
+        var pattern = /\/.*\/[a-z]*/;
+        var res = cursor.next(pattern);
+        if (res == null)
+            return null;
+        var code = res.text.substring(0, res.text.lastIndexOf("/") + 1);
+        try {
+            var func = new Function("return " + code + ";");
+            var res2 = func();
+            return res;
+        }
+        catch (e) {
+            return null;
+        }
+    };
     TokenTypes.identifierRegex = /[a-zA-Z_][a-zA-Z_0-9]*/;
-    TokenTypes.qq = TokenTypes._r(/qq\|.*\|/);
-    TokenTypes.qw = TokenTypes._r(/qw\/.*\/|qw<.*>/);
+    TokenTypes.qq = TokenTypes._r(/qq\|[^|]*\|/);
+    TokenTypes.qw = TokenTypes._r(/qw\/[^\/]*\/|qw<[^>]*>|qw\([^\(]*\)/m);
     TokenTypes.pod = TokenTypes._custom(TokenTypes._matchPod);
     //static pod = TokenTypes._r(/=pod.*=cut/m);
-    TokenTypes.keyword = TokenTypes._r(new RegExp(["package", "use", "my", "sub", "return", "if", "elsif", "else", "defined", "ref", "exists", "unless", "__END__"].map(function (t) { return t += "\\b"; }).join("|"))); //\b|use\b|my\b|sub\b|return\b|if\b|defined\b/
+    TokenTypes.keyword = TokenTypes._r(new RegExp(["BEGIN", "package", "foreach", "use", "my", "sub", "return", "if", "elsif", "else", "unless", "__END__"].map(function (t) { return t += "\\b"; }).join("|"))); //\b|use\b|my\b|sub\b|return\b|if\b|defined\b/
+    //, "defined", "ref", "exists"
     TokenTypes.end = TokenTypes._r(/__END__/);
     TokenTypes.whitespace = TokenTypes._r(/[ \t\r\n]+/);
     TokenTypes.packageSeparator = TokenTypes._r(/\:\:/);
@@ -112,7 +128,7 @@ var TokenTypes = (function () {
     TokenTypes.greaterOrEqualsThan = TokenTypes._r(/\>=/);
     TokenTypes.interpolatedString = TokenTypes._r(/\".*\"/);
     TokenTypes.string = TokenTypes._r(/\'[^\']*\'/);
-    TokenTypes.regex = TokenTypes._r(/\/.*\/[a-z]*/);
+    TokenTypes.regex = TokenTypes._custom(TokenTypes._matchRegex); //_r(/\/.*\/[a-z]*/);
     TokenTypes.regexSubstitute = TokenTypes._r(/s\/.*\/.*\/[a-z]*/); // s/abc/def/mg
     TokenTypes.colon = TokenTypes._r(/\:/);
     TokenTypes.question = TokenTypes._r(/\?/);
@@ -134,6 +150,7 @@ var TokenTypes = (function () {
     TokenTypes.and = TokenTypes._r(/\&\&/);
     TokenTypes.minus = TokenTypes._r(/\-/);
     TokenTypes.multiply = TokenTypes._r(/\*/);
+    TokenTypes.div = TokenTypes._r(/\//);
     TokenTypes.plus = TokenTypes._r(/\+/);
     TokenTypes.multiplyString = TokenTypes._r(/x/);
     //static label = TokenTypes._r(new RegExp(TokenTypes.identifierRegex.source+"[\t\r\n ]*\:"));
