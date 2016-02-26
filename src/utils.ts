@@ -5,13 +5,14 @@ class Logger {
     }
     errors = 0;
     error(...args) {
+        console.error.apply(console, args);
         throw new Error();
         //this.errors++;
         //if (this.errors > 10)
         //    throw new Error();
-        //console.error.apply(console, args);
     }
 }
+
 class TokenReader {
     tokens: Token[];
     token: Token;
@@ -19,6 +20,10 @@ class TokenReader {
     logger: Logger;
     get currentLineText(): string {
         return this.token.range.file.getLineText(this.token.range.start.line);
+    }
+    goto(tokenIndex: number) {
+        this.tokenIndex = tokenIndex;
+        this.token = this.tokens[this.tokenIndex];
     }
     getPrevToken() {
         return this.tokens[this.tokenIndex - 1];
@@ -93,7 +98,7 @@ class TokenReader {
         return res;
     }
     onUnexpectedToken(): any {
-        this.logger.error("unexecpted token type", this.token);
+        this.logger.error("unexecpted token type", this.token, this.token.range.start.line, this.token.range.start.column);
         return null;
     }
 }

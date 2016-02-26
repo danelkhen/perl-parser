@@ -6,8 +6,8 @@ var TokenType = (function () {
     TokenType.prototype.create = function (range) {
         return new Token(range, this);
     };
-    TokenType.prototype.match = function (cursor) {
-        return this.matcher(cursor);
+    TokenType.prototype.match = function (tokenizer) {
+        return this.matcher(tokenizer);
         //return cursor.next(this.regex);
     };
     return TokenType;
@@ -59,9 +59,28 @@ var TokenTypes = (function () {
             _this.all.push(tt);
         });
     };
+    TokenTypes._rs = function (list) {
+        var tt = new TokenType();
+        tt.matcher = function (tokenizer) {
+            var res = null;
+            list.first(function (regex) {
+                var res2 = tokenizer.cursor.next(regex);
+                if (res2 != null) {
+                    res = res2;
+                    return true;
+                }
+                return false;
+            });
+            return res;
+            //return cursor.next(regex);
+        };
+        return tt;
+    };
     TokenTypes._r = function (regex) {
         var tt = new TokenType();
-        tt.matcher = function (cursor) { return cursor.next(regex); };
+        tt.matcher = function (tokenizer) {
+            return tokenizer.cursor.next(regex);
+        };
         return tt;
     };
     TokenTypes._custom = function (matcher) {
@@ -69,39 +88,74 @@ var TokenTypes = (function () {
         tt.matcher = matcher;
         return tt;
     };
-    TokenTypes._matchPod = function (cursor) {
-        if (!cursor.startsWith("=pod") && !cursor.startsWith("=encoding"))
+    TokenTypes._matchPod = function (tokenizer) {
+        var cursor = tokenizer.cursor;
+        if (cursor.pos.column > 1)
             return null;
-        var start = cursor.index;
-        var cut = /=cut/.execFrom(cursor.index, cursor.src);
-        if (cut == null)
-            throw new Error("can't find pod end '=cut'");
-        var end = cut.index + 4;
+        var start = cursor.next(/=[a-z]+/);
+        if (start == null)
+            return null;
+        //if (!cursor.startsWith("=pod") && !cursor.startsWith("=encoding"))
+        //    return null;
+        //let start = cursor.index;
+        var cursor2 = cursor.clone();
+        cursor2.pos = start.end;
+        var end;
+        var cut = cursor2.next(/=cut/);
+        if (cut != null)
+            end = cut.index + 4;
+        else
+            end = cursor.file.text.length;
         //cursor.pos.index = end;
-        var range = new TextRange2(cursor.file, cursor.file.getPos(start), cursor.file.getPos(end));
+        var range = new TextRange2(cursor.file, start.start, cursor.file.getPos(end));
         return range;
     };
-    TokenTypes._matchRegex = function (cursor) {
+    TokenTypes._findLastNonWhitespaceOrCommentToken = function (tokens) {
+        for (var i = tokens.length - 1; i >= 0; i--) {
+            var token = tokens[i];
+            if (!token.isAny([TokenTypes.comment, TokenTypes.whitespace]))
+                return token;
+        }
+        return null;
+    };
+    TokenTypes._matchRegex = function (tokenizer) {
+        var cursor = tokenizer.cursor;
+        var lastToken = TokenTypes._findLastNonWhitespaceOrCommentToken(tokenizer.tokens);
+        if (lastToken == null)
+            return null;
+        if (lastToken.isAny([TokenTypes.braceClose]))
+            return null;
         var pattern = /\/.*\/[a-z]*/;
         var res = cursor.next(pattern);
         if (res == null)
             return null;
         var code = res.text.substring(0, res.text.lastIndexOf("/") + 1);
-        try {
-            var func = new Function("return " + code + ";");
-            var res2 = func();
-            return res;
-        }
-        catch (e) {
+        if (code == "//")
             return null;
-        }
+        console.log("Detected regex", res.text, lastToken);
+        return res;
+        //try {
+        //    let func = new Function("return " + code + ";");
+        //    let res2 = func();
+        //    return res;
+        //}
+        //catch (e) {
+        //    return null;
+        //}
     };
     TokenTypes.identifierRegex = /[a-zA-Z_][a-zA-Z_0-9]*/;
-    TokenTypes.qq = TokenTypes._r(/qq\|[^|]*\|/);
-    TokenTypes.qw = TokenTypes._r(/qw\/[^\/]*\/|qw<[^>]*>|qw\([^\(]*\)/m);
+    TokenTypes.qq = TokenTypes._rs([/qq\|[^|]*\|/, /qq\{[^\}]*\}/]);
+    TokenTypes.qw = TokenTypes._rs([/qw\/[^\/]*\/]/m, /qw<[^>]*>/m, /qw\([^\(]*\)/m]);
+    TokenTypes.qr = TokenTypes._rs([/qr\/.*\//, /qr\(.*\)/]); //Regexp-like quote
+    TokenTypes.tr = TokenTypes._r(/tr\/.*\/.*\//); //token replace
     TokenTypes.pod = TokenTypes._custom(TokenTypes._matchPod);
     //static pod = TokenTypes._r(/=pod.*=cut/m);
-    TokenTypes.keyword = TokenTypes._r(new RegExp(["BEGIN", "package", "foreach", "use", "my", "sub", "return", "if", "elsif", "else", "unless", "__END__"].map(function (t) { return t += "\\b"; }).join("|"))); //\b|use\b|my\b|sub\b|return\b|if\b|defined\b/
+    TokenTypes.keyword = TokenTypes._rs([
+        "BEGIN", "package", "use", "my", "sub", "return", "elsif", "else", "unless", "__END__",
+        "and", "not",
+        "foreach", "while", "for",
+        "if", "unless", "while", "until", "for", "foreach", "when" //statement modifiers
+    ].map(function (t) { return new RegExp(t + "\\b"); })); //\b|use\b|my\b|sub\b|return\b|if\b|defined\b/
     //, "defined", "ref", "exists"
     TokenTypes.end = TokenTypes._r(/__END__/);
     TokenTypes.whitespace = TokenTypes._r(/[ \t\r\n]+/);
@@ -135,7 +189,9 @@ var TokenTypes = (function () {
     //unary:
     TokenTypes.inc = TokenTypes._r(/\+\+/);
     TokenTypes.dec = TokenTypes._r(/\-\-/);
+    TokenTypes.codeRef = TokenTypes._r(/\\\&/);
     //binary
+    TokenTypes.numericCompare = TokenTypes._r(/\<=\>/);
     TokenTypes.regExpEquals = TokenTypes._r(/=\~/);
     TokenTypes.regExpNotEquals = TokenTypes._r(/\!\~/);
     TokenTypes.smallerThan = TokenTypes._r(/\</);
@@ -149,7 +205,7 @@ var TokenTypes = (function () {
     TokenTypes.or = TokenTypes._r(/\|\|/);
     TokenTypes.and = TokenTypes._r(/\&\&/);
     TokenTypes.minus = TokenTypes._r(/\-/);
-    TokenTypes.multiply = TokenTypes._r(/\*/);
+    TokenTypes.multiply = TokenTypes._r(/\*/); //also typeglob
     TokenTypes.div = TokenTypes._r(/\//);
     TokenTypes.plus = TokenTypes._r(/\+/);
     TokenTypes.multiplyString = TokenTypes._r(/x/);
@@ -271,6 +327,9 @@ var Cursor = (function () {
     function Cursor(pos) {
         this.pos = pos;
     }
+    Cursor.prototype.clone = function () {
+        return new Cursor(this.pos);
+    };
     Object.defineProperty(Cursor.prototype, "file", {
         get: function () { return this.pos.file; },
         enumerable: true,
@@ -293,13 +352,14 @@ var Cursor = (function () {
         return this.src.substr(this.index, length);
     };
     Cursor.prototype.next = function (regex) {
-        var regex2 = new RegExp(regex.source, (regex.multiline ? "m" : "") + "g");
-        regex2.lastIndex = this.index;
-        var res = regex2.exec(this.src);
+        var regex2 = new RegExp("^" + regex.source, (regex.multiline ? "m" : "") + (regex.global ? "g" : ""));
+        var s = this.src.substr(this.index);
+        //regex2.lastIndex = this.index;
+        var res = regex2.exec(s);
         if (res == null)
             return null;
-        if (res.index != this.index)
-            return null;
+        //if (res.index != this.index)
+        //    return null;
         var start = this.file.getPos(this.index);
         var end = this.file.getPos(this.index + res[0].length);
         var range = new TextRange2(this.file, start, end);

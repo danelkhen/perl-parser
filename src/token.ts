@@ -13,14 +13,14 @@ class TokenType {
         return new Token(range, this);
     }
 
-    match(cursor: Cursor): TextRange2 {
-        return this.matcher(cursor);
+    match(tokenizer: Tokenizer): TextRange2 {
+        return this.matcher(tokenizer);
         //return cursor.next(this.regex);
     }
 }
 
 interface TokenMatcher {
-    (cursor: Cursor): TextRange2;
+    (tokenizer: Tokenizer): TextRange2;
 }
 
 class Token {
@@ -70,9 +70,28 @@ class TokenTypes {
 
     }
 
+    static _rs(list: RegExp[]): TokenType {
+        let tt = new TokenType();
+        tt.matcher = tokenizer => {
+            let res = null;
+            list.first(regex => {
+                let res2 = tokenizer.cursor.next(regex);
+                if (res2 != null) {
+                    res = res2;
+                    return true;
+                }
+                return false;
+            });
+            return res;
+            //return cursor.next(regex);
+        };
+        return tt;
+    }
     static _r(regex: RegExp): TokenType {
         let tt = new TokenType();
-        tt.matcher = cursor => cursor.next(regex);
+        tt.matcher = tokenizer => {
+            return tokenizer.cursor.next(regex);
+        };
         return tt;
     }
     static _custom(matcher: TokenMatcher): TokenType {
@@ -80,11 +99,18 @@ class TokenTypes {
         tt.matcher = matcher;
         return tt;
     }
-    static qq = TokenTypes._r(/qq\|[^|]*\|/);
-    static qw = TokenTypes._r(/qw\/[^\/]*\/|qw<[^>]*>|qw\([^\(]*\)/m);
+    static qq = TokenTypes._rs([/qq\|[^|]*\|/, /qq\{[^\}]*\}/]);
+    static qw = TokenTypes._rs([/qw\/[^\/]*\/]/m, /qw<[^>]*>/m, /qw\([^\(]*\)/m]);
+    static qr = TokenTypes._rs([/qr\/.*\//, /qr\(.*\)/]);//Regexp-like quote
+    static tr = TokenTypes._r(/tr\/.*\/.*\//); //token replace
     static pod = TokenTypes._custom(TokenTypes._matchPod);
     //static pod = TokenTypes._r(/=pod.*=cut/m);
-    static keyword = TokenTypes._r(new RegExp(["BEGIN", "package", "foreach", "use", "my", "sub", "return", "if", "elsif", "else", "unless", "__END__"].map(t=> t += "\\b").join("|"))); //\b|use\b|my\b|sub\b|return\b|if\b|defined\b/
+    static keyword = TokenTypes._rs([
+        "BEGIN", "package", "use", "my", "sub", "return", "elsif", "else", "unless", "__END__",
+        "and", "not", 
+        "foreach", "while", "for",
+        "if", "unless", "while", "until", "for", "foreach", "when"    //statement modifiers
+    ].map(t=> new RegExp(t + "\\b"))); //\b|use\b|my\b|sub\b|return\b|if\b|defined\b/
     //, "defined", "ref", "exists"
     static end = TokenTypes._r(/__END__/);
     static whitespace = TokenTypes._r(/[ \t\r\n]+/);
@@ -120,8 +146,10 @@ class TokenTypes {
     //unary:
     static inc = TokenTypes._r(/\+\+/);
     static dec = TokenTypes._r(/\-\-/);
+    static codeRef = TokenTypes._r(/\\\&/);
     
     //binary
+    static numericCompare = TokenTypes._r(/\<=\>/);
     static regExpEquals = TokenTypes._r(/=\~/);
     static regExpNotEquals = TokenTypes._r(/\!\~/);
     static smallerThan = TokenTypes._r(/\</);
@@ -135,7 +163,7 @@ class TokenTypes {
     static or = TokenTypes._r(/\|\|/);
     static and = TokenTypes._r(/\&\&/);
     static minus = TokenTypes._r(/\-/);
-    static multiply = TokenTypes._r(/\*/);
+    static multiply = TokenTypes._r(/\*/);  //also typeglob
     static div = TokenTypes._r(/\//);
     static plus = TokenTypes._r(/\+/);
     static multiplyString = TokenTypes._r(/x/);
@@ -149,33 +177,62 @@ class TokenTypes {
     static not = TokenTypes._r(/\!/);
     static sigil = TokenTypes._r(/[\$@%]/);
 
-    static _matchPod(cursor: Cursor): TextRange2 {
-        if (!cursor.startsWith("=pod") && !cursor.startsWith("=encoding"))
+    static _matchPod(tokenizer: Tokenizer): TextRange2 {
+        let cursor = tokenizer.cursor;
+        if (cursor.pos.column > 1)
             return null;
-        let start = cursor.index;
-        let cut = /=cut/.execFrom(cursor.index, cursor.src);
-        if (cut == null)
-            throw new Error("can't find pod end '=cut'");
-        let end = cut.index + 4;
+        let start = cursor.next(/=[a-z]+/);
+        if (start == null)
+            return null;
+        //if (!cursor.startsWith("=pod") && !cursor.startsWith("=encoding"))
+        //    return null;
+        //let start = cursor.index;
+        let cursor2 = cursor.clone();
+        cursor2.pos = start.end;
+
+        let end: number;
+        let cut = cursor2.next(/=cut/);
+        if (cut != null)
+            end = cut.index + 4;
+        else
+            end = cursor.file.text.length;
         //cursor.pos.index = end;
-        let range = new TextRange2(cursor.file, cursor.file.getPos(start), cursor.file.getPos(end));
+        let range = new TextRange2(cursor.file, start.start, cursor.file.getPos(end));
         return range;
     }
 
-    static _matchRegex(cursor: Cursor): TextRange2 { //figure out how to distinguish between regex and two divisions. a / b / c, is it a(/b/c), or (a / b) / c ?
+    static _findLastNonWhitespaceOrCommentToken(tokens: Token[]) {
+        for (let i = tokens.length-1; i >= 0; i--) {
+            let token = tokens[i];
+            if(!token.isAny([TokenTypes.comment, TokenTypes.whitespace]))
+                return token;
+        }
+        return null;
+    }
+    static _matchRegex(tokenizer: Tokenizer): TextRange2 { //figure out how to distinguish between regex and two divisions. a / b / c, is it a(/b/c), or (a / b) / c ?
+        let cursor = tokenizer.cursor;
+        let lastToken = TokenTypes._findLastNonWhitespaceOrCommentToken(tokenizer.tokens);
+        if(lastToken==null)
+            return null;
+        if(lastToken.isAny([TokenTypes.braceClose]))
+            return null;
         let pattern = /\/.*\/[a-z]*/;
         let res = cursor.next(pattern);
         if (res == null)
             return null;
         let code = res.text.substring(0, res.text.lastIndexOf("/") + 1);
-        try {
-            let func = new Function("return " + code + ";");
-            let res2 = func();
-            return res;
-        }
-        catch (e) {
+        if (code == "//")
             return null;
-        }
+        console.log("Detected regex", res.text, lastToken);
+        return res;
+        //try {
+        //    let func = new Function("return " + code + ";");
+        //    let res2 = func();
+        //    return res;
+        //}
+        //catch (e) {
+        //    return null;
+        //}
     }
 
 };
@@ -280,6 +337,9 @@ class Cursor {
     constructor(public pos: File2Pos) {
     }
 
+    clone(): Cursor {
+        return new Cursor(this.pos);
+    }
     get file(): File2 { return this.pos.file; }
     get src(): string { return this.file.text; }
     get index(): number { return this.pos.index; }
@@ -290,13 +350,14 @@ class Cursor {
         return this.src.substr(this.index, length);
     }
     next(regex: RegExp): TextRange2 {
-        let regex2 = new RegExp(regex.source, (regex.multiline ? "m" : "") + "g");
-        regex2.lastIndex = this.index;
-        var res = regex2.exec(this.src);
+        let regex2 = new RegExp("^" + regex.source, (regex.multiline ? "m" : "") + (regex.global ? "g" : ""));
+        let s = this.src.substr(this.index);
+        //regex2.lastIndex = this.index;
+        var res = regex2.exec(s);
         if (res == null)
             return null;
-        if (res.index != this.index)
-            return null;
+        //if (res.index != this.index)
+        //    return null;
         let start = this.file.getPos(this.index);
         let end = this.file.getPos(this.index + res[0].length);
         let range = new TextRange2(this.file, start, end);

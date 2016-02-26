@@ -14,11 +14,11 @@ var Logger = (function () {
         for (var _i = 0; _i < arguments.length; _i++) {
             args[_i - 0] = arguments[_i];
         }
+        console.error.apply(console, args);
         throw new Error();
         //this.errors++;
         //if (this.errors > 10)
         //    throw new Error();
-        //console.error.apply(console, args);
     };
     return Logger;
 }());
@@ -33,6 +33,10 @@ var TokenReader = (function () {
         enumerable: true,
         configurable: true
     });
+    TokenReader.prototype.goto = function (tokenIndex) {
+        this.tokenIndex = tokenIndex;
+        this.token = this.tokens[this.tokenIndex];
+    };
     TokenReader.prototype.getPrevToken = function () {
         return this.tokens[this.tokenIndex - 1];
     };
@@ -106,7 +110,7 @@ var TokenReader = (function () {
         return res;
     };
     TokenReader.prototype.onUnexpectedToken = function () {
-        this.logger.error("unexecpted token type", this.token);
+        this.logger.error("unexecpted token type", this.token, this.token.range.start.line, this.token.range.start.column);
         return null;
     };
     return TokenReader;

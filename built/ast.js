@@ -157,13 +157,10 @@ var ValueExpression = (function (_super) {
     }
     return ValueExpression;
 }(Expression));
-var ReturnStatement = (function (_super) {
-    __extends(ReturnStatement, _super);
-    function ReturnStatement() {
-        _super.apply(this, arguments);
-    }
-    return ReturnStatement;
-}(Statement));
+//class ReturnStatement extends Statement {
+//    value: any;
+//    expression: Expression;
+//}
 var EndStatement = (function (_super) {
     __extends(EndStatement, _super);
     function EndStatement() {
@@ -178,6 +175,13 @@ var IfStatement = (function (_super) {
     }
     return IfStatement;
 }(Statement));
+var UnlessStatement = (function (_super) {
+    __extends(UnlessStatement, _super);
+    function UnlessStatement() {
+        _super.apply(this, arguments);
+    }
+    return UnlessStatement;
+}(IfStatement));
 var ElsifStatement = (function (_super) {
     __extends(ElsifStatement, _super);
     function ElsifStatement() {
@@ -206,6 +210,13 @@ var PostfixUnaryExpression = (function (_super) {
     }
     return PostfixUnaryExpression;
 }(Expression));
+var ReturnExpression = (function (_super) {
+    __extends(ReturnExpression, _super);
+    function ReturnExpression() {
+        _super.apply(this, arguments);
+    }
+    return ReturnExpression;
+}(Expression));
 var BinaryExpression = (function (_super) {
     __extends(BinaryExpression, _super);
     function BinaryExpression() {
@@ -230,6 +241,7 @@ var MultiBinaryExpression = (function (_super) {
 var Operator = (function () {
     function Operator() {
     }
+    Operator.prototype.toString = function () { return this.value + " {Operator}"; };
     return Operator;
 }());
 var HashRefCreationExpression = (function (_super) {
@@ -250,6 +262,20 @@ var ForEachStatement = (function (_super) {
     }
     return ForEachStatement;
 }(Statement));
+var ForStatement = (function (_super) {
+    __extends(ForStatement, _super);
+    function ForStatement() {
+        _super.apply(this, arguments);
+    }
+    return ForStatement;
+}(Statement));
+var WhileStatement = (function (_super) {
+    __extends(WhileStatement, _super);
+    function WhileStatement() {
+        _super.apply(this, arguments);
+    }
+    return WhileStatement;
+}(Statement));
 var BeginBlock = (function (_super) {
     __extends(BeginBlock, _super);
     function BeginBlock() {
@@ -257,3 +283,10 @@ var BeginBlock = (function (_super) {
     }
     return BeginBlock;
 }(Statement));
+var SubroutineExpression = (function (_super) {
+    __extends(SubroutineExpression, _super);
+    function SubroutineExpression() {
+        _super.apply(this, arguments);
+    }
+    return SubroutineExpression;
+}(Expression));

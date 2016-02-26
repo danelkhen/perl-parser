@@ -16,7 +16,9 @@ body{
 }
 .layout > tbody > tr:nth-child(2) {
     height:100%;
-
+}
+.layout > tbody > tr > td{
+    vertical-align:top;
 }
 .bar textarea{
     width:100%;
@@ -54,17 +56,28 @@ body{
     content:"+";
 }
 
-
-.code {    
+.code-container {    
     float:left;
     width:50%;
     box-sizing:border-box;
-    white-space:pre;    
-    font-family:'Courier New'; 
-    font-size:11px;
     height:100%;
     overflow:scroll;
 }
+.code-container > .line-numbers{
+    float:left;
+    width:50px;
+    box-sizing:border-box;
+    text-align:right;
+    padding-right:10px;
+}
+.code-container > .line-numbers,
+.code-container > .code{
+    white-space:pre;    
+    font-family:'Courier New'; 
+    font-size:11px;
+}
+
+
 .selected{
     background-color:pink;
 }
@@ -108,8 +121,8 @@ body{
 .code .string{color:brown;}
 .code .divDiv{color:inherit;}
 .code .tilda{color:inherit;}
-.code .regex{color:greenyellow;}
-.code .regexSubstitute{color:greenyellow;}
+.code .regex{color:red;}
+.code .regexSubstitute{color:red;}
 .code .or{color:inherit;}
 .code .and{color:inherit;}
 .code .minus{color:inherit;}

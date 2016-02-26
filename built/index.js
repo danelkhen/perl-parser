@@ -31,23 +31,37 @@ var IndexPage = (function () {
         }
         this.parse("noname.pm", filename);
     };
+    IndexPage.prototype.renderLineNumbers = function (count) {
+        var lineNumbers = $(".line-numbers").empty();
+        for (var i = 0; i < count; i++) {
+            lineNumbers.append($.create("div").text(i + 1));
+        }
+    };
     IndexPage.prototype.parse = function (filename, data) {
         var _this = this;
         var codeEl = $(".code").empty().text(data);
         var file = new File2(filename, data);
         var tok = new Tokenizer();
         tok.file = file;
-        tok.main();
+        try {
+            tok.main();
+        }
+        catch (e) {
+            console.error(e);
+        }
         var parser = new Parser();
         parser.logger = new Logger();
         parser.reader = new TokenReader();
         parser.reader.logger = parser.logger;
         parser.reader.tokens = tok.tokens;
         codeEl.empty();
-        tok.tokens.forEach(function (token) {
-            var span = $.create("span").addClass(token.type.name).text(token.value).appendTo(codeEl)[0];
-            _this.tokenToElement.set(token, span);
-        });
+        if (tok.tokens.length > 0) {
+            tok.tokens.forEach(function (token) {
+                var span = $.create("span").addClass(token.type.name).text(token.value).appendTo(codeEl)[0];
+                _this.tokenToElement.set(token, span);
+            });
+            this.renderLineNumbers(tok.tokens.last().range.end.line);
+        }
         var statements = parser.doParse();
         console.log(statements);
         var unit = new Unit();
@@ -75,16 +89,6 @@ var IndexPage = (function () {
                 div.scrollTop = top2;
         }
     };
-    //toAstNodeProp(prop: string, node: AstNode): AstNodeProp {
-    //    let anp: AstNodeProp = { text: null, node: node, prop: prop, children: [] };
-    //    if (node != null)
-    //        anp.text = node.constructor.name
-    //    else if (prop != null)
-    //        anp.text = prop;
-    //    else
-    //        throw new Error();
-    //    return anp;
-    //}
     IndexPage.prototype.createInstanceNode = function (node) {
         var _this = this;
         var anp = { text: node.constructor.name, node: node, children: [] };
@@ -105,22 +109,6 @@ var IndexPage = (function () {
         }
         return anp;
     };
-    //getChildNodes(node: AstNode): AstNodeProp[] {
-    //    let list: AstNodeProp[] = [];
-    //    Object.keys(node).forEach(key=> {
-    //        let value = node[key];
-    //        if (value == null)
-    //            return;
-    //        if (value instanceof AstNode) {
-    //            let anp: AstNodeProp = this.toAstNodeProp(key, value);
-    //            list.add(anp);
-    //        }
-    //        else if (value instanceof Array) {
-    //            list.addRange(value.where(t=> t instanceof AstNode).select(t=> this.toAstNodeProp(key, t)));
-    //        }
-    //    });
-    //    return list;
-    //}
     IndexPage.prototype.createTree = function (node) {
         var _this = this;
         var li = $.create("li.node");

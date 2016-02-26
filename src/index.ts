@@ -36,22 +36,36 @@ class IndexPage {
         this.parse("noname.pm", filename);
     }
 
+    renderLineNumbers(count: number) {
+        let lineNumbers = $(".line-numbers").empty();
+        for (let i = 0; i < count; i++) {
+            lineNumbers.append($.create("div").text(i + 1));
+        }
+    }
     parse(filename: string, data: string) {
         let codeEl = $(".code").empty().text(data);
         let file = new File2(filename, data);
         let tok = new Tokenizer();
         tok.file = file;
-        tok.main();
+        try {
+            tok.main();
+        }
+        catch (e) {
+            console.error(e);
+        }
         let parser = new Parser();
         parser.logger = new Logger();
         parser.reader = new TokenReader();
         parser.reader.logger = parser.logger;
         parser.reader.tokens = tok.tokens;
         codeEl.empty();
-        tok.tokens.forEach(token=> {
-            let span = $.create("span").addClass(token.type.name).text(token.value).appendTo(codeEl)[0];
-            this.tokenToElement.set(token, span);
-        });
+        if (tok.tokens.length > 0) {
+            tok.tokens.forEach(token=> {
+                let span = $.create("span").addClass(token.type.name).text(token.value).appendTo(codeEl)[0];
+                this.tokenToElement.set(token, span);
+            });
+            this.renderLineNumbers(tok.tokens.last().range.end.line);
+        }
         var statements = parser.doParse();
         console.log(statements);
         let unit = new Unit();
@@ -81,17 +95,6 @@ class IndexPage {
         }
     }
 
-    //toAstNodeProp(prop: string, node: AstNode): AstNodeProp {
-    //    let anp: AstNodeProp = { text: null, node: node, prop: prop, children: [] };
-    //    if (node != null)
-    //        anp.text = node.constructor.name
-    //    else if (prop != null)
-    //        anp.text = prop;
-    //    else
-    //        throw new Error();
-    //    return anp;
-    //}
-
     createInstanceNode(node: AstNode) {
         let anp: AstNodeProp = { text: node.constructor.name, node: node, children: [] };
         anp.children = Object.keys(node).select(prop=> this.createPropertyNode(node, prop)).exceptNulls();
@@ -112,23 +115,6 @@ class IndexPage {
         return anp;
 
     }
-    //getChildNodes(node: AstNode): AstNodeProp[] {
-    //    let list: AstNodeProp[] = [];
-    //    Object.keys(node).forEach(key=> {
-    //        let value = node[key];
-    //        if (value == null)
-    //            return;
-
-    //        if (value instanceof AstNode) {
-    //            let anp: AstNodeProp = this.toAstNodeProp(key, value);
-    //            list.add(anp);
-    //        }
-    //        else if (value instanceof Array) {
-    //            list.addRange(value.where(t=> t instanceof AstNode).select(t=> this.toAstNodeProp(key, t)));
-    //        }
-    //    });
-    //    return list;
-    //}
 
     createTree(node: AstNodeProp): HTMLElement {
         let li = $.create("li.node");

@@ -45,9 +45,7 @@ class VariableDeclarationExpression extends Expression {
 }
 
 class SubroutineDeclaration extends Statement {
-    name: SimpleName;
-    statements: Statement[];
-    attribute: SimpleName;
+    declaration: SubroutineExpression;
 }
 
 class RegexExpression extends Expression {
@@ -98,10 +96,10 @@ class ValueExpression extends Expression {
     value: any;
 }
 
-class ReturnStatement extends Statement {
-    value: any;
-    expression: Expression;
-}
+//class ReturnStatement extends Statement {
+//    value: any;
+//    expression: Expression;
+//}
 class EndStatement extends Statement {
 }
 class IfStatement extends Statement {
@@ -109,6 +107,8 @@ class IfStatement extends Statement {
     expression: Expression;
     statements: Statement[];
     else: Statement;
+}
+class UnlessStatement extends IfStatement {
 }
 
 class ElsifStatement extends IfStatement {
@@ -125,6 +125,10 @@ class PrefixUnaryExpression extends Expression {
 class PostfixUnaryExpression extends Expression {
     expression: Expression;
     operator: Operator;
+}
+
+class ReturnExpression extends Expression {
+    expression: Expression;
 }
 
 class BinaryExpression extends Expression {
@@ -146,6 +150,7 @@ class MultiBinaryExpression extends Expression {
 
 class Operator {
     value: string;
+    toString() { return this.value +" {Operator}"; }
 }
 
 class HashRefCreationExpression extends Expression {
@@ -157,8 +162,19 @@ class HashRefCreationExpression extends Expression {
 */
 class ForEachStatement extends Statement {
     label: SimpleName;
+    
     variable: Expression;
     list: Expression;
+    statements: Statement[];
+}
+class ForStatement extends Statement {
+    initializer: Expression;
+    condition: Expression;
+    iterator: Expression;
+    statements: Statement[];
+}
+class WhileStatement extends Statement {
+    condition: Expression;
     statements: Statement[];
 }
 class BeginBlock extends Statement {
@@ -169,5 +185,15 @@ interface HasLabel {
     label: SimpleName;
 }
 interface HasArrow {
-    arrow:boolean;
+    arrow: boolean;
 }
+
+class SubroutineExpression extends Expression {
+    statements: Statement[];
+    prototype:Expression;
+    
+    name: SimpleName;
+    attribute: SimpleName;
+}
+
+
