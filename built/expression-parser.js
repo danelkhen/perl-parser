@@ -26,9 +26,17 @@ var ExpressionParser = (function (_super) {
         var mbe = this.create(MultiBinaryExpression);
         mbe.expressions = [];
         mbe.operators = [];
+        var tempParser;
         while (true) {
             i++;
-            var exp = this.parseNonBinaryExpression();
+            var exp = void 0;
+            if (tempParser != null) {
+                exp = tempParser.call(this);
+                tempParser = null;
+            }
+            else {
+                exp = this.parseNonBinaryExpression();
+            }
             mbe.expressions.push(exp);
             if (this.token == null)
                 break;
@@ -38,8 +46,11 @@ var ExpressionParser = (function (_super) {
                 TokenTypes.greaterThan, TokenTypes.smallerOrEqualsThan, TokenTypes.smallerThan,
                 TokenTypes.numericCompare,
                 TokenTypes.concatAssign, TokenTypes.divideAssign, TokenTypes.subtractAssign,
-                TokenTypes.addAssign, TokenTypes.multiplyAssign, TokenTypes.plus, TokenTypes.minus, TokenTypes.multiply, TokenTypes.multiplyString, TokenTypes.div
-            ]) || this.token.isAnyKeyword(["if", "unless", "while", "until", "for", "foreach", "when", "and"])) {
+                TokenTypes.addAssign, TokenTypes.multiplyAssign, TokenTypes.plus, TokenTypes.minus, TokenTypes.multiply, TokenTypes.multiplyString, TokenTypes.div, TokenTypes.range,
+            ]) || this.token.isAnyKeyword(["if", "unless", "while", "until", "for", "foreach", "when", "and", "eq"])) {
+                if (this.token.isAnyKeyword(["for", "foreach"])) {
+                    tempParser = this.parseSingleOrCommaSeparatedExpressions;
+                }
                 var operator = new Operator();
                 operator.value = this.token.value;
                 mbe.operators.push(operator);
@@ -107,7 +118,7 @@ var ExpressionParser = (function (_super) {
                     throw new Error();
                 return lastExpression;
             }
-            else if (this.token.isAny([TokenTypes.not, TokenTypes.sigil, TokenTypes.deref, TokenTypes.multiply, TokenTypes.codeRef]) || this.token.isAnyKeyword(["not"])) {
+            else if (this.token.isAny([TokenTypes.not, TokenTypes.sigil, TokenTypes.deref, TokenTypes.multiply, TokenTypes.codeRef, TokenTypes.lastIndexVar]) || this.token.isAnyKeyword(["not"])) {
                 var node = this.create(PrefixUnaryExpression);
                 node.operator = new Operator();
                 node.operator.value = this.token.value;
@@ -146,6 +157,7 @@ var ExpressionParser = (function (_super) {
                 exp.condition = lastExpression;
                 this.nextNonWhitespaceToken(exp);
                 exp.trueExpression = this.parseExpression();
+                this.skipWhitespaceAndComments();
                 this.expect(TokenTypes.colon);
                 this.nextNonWhitespaceToken();
                 exp.falseExpression = this.parseExpression();
@@ -200,9 +212,20 @@ var ExpressionParser = (function (_super) {
         this.expectKeyword("return");
         var node = this.create(ReturnExpression);
         this.nextNonWhitespaceToken(node);
-        if (!this.token.is(TokenTypes.semicolon))
-            node.expression = this.parseExpression();
+        if (!this.token.is(TokenTypes.semicolon)) {
+            node.expression = this.parseSingleOrCommaSeparatedExpressions();
+        }
         return node;
+    };
+    ExpressionParser.prototype.parseSingleOrCommaSeparatedExpressions = function () {
+        var returnItems = this.parseCommaSeparatedExpressions();
+        if (returnItems.length == 1)
+            return returnItems[0];
+        var list = new ListDeclaration();
+        list.items = returnItems;
+        list.tokens = [returnItems[0].token];
+        list.token = returnItems[0].token;
+        return list;
     };
     ExpressionParser.prototype.parseArrayMemberAccess = function (target) {
         this.expect(TokenTypes.bracketOpen);
@@ -231,16 +254,38 @@ var ExpressionParser = (function (_super) {
     //    exp.value = this.token.value;
     //    return exp;
     //}
-    ExpressionParser.prototype.parseHashRefOrBlockExpression = function () {
-        this.expect(TokenTypes.braceOpen);
-        var index = this.reader.clone().findClosingBraceIndex(TokenTypes.braceOpen, TokenTypes.braceClose);
-        if (index < 0)
-            throw new Error("can't find brace close");
-        var tokens = this.reader.getRange(this.reader.tokenIndex, index);
-        if (tokens.first(function (t) { return t.is(TokenTypes.semicolon); }) != null) {
-            return this.parseBlockExpression();
+    ExpressionParser.prototype.isBlockExpression = function () {
+        var reader2 = this.reader.clone();
+        var depth = 0;
+        while (reader2.token != null) {
+            if (reader2.token.is(TokenTypes.braceOpen))
+                depth++;
+            else if (reader2.token.is(TokenTypes.braceClose))
+                depth--;
+            else if (depth == 1 && reader2.token.is(TokenTypes.semicolon))
+                return true;
+            if (depth == 0)
+                break;
+            reader2.nextNonWhitespaceToken();
         }
+        return false;
+    };
+    ExpressionParser.prototype.parseHashRefOrBlockExpression = function () {
+        var isBlock = this.isBlockExpression();
+        if (isBlock)
+            return this.parseBlockExpression();
         return this.parseHashRefCreation();
+        //let index = this.reader.clone().findClosingBraceIndex(TokenTypes.braceOpen, TokenTypes.braceClose);
+        //if (index < 0)
+        //    throw new Error("can't find brace close");
+        //let tokens = this.reader.getRange(this.reader.tokenIndex, index);
+        //for (let token of tokens) {
+        //    if (token.is(TokenTypes.braceOpen))
+        //}
+        //if (tokens.first(t=> t.is(TokenTypes.semicolon)) != null) {
+        //    return this.parseBlockExpression();
+        //}
+        //return this.parseHashRefCreation();
     };
     ExpressionParser.prototype.parseHashRefCreation = function () {
         this.expect(TokenTypes.braceOpen);
@@ -336,9 +381,7 @@ var ExpressionParser = (function (_super) {
         var node = this.create(VariableDeclarationExpression);
         if (!this.token.isKeyword("my"))
             return this.onUnexpectedToken();
-        this.nextToken();
-        this.expect(TokenTypes.whitespace);
-        this.skipWhitespaceAndComments();
+        this.nextNonWhitespaceToken(node);
         if (this.token.is(TokenTypes.parenOpen)) {
             node.variables = this.parseParenthesizedList();
         }

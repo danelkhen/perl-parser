@@ -1,4 +1,9 @@
 "use strict";
+var __extends = (this && this.__extends) || function (d, b) {
+    for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p];
+    function __() { this.constructor = d; }
+    d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
+};
 var TokenType = (function () {
     function TokenType() {
     }
@@ -7,8 +12,18 @@ var TokenType = (function () {
         return new Token(range, this);
     };
     TokenType.prototype.match = function (tokenizer) {
-        return this.matcher(tokenizer);
-        //return cursor.next(this.regex);
+        throw new Error();
+    };
+    TokenType.prototype.tryTokenize = function (tokenizer) {
+        var range = this.match(tokenizer);
+        if (range == null)
+            return 0;
+        if (range.length == 0)
+            throw new Error();
+        var token = this.create(range);
+        tokenizer.tokens.push(token);
+        tokenizer.cursor.pos = range.end;
+        return 1;
     };
     return TokenType;
 }());
@@ -43,6 +58,26 @@ var Token = (function () {
     };
     return Token;
 }());
+var HereDocTokenType = (function (_super) {
+    __extends(HereDocTokenType, _super);
+    function HereDocTokenType() {
+        _super.apply(this, arguments);
+    }
+    HereDocTokenType.prototype.tryTokenize = function (tokenizer) {
+        var range = tokenizer.cursor.next(/^<<"[a-zA-Z0-9]+"/);
+        if (range == null)
+            return 0;
+        var ender = range.text.substring(3, range.text.length - 1);
+        var newTokenType = TokenTypes._r(new RegExp("\\n[\\S\\s]*" + ender + "\\n", "m"));
+        newTokenType.name = "heredocValue";
+        tokenizer.tempTokenTypes.push(newTokenType);
+        var token = this.create(range);
+        tokenizer.tokens.push(token);
+        tokenizer.cursor.pos = range.end;
+        return 1;
+    };
+    return HereDocTokenType;
+}(TokenType));
 var TokenTypes = (function () {
     function TokenTypes() {
     }
@@ -61,7 +96,8 @@ var TokenTypes = (function () {
     };
     TokenTypes._rs = function (list) {
         var tt = new TokenType();
-        tt.matcher = function (tokenizer) {
+        tt.tag = list;
+        tt.match = function (tokenizer) {
             var res = null;
             list.first(function (regex) {
                 var res2 = tokenizer.cursor.next(regex);
@@ -78,14 +114,14 @@ var TokenTypes = (function () {
     };
     TokenTypes._r = function (regex) {
         var tt = new TokenType();
-        tt.matcher = function (tokenizer) {
+        tt.match = function (tokenizer) {
             return tokenizer.cursor.next(regex);
         };
         return tt;
     };
     TokenTypes._custom = function (matcher) {
         var tt = new TokenType();
-        tt.matcher = matcher;
+        tt.match = matcher;
         return tt;
     };
     TokenTypes._matchPod = function (tokenizer) {
@@ -123,7 +159,7 @@ var TokenTypes = (function () {
         var lastToken = TokenTypes._findLastNonWhitespaceOrCommentToken(tokenizer.tokens);
         if (lastToken == null)
             return null;
-        if (lastToken.isAny([TokenTypes.braceClose]))
+        if (lastToken.isAny([TokenTypes.braceClose, TokenTypes.parenClose]))
             return null;
         var pattern = /\/.*\/[a-z]*/;
         var res = cursor.next(pattern);
@@ -144,15 +180,16 @@ var TokenTypes = (function () {
         //}
     };
     TokenTypes.identifierRegex = /[a-zA-Z_][a-zA-Z_0-9]*/;
+    TokenTypes.heredoc = new HereDocTokenType(); // TokenTypes._custom(TokenTypes.match(/<<"([a-zA-Z0-9]+)"[\s\S]*$/m);
     TokenTypes.qq = TokenTypes._rs([/qq\|[^|]*\|/, /qq\{[^\}]*\}/]);
-    TokenTypes.qw = TokenTypes._rs([/qw\/[^\/]*\/]/m, /qw<[^>]*>/m, /qw\([^\(]*\)/m]);
+    TokenTypes.qw = TokenTypes._rs([/qw\/[^\/]*\//m, /qw<[^>]*>/m, /qw\([^\)]*\)/m]);
     TokenTypes.qr = TokenTypes._rs([/qr\/.*\//, /qr\(.*\)/]); //Regexp-like quote
     TokenTypes.tr = TokenTypes._r(/tr\/.*\/.*\//); //token replace
     TokenTypes.pod = TokenTypes._custom(TokenTypes._matchPod);
     //static pod = TokenTypes._r(/=pod.*=cut/m);
     TokenTypes.keyword = TokenTypes._rs([
         "BEGIN", "package", "use", "my", "sub", "return", "elsif", "else", "unless", "__END__",
-        "and", "not",
+        "and", "not", "eq",
         "foreach", "while", "for",
         "if", "unless", "while", "until", "for", "foreach", "when" //statement modifiers
     ].map(function (t) { return new RegExp(t + "\\b"); })); //\b|use\b|my\b|sub\b|return\b|if\b|defined\b/
@@ -180,7 +217,7 @@ var TokenTypes = (function () {
     TokenTypes.bracketClose = TokenTypes._r(/\]/);
     TokenTypes.smallerOrEqualsThan = TokenTypes._r(/\<=/);
     TokenTypes.greaterOrEqualsThan = TokenTypes._r(/\>=/);
-    TokenTypes.interpolatedString = TokenTypes._r(/\".*\"/);
+    TokenTypes.interpolatedString = TokenTypes._r(/\"[^"]*\"/);
     TokenTypes.string = TokenTypes._r(/\'[^\']*\'/);
     TokenTypes.regex = TokenTypes._custom(TokenTypes._matchRegex); //_r(/\/.*\/[a-z]*/);
     TokenTypes.regexSubstitute = TokenTypes._r(/s\/.*\/.*\/[a-z]*/); // s/abc/def/mg
@@ -190,6 +227,7 @@ var TokenTypes = (function () {
     TokenTypes.inc = TokenTypes._r(/\+\+/);
     TokenTypes.dec = TokenTypes._r(/\-\-/);
     TokenTypes.codeRef = TokenTypes._r(/\\\&/);
+    TokenTypes.lastIndexVar = TokenTypes._r(/\$#/);
     //binary
     TokenTypes.numericCompare = TokenTypes._r(/\<=\>/);
     TokenTypes.regExpEquals = TokenTypes._r(/=\~/);
@@ -199,6 +237,7 @@ var TokenTypes = (function () {
     TokenTypes.arrow = TokenTypes._r(/\-\>/);
     TokenTypes.fatComma = TokenTypes._r(/\=\>/);
     TokenTypes.assignment = TokenTypes._r(/=/);
+    TokenTypes.range = TokenTypes._r(/\.\./);
     TokenTypes.concat = TokenTypes._r(/\./);
     TokenTypes.divDiv = TokenTypes._r(/\/\//);
     TokenTypes.tilda = TokenTypes._r(/\~/);
@@ -216,7 +255,6 @@ var TokenTypes = (function () {
     TokenTypes.sigil = TokenTypes._r(/[\$@%]/);
     return TokenTypes;
 }());
-;
 var TextRange2 = (function () {
     function TextRange2(file, start, end) {
         this.file = file;

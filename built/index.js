@@ -11,6 +11,21 @@ var IndexPage = (function () {
         var _this = this;
         this.tbUrl = $("#tbUrl");
         this.urlKey = "perl-parser\turl";
+        this.tbRegex = $("#tbRegex");
+        this.tbRegex.keyup(function (e) {
+            var s = _this.tbRegex.val();
+            try {
+                var regex = new Function("return " + s + ";")();
+                var res = regex.exec(_this.code);
+                if (res instanceof Array)
+                    console.log(JSON.stringify(res[0]), { regex: res });
+                else
+                    console.log(res);
+            }
+            catch (e) {
+                console.log(e);
+            }
+        });
         var lastUrl = localStorage[this.urlKey];
         if (lastUrl != null)
             this.tbUrl.val(lastUrl);
@@ -39,34 +54,31 @@ var IndexPage = (function () {
     };
     IndexPage.prototype.parse = function (filename, data) {
         var _this = this;
+        this.code = data;
         var codeEl = $(".code").empty().text(data);
         var file = new File2(filename, data);
         var tok = new Tokenizer();
         tok.file = file;
-        try {
-            tok.main();
-        }
-        catch (e) {
-            console.error(e);
-        }
-        var parser = new Parser();
-        parser.logger = new Logger();
-        parser.reader = new TokenReader();
-        parser.reader.logger = parser.logger;
-        parser.reader.tokens = tok.tokens;
-        codeEl.empty();
-        if (tok.tokens.length > 0) {
-            tok.tokens.forEach(function (token) {
-                var span = $.create("span").addClass(token.type.name).text(token.value).appendTo(codeEl)[0];
-                _this.tokenToElement.set(token, span);
-            });
-            this.renderLineNumbers(tok.tokens.last().range.end.line);
-        }
-        var statements = parser.doParse();
-        console.log(statements);
-        var unit = new Unit();
-        unit.statements = statements;
-        $(".tree").empty().getAppend("ul").append(this.createTree(this.createInstanceNode(unit)));
+        safeTry(function () { return tok.main(); }).catch(function (e) { return console.error(e); }).then(function () {
+            var parser = new Parser();
+            parser.logger = new Logger();
+            parser.reader = new TokenReader();
+            parser.reader.logger = parser.logger;
+            parser.reader.tokens = tok.tokens;
+            codeEl.empty();
+            if (tok.tokens.length > 0) {
+                tok.tokens.forEach(function (token) {
+                    var span = $.create("span").addClass(token.type.name).text(token.value).appendTo(codeEl)[0];
+                    _this.tokenToElement.set(token, span);
+                });
+                _this.renderLineNumbers(tok.tokens.last().range.end.line);
+            }
+            var statements = parser.doParse();
+            console.log(statements);
+            var unit = new Unit();
+            unit.statements = statements;
+            $(".tree").empty().getAppend("ul").append(_this.createTree(_this.createInstanceNode(unit)));
+        });
         //$.create("pre").text(stringifyNodes(statements)).appendTo("body")
     };
     IndexPage.prototype.onMouseOverNode = function (e, node) {

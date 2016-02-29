@@ -5,18 +5,33 @@ class TokenType {
     //}
 
     name: string;
-    matcher: TokenMatcher;
+    tag: any;
 
     //regex: RegExp;
 
     create(range: TextRange2) {
         return new Token(range, this);
     }
-
     match(tokenizer: Tokenizer): TextRange2 {
-        return this.matcher(tokenizer);
-        //return cursor.next(this.regex);
+        throw new Error();
     }
+
+
+    tryTokenize(tokenizer: Tokenizer): number {
+        let range = this.match(tokenizer);
+        if (range == null)
+            return 0;
+        if (range.length == 0)
+            throw new Error();
+        let token = this.create(range);
+        tokenizer.tokens.push(token);
+        tokenizer.cursor.pos = range.end;
+        return 1;
+    }
+    //match(tokenizer: Tokenizer): TextRange2 {
+    //    return this.matcher(tokenizer);
+    //    //return cursor.next(this.regex);
+    //}
 }
 
 interface TokenMatcher {
@@ -53,6 +68,27 @@ class Token {
 
 }
 
+
+
+class HereDocTokenType extends TokenType {
+
+    tryTokenize(tokenizer: Tokenizer): number {
+        let range = tokenizer.cursor.next(/^<<"[a-zA-Z0-9]+"/);
+        if (range == null)
+            return 0;
+        let ender = range.text.substring(3, range.text.length - 1);
+        let newTokenType = TokenTypes._r(new RegExp("\\n[\\S\\s]*" + ender + "\\n", "m"));
+        newTokenType.name = "heredocValue";
+        tokenizer.tempTokenTypes.push(newTokenType);
+        let token = this.create(range);
+        tokenizer.tokens.push(token);
+        tokenizer.cursor.pos = range.end;
+        return 1;
+    }
+
+}
+
+
 class TokenTypes {
     static identifierRegex = /[a-zA-Z_][a-zA-Z_0-9]*/;
     static all: TokenType[];
@@ -72,7 +108,8 @@ class TokenTypes {
 
     static _rs(list: RegExp[]): TokenType {
         let tt = new TokenType();
-        tt.matcher = tokenizer => {
+        tt.tag = list;
+        tt.match = tokenizer => {
             let res = null;
             list.first(regex => {
                 let res2 = tokenizer.cursor.next(regex);
@@ -89,25 +126,26 @@ class TokenTypes {
     }
     static _r(regex: RegExp): TokenType {
         let tt = new TokenType();
-        tt.matcher = tokenizer => {
+        tt.match = tokenizer => {
             return tokenizer.cursor.next(regex);
         };
         return tt;
     }
     static _custom(matcher: TokenMatcher): TokenType {
         let tt = new TokenType();
-        tt.matcher = matcher;
+        tt.match = matcher;
         return tt;
     }
+    static heredoc = new HereDocTokenType();// TokenTypes._custom(TokenTypes.match(/<<"([a-zA-Z0-9]+)"[\s\S]*$/m);
     static qq = TokenTypes._rs([/qq\|[^|]*\|/, /qq\{[^\}]*\}/]);
-    static qw = TokenTypes._rs([/qw\/[^\/]*\/]/m, /qw<[^>]*>/m, /qw\([^\(]*\)/m]);
+    static qw = TokenTypes._rs([/qw\/[^\/]*\//m, /qw<[^>]*>/m, /qw\([^\)]*\)/m]);
     static qr = TokenTypes._rs([/qr\/.*\//, /qr\(.*\)/]);//Regexp-like quote
     static tr = TokenTypes._r(/tr\/.*\/.*\//); //token replace
     static pod = TokenTypes._custom(TokenTypes._matchPod);
     //static pod = TokenTypes._r(/=pod.*=cut/m);
     static keyword = TokenTypes._rs([
         "BEGIN", "package", "use", "my", "sub", "return", "elsif", "else", "unless", "__END__",
-        "and", "not", 
+        "and", "not",  "eq", 
         "foreach", "while", "for",
         "if", "unless", "while", "until", "for", "foreach", "when"    //statement modifiers
     ].map(t=> new RegExp(t + "\\b"))); //\b|use\b|my\b|sub\b|return\b|if\b|defined\b/
@@ -135,7 +173,7 @@ class TokenTypes {
     static bracketClose = TokenTypes._r(/\]/);
     static smallerOrEqualsThan = TokenTypes._r(/\<=/);
     static greaterOrEqualsThan = TokenTypes._r(/\>=/);
-    static interpolatedString = TokenTypes._r(/\".*\"/);
+    static interpolatedString = TokenTypes._r(/\"[^"]*\"/);
     static string = TokenTypes._r(/\'[^\']*\'/);
     static regex = TokenTypes._custom(TokenTypes._matchRegex);//_r(/\/.*\/[a-z]*/);
     static regexSubstitute = TokenTypes._r(/s\/.*\/.*\/[a-z]*/);  // s/abc/def/mg
@@ -147,6 +185,7 @@ class TokenTypes {
     static inc = TokenTypes._r(/\+\+/);
     static dec = TokenTypes._r(/\-\-/);
     static codeRef = TokenTypes._r(/\\\&/);
+    static lastIndexVar = TokenTypes._r(/\$#/);
     
     //binary
     static numericCompare = TokenTypes._r(/\<=\>/);
@@ -157,6 +196,7 @@ class TokenTypes {
     static arrow = TokenTypes._r(/\-\>/);
     static fatComma = TokenTypes._r(/\=\>/);
     static assignment = TokenTypes._r(/=/);
+    static range = TokenTypes._r(/\.\./);
     static concat = TokenTypes._r(/\./);
     static divDiv = TokenTypes._r(/\/\//);
     static tilda = TokenTypes._r(/\~/);
@@ -202,9 +242,9 @@ class TokenTypes {
     }
 
     static _findLastNonWhitespaceOrCommentToken(tokens: Token[]) {
-        for (let i = tokens.length-1; i >= 0; i--) {
+        for (let i = tokens.length - 1; i >= 0; i--) {
             let token = tokens[i];
-            if(!token.isAny([TokenTypes.comment, TokenTypes.whitespace]))
+            if (!token.isAny([TokenTypes.comment, TokenTypes.whitespace]))
                 return token;
         }
         return null;
@@ -212,9 +252,9 @@ class TokenTypes {
     static _matchRegex(tokenizer: Tokenizer): TextRange2 { //figure out how to distinguish between regex and two divisions. a / b / c, is it a(/b/c), or (a / b) / c ?
         let cursor = tokenizer.cursor;
         let lastToken = TokenTypes._findLastNonWhitespaceOrCommentToken(tokenizer.tokens);
-        if(lastToken==null)
+        if (lastToken == null)
             return null;
-        if(lastToken.isAny([TokenTypes.braceClose]))
+        if (lastToken.isAny([TokenTypes.braceClose, TokenTypes.parenClose]))
             return null;
         let pattern = /\/.*\/[a-z]*/;
         let res = cursor.next(pattern);
@@ -235,8 +275,7 @@ class TokenTypes {
         //}
     }
 
-};
-
+}
 
 class TextRange2 {
     constructor(public file: File2, public start: File2Pos, public end?: File2Pos) {

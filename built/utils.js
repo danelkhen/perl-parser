@@ -125,3 +125,21 @@ RegExp.prototype.testFrom = function (index, s) {
     re.lastIndex = index;
     return re.test(s);
 };
+var DEBUG = true;
+function safeTry(action) {
+    return new Promise(function (resolve, reject) {
+        if (DEBUG) {
+            var res = action();
+            resolve(res);
+        }
+        else {
+            try {
+                var res = action();
+                resolve(res);
+            }
+            catch (e) {
+                reject(e);
+            }
+        }
+    });
+}

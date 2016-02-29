@@ -3,14 +3,8 @@
     public doParse(): Statement[] {
         this.nextToken();
         let statements: Statement[] = [];
-        try {
-            return this.parseStatementsUntil(null, statements);
-        }
-        catch (e) {
-            let e2: Error = e;
-            console.error("parse error", e2);
-            return statements;
-        }
+        safeTry(()=>this.parseStatementsUntil(null, statements)).catch(e=>console.error("parse error", e));
+        return statements;
     }
 
 
@@ -114,7 +108,7 @@
             this.nextNonWhitespaceToken();
         if (this.token.is(TokenTypes.sigiledIdentifier)) {
             this.createExpressionParser().parseMemberExpression();
-            this.nextNonWhitespaceToken();
+            this.skipWhitespaceAndComments();
         }
         this.expect(TokenTypes.parenOpen);
         this.nextNonWhitespaceToken();
@@ -149,7 +143,7 @@
         this.expect(TokenTypes.parenOpen, node);
         node.list = this.createExpressionParser().parseParenthesizedList();
         this.skipWhitespaceAndComments(node);
-        node.statements = this.parseBracedStatements(node);
+        node.statements = this.parseBracedStatements(node, true);
         return node;
     }
 

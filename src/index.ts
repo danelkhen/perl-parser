@@ -8,11 +8,28 @@ class IndexPage {
 
     tokenToElement: Map<Token, HTMLElement> = new Map<Token, HTMLElement>();
     tbUrl: JQuery;
+    tbRegex: JQuery;
     urlKey: string;
+    code: string;
     main() {
 
         this.tbUrl = $("#tbUrl");
         this.urlKey = "perl-parser\turl";
+        this.tbRegex = $("#tbRegex");
+        this.tbRegex.keyup(e=> {
+            let s = this.tbRegex.val();
+            try {
+                let regex = new Function("return " + s + ";")();
+                let res = regex.exec(this.code);
+                if(res instanceof Array)
+                    console.log(JSON.stringify(res[0]), {regex:res});
+                else
+                    console.log(res);
+            }
+            catch (e) {
+                console.log(e);
+            }
+        });
         let lastUrl = localStorage[this.urlKey];
         if (lastUrl != null)
             this.tbUrl.val(lastUrl);
@@ -43,35 +60,32 @@ class IndexPage {
         }
     }
     parse(filename: string, data: string) {
+        this.code = data;
         let codeEl = $(".code").empty().text(data);
         let file = new File2(filename, data);
         let tok = new Tokenizer();
         tok.file = file;
-        try {
-            tok.main();
-        }
-        catch (e) {
-            console.error(e);
-        }
-        let parser = new Parser();
-        parser.logger = new Logger();
-        parser.reader = new TokenReader();
-        parser.reader.logger = parser.logger;
-        parser.reader.tokens = tok.tokens;
-        codeEl.empty();
-        if (tok.tokens.length > 0) {
-            tok.tokens.forEach(token=> {
-                let span = $.create("span").addClass(token.type.name).text(token.value).appendTo(codeEl)[0];
-                this.tokenToElement.set(token, span);
-            });
-            this.renderLineNumbers(tok.tokens.last().range.end.line);
-        }
-        var statements = parser.doParse();
-        console.log(statements);
-        let unit = new Unit();
-        unit.statements = statements;
+        safeTry(() => tok.main()).catch(e=> console.error(e)).then(() => {
+            let parser = new Parser();
+            parser.logger = new Logger();
+            parser.reader = new TokenReader();
+            parser.reader.logger = parser.logger;
+            parser.reader.tokens = tok.tokens;
+            codeEl.empty();
+            if (tok.tokens.length > 0) {
+                tok.tokens.forEach(token=> {
+                    let span = $.create("span").addClass(token.type.name).text(token.value).appendTo(codeEl)[0];
+                    this.tokenToElement.set(token, span);
+                });
+                this.renderLineNumbers(tok.tokens.last().range.end.line);
+            }
+            var statements = parser.doParse();
+            console.log(statements);
+            let unit = new Unit();
+            unit.statements = statements;
 
-        $(".tree").empty().getAppend("ul").append(this.createTree(this.createInstanceNode(unit)));
+            $(".tree").empty().getAppend("ul").append(this.createTree(this.createInstanceNode(unit)));
+        });
         //$.create("pre").text(stringifyNodes(statements)).appendTo("body")
     }
 

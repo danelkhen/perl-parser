@@ -9,16 +9,11 @@ var Parser = (function (_super) {
         _super.apply(this, arguments);
     }
     Parser.prototype.doParse = function () {
+        var _this = this;
         this.nextToken();
         var statements = [];
-        try {
-            return this.parseStatementsUntil(null, statements);
-        }
-        catch (e) {
-            var e2 = e;
-            console.error("parse error", e2);
-            return statements;
-        }
+        safeTry(function () { return _this.parseStatementsUntil(null, statements); }).catch(function (e) { return console.error("parse error", e); });
+        return statements;
     };
     Parser.prototype.parseBracedStatements = function (node, skipLastOptionalSemicolon) {
         this.expect(TokenTypes.braceOpen, node);
@@ -116,7 +111,7 @@ var Parser = (function (_super) {
             this.nextNonWhitespaceToken();
         if (this.token.is(TokenTypes.sigiledIdentifier)) {
             this.createExpressionParser().parseMemberExpression();
-            this.nextNonWhitespaceToken();
+            this.skipWhitespaceAndComments();
         }
         this.expect(TokenTypes.parenOpen);
         this.nextNonWhitespaceToken();
@@ -150,7 +145,7 @@ var Parser = (function (_super) {
         this.expect(TokenTypes.parenOpen, node);
         node.list = this.createExpressionParser().parseParenthesizedList();
         this.skipWhitespaceAndComments(node);
-        node.statements = this.parseBracedStatements(node);
+        node.statements = this.parseBracedStatements(node, true);
         return node;
     };
     Parser.prototype.parseForStatement = function () {
