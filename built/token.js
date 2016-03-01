@@ -189,7 +189,7 @@ var TokenTypes = (function () {
     //static pod = TokenTypes._r(/=pod.*=cut/m);
     TokenTypes.keyword = TokenTypes._rs([
         "BEGIN", "package", "use", "my", "sub", "return", "elsif", "else", "unless", "__END__",
-        "and", "not", "eq",
+        "and", "not", "eq", "or",
         "foreach", "while", "for",
         "if", "unless", "while", "until", "for", "foreach", "when" //statement modifiers
     ].map(function (t) { return new RegExp(t + "\\b"); })); //\b|use\b|my\b|sub\b|return\b|if\b|defined\b/

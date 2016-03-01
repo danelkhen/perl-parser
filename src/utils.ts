@@ -123,7 +123,7 @@ RegExp.prototype.testFrom = function (index: number, s: string): boolean {
 
 
 let DEBUG = true;
-function safeTry<T>(action: (...args:any[]) => T): Promise<T> {
+function safeTry<T>(action: (...args: any[]) => T): Promise<T> {
     return new Promise<T>((resolve, reject) => {
         if (DEBUG) {
             let res = action();
@@ -142,3 +142,17 @@ function safeTry<T>(action: (...args:any[]) => T): Promise<T> {
     });
 }
 
+
+interface Array<T> {
+    withItemBetweenEach<R>(item: R): Array<T | R>;
+}
+
+Array.prototype.withItemBetweenEach = function (item) {
+    let list = [];
+    for (let i = 0; i < this.length; i++) {
+        if (i > 0)
+            list.push(item);
+        list.push(this[i]);
+    }
+    return list;
+}

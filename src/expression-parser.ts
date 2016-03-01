@@ -41,7 +41,7 @@
                 TokenTypes.numericCompare,
                 TokenTypes.concatAssign, TokenTypes.divideAssign, TokenTypes.subtractAssign,
                 TokenTypes.addAssign, TokenTypes.multiplyAssign, TokenTypes.plus, TokenTypes.minus, TokenTypes.multiply, TokenTypes.multiplyString, TokenTypes.div, TokenTypes.range,
-            ]) || this.token.isAnyKeyword(["if", "unless", "while", "until", "for", "foreach", "when", "and", "eq"])) { //statement modifiers
+            ]) || this.token.isAnyKeyword(["if", "unless", "while", "until", "for", "foreach", "when", "and", "eq", "or"])) { //statement modifiers
                 if (this.token.isAnyKeyword(["for", "foreach"])) {           //for,foreach postfix have list after them without parantheses
                     tempParser = this.parseSingleOrCommaSeparatedExpressions;
                 }
@@ -80,12 +80,12 @@
                 if (lastExpression == null)
                     lastExpression = this.parseArrayRefDeclaration();
                 else
-                    lastExpression = this.parseArrayMemberAccess(lastExpression);
+                    lastExpression = this.parseArrayMemberAccess(lastExpression, false);
             }
             else if (this.token.is(TokenTypes.braceOpen)) {
                 if (lastExpression == null)
                     return this.parseHashRefOrBlockExpression();
-                lastExpression = this.parseHashMemberAccess(lastExpression);
+                lastExpression = this.parseHashMemberAccess(lastExpression, false);
             }
             else if (this.token.is(TokenTypes.parenOpen)) {
                 if (lastExpression == null) {
@@ -114,7 +114,7 @@
                     throw new Error();
                 return lastExpression;
             }
-            else if (this.token.is(TokenTypes.sigil)) { //multiply: *{"a::b"}{CODE}
+            else if (this.token.is(TokenTypes.sigil) || this.token.is(TokenTypes.multiply)) { //multiply: *{"a::b"}{CODE}
                 let node = this.create(PrefixUnaryExpression);
                 node.operator = new Operator();
                 node.operator.value = this.token.value;
@@ -148,12 +148,12 @@
                 lastExpression = node;
             }
             else if (this.token.isIdentifier()) { //defined exists ref etc... // || this.token.isKeyword()
-                let node = this.parseMemberExpression();
-                node.prev = lastExpression;
+                let node = this.parseMemberExpression(lastExpression, false);
+                //node.prev = lastExpression;
                 lastExpression = node;
                 if (this.token.is(TokenTypes.whitespace)) {   //detect invocation without parantheses
                     this.skipWhitespaceAndComments();
-                    if (!this.token.isAny([TokenTypes.parenOpen, TokenTypes.arrow, TokenTypes.comma, TokenTypes.fatComma, TokenTypes.keyword])) {
+                    if (!this.token.isAny([TokenTypes.parenOpen, TokenTypes.arrow, TokenTypes.comma, TokenTypes.fatComma, TokenTypes.keyword, TokenTypes.assignment])) {
                         let invocation = this.parseInvocationExpression();
                         invocation.target = node;
                         lastExpression = invocation;
@@ -161,8 +161,8 @@
                 }
             }
             else if (this.token.isAny([TokenTypes.sigiledIdentifier, TokenTypes.evalErrorVar])) {
-                let node = this.parseMemberExpression();
-                node.prev = lastExpression;
+                let node = this.parseMemberExpression(null, false);
+                node.target = lastExpression;
                 lastExpression = node;
             }
             else if (this.token.is(TokenTypes.question)) {
@@ -177,6 +177,8 @@
                 lastExpression = exp;
             }
             else if (this.token.isAny([TokenTypes.integer, TokenTypes.interpolatedString, TokenTypes.qq, TokenTypes.string, TokenTypes.qw])) {
+                if(lastExpression!=null)
+                    return lastExpression; //shouldn't continue parsing
                 let node = this.create(ValueExpression);
                 node.value = this.token.value;//TODO:
                 lastExpression = node;
@@ -191,10 +193,13 @@
             else if (this.token.is(TokenTypes.arrow) || this.token.is(TokenTypes.packageSeparator)) {
                 let arrow = this.token.is(TokenTypes.arrow);
                 this.nextToken();
-                let node = this.parseNonBinaryExpression(lastExpression);
-                let node2: HasArrow = <any>node;
-                node2.arrow = arrow;
-                return node;
+                lastExpression = this.parseAnyMemberAccess(lastExpression, arrow);
+                //let node = this.parseNonBinaryExpression(lastExpression);
+                //let node2: HasArrow = <any>node;
+                //node2.arrow = arrow;
+                //if (node2.arrow)
+                //    console.log("arrow=true", node2);
+                //return node;
             }
             else if (lastExpression != null)
                 return lastExpression;
@@ -244,26 +249,47 @@
     }
 
 
-    parseArrayMemberAccess(target: Expression): ArrayMemberAccessExpression {
+    parseAnyMemberAccess(target: Expression, arrow: boolean): Expression {
+        if (this.token.is(TokenTypes.braceOpen))
+            return this.parseHashMemberAccess(target, arrow);
+        if (this.token.is(TokenTypes.bracketOpen))
+            return this.parseArrayMemberAccess(target, arrow);
+        return this.parseMemberExpression(target, arrow);
+    }
+    parseArrayMemberAccess(target: Expression, arrow: boolean): ArrayMemberAccessExpression {
         this.expect(TokenTypes.bracketOpen);
         let node = this.create(ArrayMemberAccessExpression);
         this.nextNonWhitespaceToken(node);
         node.expression = this.parseExpression();
         node.target = target;
+        node.arrow = arrow;
         this.expect(TokenTypes.bracketClose, node);
         this.nextToken();
         return node;
     }
-    parseHashMemberAccess(target: Expression): HashMemberAccessExpression {
+    parseHashMemberAccess(target: Expression, arrow: boolean): HashMemberAccessExpression {
         this.expect(TokenTypes.braceOpen);
-        let exp = this.create(HashMemberAccessExpression);
-        this.nextNonWhitespaceToken(exp);
-        exp.member = this.parseExpression();
-        this.expect(TokenTypes.braceClose, exp);
+        let node = this.create(HashMemberAccessExpression);
+        this.nextNonWhitespaceToken(node);
+        node.member = this.parseExpression();
+        node.arrow = arrow;
+        this.expect(TokenTypes.braceClose, node);
         this.nextToken();
-        exp.target = target;
-        return exp;
+        node.target = target;
+        return node;
     }
+
+    parseMemberExpression(target: Expression, arrow: boolean): MemberExpression {
+        this.log("parseMemberExpression", this.token);
+        let node = this.create(MemberExpression);
+        node.token = this.token;
+        node.name = this.token.value;
+        node.target = target;
+        node.arrow = arrow;
+        this.nextToken();
+        return node;
+    }
+
     //parseBareword(): BarewordExpression {
     //    this.expectIdentifier();
     //    let exp = new BarewordExpression();
@@ -321,14 +347,6 @@
         return node;
     }
 
-    parseMemberExpression(): MemberExpression {
-        this.log("parseMemberExpression", this.token);
-        let node = this.create(MemberExpression);
-        node.token = this.token;
-        node.name = this.token.value;
-        this.nextToken();
-        return node;
-    }
 
 
     parseInvocationExpression(): InvocationExpression {
@@ -370,7 +388,7 @@
         let items: Expression[] = [];
         this.nextNonWhitespaceToken(node);
         while (this.token != null) {
-            if (this.token.is(TokenTypes.parenClose))
+            if (this.token.is(closer))
                 break;
             let exp = this.parseExpression();
             items.push(exp);
@@ -411,7 +429,7 @@
             node.variables = this.parseParenthesizedList();
         }
         else if (this.token.is(TokenTypes.sigiledIdentifier)) {
-            node.variables = this.parseMemberExpression();
+            node.variables = this.parseMemberExpression(null, false);
         }
         else {
             this.logger.error("unexpected token in VariableDeclarationExpression", this.token);

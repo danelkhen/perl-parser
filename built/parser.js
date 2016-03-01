@@ -110,7 +110,7 @@ var Parser = (function (_super) {
         if (this.token.isKeyword("my"))
             this.nextNonWhitespaceToken();
         if (this.token.is(TokenTypes.sigiledIdentifier)) {
-            this.createExpressionParser().parseMemberExpression();
+            this.createExpressionParser().parseMemberExpression(null, false);
             this.skipWhitespaceAndComments();
         }
         this.expect(TokenTypes.parenOpen);
@@ -139,7 +139,7 @@ var Parser = (function (_super) {
             node.variable = this.createExpressionParser().parseVariableDeclarationExpression();
         }
         else if (this.token.is(TokenTypes.sigiledIdentifier)) {
-            node.variable = this.createExpressionParser().parseMemberExpression(); // .parseNonBinaryExpression();
+            node.variable = this.createExpressionParser().parseMemberExpression(null, false); // .parseNonBinaryExpression();
         }
         this.skipWhitespaceAndComments(node);
         this.expect(TokenTypes.parenOpen, node);

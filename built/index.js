@@ -78,6 +78,10 @@ var IndexPage = (function () {
             var unit = new Unit();
             unit.statements = statements;
             $(".tree").empty().getAppend("ul").append(_this.createTree(_this.createInstanceNode(unit)));
+            var writer = new AstWriter();
+            writer.main();
+            writer.write(unit);
+            $(".generated-code").text(writer.sb.join(""));
         });
         //$.create("pre").text(stringifyNodes(statements)).appendTo("body")
     };

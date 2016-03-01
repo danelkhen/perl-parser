@@ -21,8 +21,8 @@ class IndexPage {
             try {
                 let regex = new Function("return " + s + ";")();
                 let res = regex.exec(this.code);
-                if(res instanceof Array)
-                    console.log(JSON.stringify(res[0]), {regex:res});
+                if (res instanceof Array)
+                    console.log(JSON.stringify(res[0]), { regex: res });
                 else
                     console.log(res);
             }
@@ -83,8 +83,13 @@ class IndexPage {
             console.log(statements);
             let unit = new Unit();
             unit.statements = statements;
-
             $(".tree").empty().getAppend("ul").append(this.createTree(this.createInstanceNode(unit)));
+
+
+            let writer = new AstWriter();
+            writer.main();
+            writer.write(unit);
+            $(".generated-code").text(writer.sb.join(""));
         });
         //$.create("pre").text(stringifyNodes(statements)).appendTo("body")
     }

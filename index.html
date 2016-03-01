@@ -14,11 +14,12 @@
     <script src="built/parser-base.js"></script>
     <script src="built/expression-parser.js"></script>
     <script src="built/parser.js"></script>
+    <script src="built/ast-writer.js"></script>
     <script src="built/index.js"></script>
 </head>
 <body>
     <!--https://raw.githubusercontent.com/mickeyn/PONAPI/master/Server/lib/Test/PONAPI/Repository/MockDB.pm-->
-    <table class="layout">
+    <table class="layout" id="layout1">
         <tr>
             <td>
                 <form class="bar">
@@ -29,11 +30,19 @@
         </tr>
         <tr>
             <td>
-                <div class="code-container">
-                    <div class="line-numbers"></div>
-                    <div class="code"></div>
-                </div>
-                <div class="tree"></div>
+                <table class="layout" id="layout2">
+                    <tr>
+                        <td class="col">
+                            <div class="code-container">
+                                <div class="line-numbers"></div>
+                                <div class="code"></div>
+                            </div>
+                        </td>
+                        <td class="col"><pre class="generated-code"></pre></td>
+                        <td class="col"><div class="tree"></div></td>
+                    </tr>
+                </table>
+
             </td>
         </tr>
     </table>

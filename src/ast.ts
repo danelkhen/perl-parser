@@ -62,27 +62,28 @@ class UseStatement extends Statement {
     list: Expression;
 }
 
-class MemberExpression extends Expression {
+class MemberExpression extends Expression implements HasArrow {
     name: string;
-    prev: Expression;
+    target: Expression;
     arrow: boolean;
 }
 
-class HashMemberAccessExpression extends Expression {
+class HashMemberAccessExpression extends Expression implements HasArrow{
     member: Expression;
     target: Expression;
     arrow: boolean;
 }
 
-class ArrayMemberAccessExpression extends Expression {
+class ArrayMemberAccessExpression extends Expression implements HasArrow {
     expression: Expression;
     target: Expression;
     arrow: boolean;
 }
 
-class InvocationExpression extends Expression {
+class InvocationExpression extends Expression implements HasArrow {
     target: Expression;
     arguments: Expression[];
+    arrow: boolean;
 }
 
 class BarewordExpression extends Expression {
@@ -149,7 +150,7 @@ class MultiBinaryExpression extends Expression {
 
 class Operator {
     value: string;
-    toString() { return this.value +" {Operator}"; }
+    toString() { return this.value + " {Operator}"; }
 }
 
 class HashRefCreationExpression extends Expression {
@@ -161,7 +162,7 @@ class HashRefCreationExpression extends Expression {
 */
 class ForEachStatement extends Statement {
     label: SimpleName;
-    
+
     variable: Expression;
     list: Expression;
     statements: Statement[];
@@ -189,8 +190,8 @@ interface HasArrow {
 
 class SubroutineExpression extends Expression {
     statements: Statement[];
-    prototype:Expression;
-    
+    prototype: Expression;
+
     name: SimpleName;
     attribute: SimpleName;
 }

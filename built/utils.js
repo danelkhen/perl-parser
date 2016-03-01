@@ -143,3 +143,12 @@ function safeTry(action) {
         }
     });
 }
+Array.prototype.withItemBetweenEach = function (item) {
+    var list = [];
+    for (var i = 0; i < this.length; i++) {
+        if (i > 0)
+            list.push(item);
+        list.push(this[i]);
+    }
+    return list;
+};
