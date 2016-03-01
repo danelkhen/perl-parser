@@ -6,17 +6,16 @@ class AstWriter {
      */
     main() {
         this.register(Unit, t=> t.statements);
-        this.register(PackageDeclaration, t=> ["package ", t.name, ";", "\n", t.statements]);
-        this.register(UseStatement, t=> ["use ", t.module, [" ", t.list], ";", "\n"]);
+        this.register(PackageDeclaration, t=> { let x = [t.packageToken, t.packageTokenPost, t.name, t.semicolonToken, [t.semicolonTokenPost], t.statements]; console.log(x); return x; });
+        this.register(UseStatement, t=> [t.useToken, t.useTokenPost, t.module, [t.modulePostTokens], [t.list], t.semicolonToken, [t.semicolonTokenPost]]);
         this.register(VariableDeclarationStatement, t=> [t.declaration, ";", "\n"]);
-        this.register(VariableDeclarationExpression, t=> ["my"," ", t.variables, [" ", "=", " ", t.initializer]]);
-        this.register(MemberExpression, t=> [[t.target,  (t.arrow ? "->" : "::")], t.name]);
+        this.register(VariableDeclarationExpression, t=> ["my", " ", t.variables, [" ", "=", " ", t.initializer]]);
+        this.register(MemberExpression, t=> [[t.target, (t.arrow ? "->" : "::")], t.name]);
         this.register(InvocationExpression, t=> [t.target, [(t.arrow ? "->" : null)], "(", [t.arguments], ")"]);
         this.register(ExpressionStatement, t=> [t.expression, ";", "\n"]);
         this.register(ValueExpression, t=> [t.value]);
         this.register(BinaryExpression, t=> [t.left, " ", t.operator, " ", t.right]);
-        this.register(MultiBinaryExpression, t=> { let list: Array<any> = [t.expressions[0]]; t.operators.forEach((op, i) => list.push(op, list[i + 1])); return list.withItemBetweenEach(" "); });
-        this.register(BeginBlock, t=> ["BEGIN", "\n", "{", "\n", t.statements, "}", "\n"]);
+        this.register(BeginBlock, t=> ["BEGIN", " ", "{", "\n", t.statements, "}", "\n"]);
         this.register(ListDeclaration, t=> ["(", t.items.withItemBetweenEach(", "), ")"]);
         this.register(PrefixUnaryExpression, t=> [t.operator, t.expression]);
         this.register(SubroutineExpression, t=> ["sub", " ", t.name, [":", t.attribute], "{", "\n", ["(", t.prototype, ")"], t.statements, "}", "\n"]);
@@ -25,12 +24,30 @@ class AstWriter {
         this.register(HashMemberAccessExpression, t=> [t.target, [(t.arrow ? "->" : null)], "{", t.member, "}"]);
         this.register(ReturnExpression, t=> ["return ", t.expression]);
         this.register(ArrayRefDeclaration, t=> ["[", t.items.withItemBetweenEach(","), "]"]);
-        this.register(IfStatement, t=> ["if","(", t.expression,")", "{", "\n", t.statements, "}", [t.else]]);
-        this.register(ElsifStatement, t=> ["elsif","(", t.expression,")", "{", "\n", t.statements, "}", [t.else]]);
+        this.register(IfStatement, t=> ["if", "(", t.expression, ")", "{", "\n", t.statements, "}", [t.else]]);
+        this.register(ElsifStatement, t=> ["elsif", "(", t.expression, ")", "{", "\n", t.statements, "}", [t.else]]);
         this.register(ElseStatement, t=> ["else", "{", "\n", t.statements, "}"]);
         this.register(HashRefCreationExpression, t=> ["{", t.items.withItemBetweenEach(","), "}"]);
-        this.register(ForEachStatement, t=> [[t.label,":"], "for", [t.variable], "(", t.list, ")", "{", "\n", t.statements, "}", "\n"]);
-        this.register(ArrayMemberAccessExpression, t=> [[t.target,  (t.arrow ? "->" : "::")], "[", t.expression, "]"]);
+        this.register(ForEachStatement, t=> [[t.label, ":"], "for", [t.variable], "(", t.list, ")", "{", "\n", t.statements, "}", "\n"]);
+        this.register(ArrayMemberAccessExpression, t=> [[t.target, (t.arrow ? "->" : "::")], "[", t.expression, "]"]);
+        this.register(BlockExpression, t=> ["{", "\n", t.statements, "}", "\n"]);
+
+        this.register(RegexExpression, t=> [t.value]);
+
+        this.register(TrinaryExpression, t=> [t.condition, " ", "?", " ", t.trueExpression, " ", ":", " ", t.falseExpression]);
+        this.register(EndStatement, t=> ["__END__"]);
+
+
+
+        this.register(MultiBinaryExpression, t=> {
+            if (t.expressions.length != t.operators.length + 1)
+                throw new Error("invalid multiexpression");
+            let list: Array<any> = [t.expressions[0]];
+            t.operators.forEach((op, i) => list.push(op, t.expressions[i + 1]));
+            let res = list.withItemBetweenEach(" ");
+            console.log("Multi", res);
+            return res;
+        });
         this.sb = [];
     }
     write(obj: any) {
@@ -40,6 +57,7 @@ class AstWriter {
             let node = <AstNode>obj;
             let func = this.map.get(node.constructor);
             if (func == null) {
+                this.sb.push("!!!ERROR!!!");
                 console.warn("no writer for node", node);
                 return;
             }

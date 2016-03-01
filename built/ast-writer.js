@@ -8,8 +8,8 @@ var AstWriter = (function () {
      */
     AstWriter.prototype.main = function () {
         this.register(Unit, function (t) { return t.statements; });
-        this.register(PackageDeclaration, function (t) { return ["package ", t.name, ";", "\n", t.statements]; });
-        this.register(UseStatement, function (t) { return ["use ", t.module, [" ", t.list], ";", "\n"]; });
+        this.register(PackageDeclaration, function (t) { var x = [t.packageToken, t.packageTokenPost, t.name, t.semicolonToken, [t.semicolonTokenPost], t.statements]; console.log(x); return x; });
+        this.register(UseStatement, function (t) { return [t.useToken, t.useTokenPost, t.module, [t.modulePostTokens], [t.list], t.semicolonToken, [t.semicolonTokenPost]]; });
         this.register(VariableDeclarationStatement, function (t) { return [t.declaration, ";", "\n"]; });
         this.register(VariableDeclarationExpression, function (t) { return ["my", " ", t.variables, [" ", "=", " ", t.initializer]]; });
         this.register(MemberExpression, function (t) { return [[t.target, (t.arrow ? "->" : "::")], t.name]; });
@@ -17,8 +17,7 @@ var AstWriter = (function () {
         this.register(ExpressionStatement, function (t) { return [t.expression, ";", "\n"]; });
         this.register(ValueExpression, function (t) { return [t.value]; });
         this.register(BinaryExpression, function (t) { return [t.left, " ", t.operator, " ", t.right]; });
-        this.register(MultiBinaryExpression, function (t) { var list = [t.expressions[0]]; t.operators.forEach(function (op, i) { return list.push(op, list[i + 1]); }); return list.withItemBetweenEach(" "); });
-        this.register(BeginBlock, function (t) { return ["BEGIN", "\n", "{", "\n", t.statements, "}", "\n"]; });
+        this.register(BeginBlock, function (t) { return ["BEGIN", " ", "{", "\n", t.statements, "}", "\n"]; });
         this.register(ListDeclaration, function (t) { return ["(", t.items.withItemBetweenEach(", "), ")"]; });
         this.register(PrefixUnaryExpression, function (t) { return [t.operator, t.expression]; });
         this.register(SubroutineExpression, function (t) { return ["sub", " ", t.name, [":", t.attribute], "{", "\n", ["(", t.prototype, ")"], t.statements, "}", "\n"]; });
@@ -33,6 +32,19 @@ var AstWriter = (function () {
         this.register(HashRefCreationExpression, function (t) { return ["{", t.items.withItemBetweenEach(","), "}"]; });
         this.register(ForEachStatement, function (t) { return [[t.label, ":"], "for", [t.variable], "(", t.list, ")", "{", "\n", t.statements, "}", "\n"]; });
         this.register(ArrayMemberAccessExpression, function (t) { return [[t.target, (t.arrow ? "->" : "::")], "[", t.expression, "]"]; });
+        this.register(BlockExpression, function (t) { return ["{", "\n", t.statements, "}", "\n"]; });
+        this.register(RegexExpression, function (t) { return [t.value]; });
+        this.register(TrinaryExpression, function (t) { return [t.condition, " ", "?", " ", t.trueExpression, " ", ":", " ", t.falseExpression]; });
+        this.register(EndStatement, function (t) { return ["__END__"]; });
+        this.register(MultiBinaryExpression, function (t) {
+            if (t.expressions.length != t.operators.length + 1)
+                throw new Error("invalid multiexpression");
+            var list = [t.expressions[0]];
+            t.operators.forEach(function (op, i) { return list.push(op, t.expressions[i + 1]); });
+            var res = list.withItemBetweenEach(" ");
+            console.log("Multi", res);
+            return res;
+        });
         this.sb = [];
     };
     AstWriter.prototype.write = function (obj) {
@@ -43,6 +55,7 @@ var AstWriter = (function () {
             var node = obj;
             var func = this.map.get(node.constructor);
             if (func == null) {
+                this.sb.push("!!!ERROR!!!");
                 console.warn("no writer for node", node);
                 return;
             }

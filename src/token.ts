@@ -177,6 +177,7 @@ class TokenTypes {
     static string = TokenTypes._r(/\'[^\']*\'/);
     static regex = TokenTypes._custom(TokenTypes._matchRegex);//_r(/\/.*\/[a-z]*/);
     static regexSubstitute = TokenTypes._r(/s\/.*\/.*\/[a-z]*/);  // s/abc/def/mg
+    static regexMatch = TokenTypes._rs([/m\/.*\/[a-z]*/, /m#.*#[a-z]*/]);  // s/abc/def/mg
 
     static colon = TokenTypes._r(/\:/);
     static question = TokenTypes._r(/\?/);
@@ -231,7 +232,7 @@ class TokenTypes {
         cursor2.pos = start.end;
 
         let end: number;
-        let cut = cursor2.next(/=cut/);
+        let cut = cursor2.find(/=cut/);
         if (cut != null)
             end = cut.index + 4;
         else
@@ -382,6 +383,21 @@ class Cursor {
     }
     next(regex: RegExp): TextRange2 {
         let regex2 = new RegExp("^" + regex.source, (regex.multiline ? "m" : "") + (regex.global ? "g" : ""));
+        return this.find(regex2);
+        //let s = this.src.substr(this.index);
+        ////regex2.lastIndex = this.index;
+        //var res = regex2.exec(s);
+        //if (res == null)
+        //    return null;
+        ////if (res.index != this.index)
+        ////    return null;
+        //let start = this.file.getPos(this.index);
+        //let end = this.file.getPos(this.index + res[0].length);
+        //let range = new TextRange2(this.file, start, end);
+        //return range;
+    }
+    find(regex: RegExp): TextRange2 {
+        let regex2 = regex;
         let s = this.src.substr(this.index);
         //regex2.lastIndex = this.index;
         var res = regex2.exec(s);
@@ -389,8 +405,8 @@ class Cursor {
             return null;
         //if (res.index != this.index)
         //    return null;
-        let start = this.file.getPos(this.index);
-        let end = this.file.getPos(this.index + res[0].length);
+        let start = this.file.getPos(this.index + res.index);
+        let end = this.file.getPos(this.index + res.index + res[0].length);
         let range = new TextRange2(this.file, start, end);
         return range;
     }

@@ -137,7 +137,7 @@ var TokenTypes = (function () {
         var cursor2 = cursor.clone();
         cursor2.pos = start.end;
         var end;
-        var cut = cursor2.next(/=cut/);
+        var cut = cursor2.find(/=cut/);
         if (cut != null)
             end = cut.index + 4;
         else
@@ -213,6 +213,7 @@ var TokenTypes = (function () {
     TokenTypes.string = TokenTypes._r(/\'[^\']*\'/);
     TokenTypes.regex = TokenTypes._custom(TokenTypes._matchRegex); //_r(/\/.*\/[a-z]*/);
     TokenTypes.regexSubstitute = TokenTypes._r(/s\/.*\/.*\/[a-z]*/); // s/abc/def/mg
+    TokenTypes.regexMatch = TokenTypes._rs([/m\/.*\/[a-z]*/, /m#.*#[a-z]*/]); // s/abc/def/mg
     TokenTypes.colon = TokenTypes._r(/\:/);
     TokenTypes.question = TokenTypes._r(/\?/);
     //unary:
@@ -383,6 +384,21 @@ var Cursor = (function () {
     };
     Cursor.prototype.next = function (regex) {
         var regex2 = new RegExp("^" + regex.source, (regex.multiline ? "m" : "") + (regex.global ? "g" : ""));
+        return this.find(regex2);
+        //let s = this.src.substr(this.index);
+        ////regex2.lastIndex = this.index;
+        //var res = regex2.exec(s);
+        //if (res == null)
+        //    return null;
+        ////if (res.index != this.index)
+        ////    return null;
+        //let start = this.file.getPos(this.index);
+        //let end = this.file.getPos(this.index + res[0].length);
+        //let range = new TextRange2(this.file, start, end);
+        //return range;
+    };
+    Cursor.prototype.find = function (regex) {
+        var regex2 = regex;
         var s = this.src.substr(this.index);
         //regex2.lastIndex = this.index;
         var res = regex2.exec(s);
@@ -390,8 +406,8 @@ var Cursor = (function () {
             return null;
         //if (res.index != this.index)
         //    return null;
-        var start = this.file.getPos(this.index);
-        var end = this.file.getPos(this.index + res[0].length);
+        var start = this.file.getPos(this.index + res.index);
+        var end = this.file.getPos(this.index + res.index + res[0].length);
         var range = new TextRange2(this.file, start, end);
         return range;
     };

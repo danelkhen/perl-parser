@@ -28,6 +28,10 @@ class Unit extends AstNode {
 }
 
 class PackageDeclaration extends Statement {
+    packageToken:Token;
+    packageTokenPost:Token[];
+    semicolonToken:Token;
+    semicolonTokenPost:Token[];
     statements: Statement[];
     name: MemberExpression;
 }
@@ -58,6 +62,12 @@ class ExpressionStatement extends Statement {
     expression: Expression;
 }
 class UseStatement extends Statement {
+    useToken:Token;
+    useTokenPost:Token[];
+    modulePostTokens:Token[];
+    semicolonToken:Token;
+    semicolonTokenPost:Token[];
+
     module: Expression;
     list: Expression;
 }

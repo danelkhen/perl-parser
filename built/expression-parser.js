@@ -188,7 +188,7 @@ var ExpressionParser = (function (_super) {
                 lastExpression = node;
                 this.nextToken();
             }
-            else if (this.token.isAny([TokenTypes.regex, TokenTypes.regexSubstitute, TokenTypes.qr, TokenTypes.tr])) {
+            else if (this.token.isAny([TokenTypes.regex, TokenTypes.regexSubstitute, TokenTypes.regexMatch, TokenTypes.qr, TokenTypes.tr])) {
                 var node = this.create(RegexExpression);
                 node.value = this.token.value; //TODO:
                 lastExpression = node;
@@ -297,7 +297,7 @@ var ExpressionParser = (function (_super) {
                 depth++;
             else if (reader2.token.is(TokenTypes.braceClose))
                 depth--;
-            else if (depth == 1 && reader2.token.is(TokenTypes.semicolon))
+            else if (depth == 1 && (reader2.token.is(TokenTypes.semicolon) || reader2.token.isAnyKeyword(["if", "while", "for", "foreach"])))
                 return true;
             if (depth == 0)
                 break;

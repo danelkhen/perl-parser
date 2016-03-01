@@ -1,3 +1,5 @@
+//class AstNodeBuilder<T extends AstNode>{
+//}
 var ParserBase = (function () {
     function ParserBase() {
     }
@@ -9,7 +11,9 @@ var ParserBase = (function () {
         return this.reader.expectIdentifier(value);
     };
     ParserBase.prototype.expectKeyword = function (value) {
-        return this.reader.expectKeyword(value);
+        if (this.reader.expectKeyword(value))
+            return this.token;
+        return null;
     };
     ParserBase.prototype.expectAny = function (types, node) {
         var res = this.reader.expectAny(types);
@@ -21,7 +25,16 @@ var ParserBase = (function () {
         var res = this.reader.expect(type);
         if (res && node != null)
             node.tokens.add(this.token);
-        return res;
+        return this.token;
+    };
+    ParserBase.prototype.expectToken = function (query, node) {
+        if (query(this.token)) {
+            if (node != null)
+                node.tokens.add(this.token);
+            return this.token;
+        }
+        this.onUnexpectedToken();
+        return null;
     };
     ParserBase.prototype.expectValue = function (type, value, node) {
         var res = this.reader.expect(type, value);
@@ -82,6 +95,14 @@ var ParserBase = (function () {
             node.tokens.addRange(skipped);
         return skipped;
     };
+    ParserBase.prototype.expectAndSkipWhitespace = function (node) {
+        this.expect(TokenTypes.whitespace);
+        return this.skipWhitespaceAndComments(node);
+    };
+    //expectCreate<T extends AstNode>(query: TokenQuery, ctor: Type<T>): T {
+    //    this.expectToken(query);
+    //    this.create(ctor);
+    //}
     ParserBase.prototype.create = function (ctor) {
         var node = new ctor();
         node.token = this.token;

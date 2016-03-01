@@ -3,7 +3,7 @@
     public doParse(): Statement[] {
         this.nextToken();
         let statements: Statement[] = [];
-        safeTry(()=>this.parseStatementsUntil(null, statements)).catch(e=>console.error("parse error", e));
+        safeTry(() => this.parseStatementsUntil(null, statements)).catch(e=> console.error("parse error", e));
         return statements;
     }
 
@@ -274,30 +274,31 @@
         return node;
     }
     parsePackageDeclaration(): PackageDeclaration {
-        this.log("parsePackage");
-        this.expectKeyword("package");
         let node = this.create(PackageDeclaration);
+        node.packageToken = this.expectKeyword("package");
         node.statements = [];
         this.nextToken();
-        this.expect(TokenTypes.whitespace);
-        this.nextToken();
+        node.packageTokenPost = this.expectAndSkipWhitespace();
         this.expect(TokenTypes.identifier);
         node.name = this.parseMemberExpression();
-        this.expect(TokenTypes.semicolon);
-        this.nextToken();
+        node.semicolonToken = this.expect(TokenTypes.semicolon);
+        node.semicolonTokenPost = this.nextNonWhitespaceToken();
         node.statements = this.parseStatementsUntil();
         return node;
     }
     parseUse(): UseStatement {
         let node = this.create(UseStatement);
+        node.useToken = this.expectKeyword("use");
         this.nextToken();
-        this.expect(TokenTypes.whitespace);
-        this.nextToken();
-        node.module = this.createExpressionParser().parseNonBinaryExpression();// this.parseMemberExpression();
-        if (!this.token.is(TokenTypes.semicolon))
+        node.useTokenPost = this.expectAndSkipWhitespace();
+        //this.nextToken();
+        node.module = this.createExpressionParser().parseNonBinaryExpression();
+        if (!this.token.is(TokenTypes.semicolon)) {
+            node.modulePostTokens = this.skipWhitespaceAndComments();
             node.list = this.parseExpression();
-        this.expect(TokenTypes.semicolon);
-        this.nextToken();
+        }
+        node.semicolonToken = this.expect(TokenTypes.semicolon);
+        node.semicolonTokenPost = this.nextNonWhitespaceToken();
         return node;
     }
     parseExpression(): Expression { return this.createExpressionParser().parseExpression(); }
