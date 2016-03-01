@@ -170,14 +170,6 @@ var TokenTypes = (function () {
             return null;
         console.log("Detected regex", res.text, lastToken);
         return res;
-        //try {
-        //    let func = new Function("return " + code + ";");
-        //    let res2 = func();
-        //    return res;
-        //}
-        //catch (e) {
-        //    return null;
-        //}
     };
     TokenTypes.identifierRegex = /[a-zA-Z_][a-zA-Z_0-9]*/;
     TokenTypes.heredoc = new HereDocTokenType(); // TokenTypes._custom(TokenTypes.match(/<<"([a-zA-Z0-9]+)"[\s\S]*$/m);

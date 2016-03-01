@@ -265,14 +265,6 @@ class TokenTypes {
             return null;
         console.log("Detected regex", res.text, lastToken);
         return res;
-        //try {
-        //    let func = new Function("return " + code + ";");
-        //    let res2 = func();
-        //    return res;
-        //}
-        //catch (e) {
-        //    return null;
-        //}
     }
 
 }

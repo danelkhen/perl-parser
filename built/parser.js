@@ -246,21 +246,6 @@ var Parser = (function (_super) {
         console.log("parseSubroutineDeclaration", this.token);
         var node = this.create(SubroutineDeclaration);
         node.declaration = this.createExpressionParser().parseSubroutineExpression();
-        //this.nextNonWhitespaceToken(node);
-        //if (this.token.is(TokenTypes.identifier)) {
-        //    node.name = this.parseSimpleName();
-        //    this.nextNonWhitespaceToken(node);
-        //}
-        //if (this.token.is(TokenTypes.colon)) { //subroutine attributes: sub foo : method { ... }
-        //    this.nextNonWhitespaceToken(node);
-        //    node.attribute = this.parseSimpleName();
-        //    this.nextNonWhitespaceToken(node);
-        //}
-        //this.expect(TokenTypes.braceOpen, node);
-        //this.nextNonWhitespaceToken(node);
-        //node.statements = this.parseStatementsUntil(TokenTypes.braceClose);
-        //this.expect(TokenTypes.braceClose, node);
-        //this.nextToken();
         return node;
     };
     Parser.prototype.parseVariableDeclarationStatement = function () {
@@ -279,6 +264,7 @@ var Parser = (function (_super) {
     };
     Parser.prototype.parsePackageDeclaration = function () {
         this.log("parsePackage");
+        this.expectKeyword("package");
         var node = this.create(PackageDeclaration);
         node.statements = [];
         this.nextToken();

@@ -1,6 +1,9 @@
 ﻿"use strict";
 class AstWriter {
     sb: string[];
+    /**
+     * every ast node can return a mixed array with nodes/tokens/operators/strings/arrays, any array / inner array with null items will be *skipped*
+     */
     main() {
         this.register(Unit, t=> t.statements);
         this.register(PackageDeclaration, t=> ["package ", t.name, ";", "\n", t.statements]);
@@ -21,16 +24,12 @@ class AstWriter {
         this.register(SimpleName, t=> [t.name]);
         this.register(HashMemberAccessExpression, t=> [t.target, [(t.arrow ? "->" : null)], "{", t.member, "}"]);
         this.register(ReturnExpression, t=> ["return ", t.expression]);
-
-
         this.register(ArrayRefDeclaration, t=> ["[", t.items.withItemBetweenEach(","), "]"]);
         this.register(IfStatement, t=> ["if","(", t.expression,")", "{", "\n", t.statements, "}", [t.else]]);
         this.register(ElsifStatement, t=> ["elsif","(", t.expression,")", "{", "\n", t.statements, "}", [t.else]]);
         this.register(ElseStatement, t=> ["else", "{", "\n", t.statements, "}"]);
         this.register(HashRefCreationExpression, t=> ["{", t.items.withItemBetweenEach(","), "}"]);
         this.register(ForEachStatement, t=> [[t.label,":"], "for", [t.variable], "(", t.list, ")", "{", "\n", t.statements, "}", "\n"]);
-
-
         this.register(ArrayMemberAccessExpression, t=> [[t.target,  (t.arrow ? "->" : "::")], "[", t.expression, "]"]);
         this.sb = [];
     }

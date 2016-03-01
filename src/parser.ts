@@ -254,25 +254,8 @@
     }
     parseSubroutineDeclaration(): SubroutineDeclaration {
         console.log("parseSubroutineDeclaration", this.token);
-        
         let node = this.create(SubroutineDeclaration);
         node.declaration = this.createExpressionParser().parseSubroutineExpression();
-
-        //this.nextNonWhitespaceToken(node);
-        //if (this.token.is(TokenTypes.identifier)) {
-        //    node.name = this.parseSimpleName();
-        //    this.nextNonWhitespaceToken(node);
-        //}
-        //if (this.token.is(TokenTypes.colon)) { //subroutine attributes: sub foo : method { ... }
-        //    this.nextNonWhitespaceToken(node);
-        //    node.attribute = this.parseSimpleName();
-        //    this.nextNonWhitespaceToken(node);
-        //}
-        //this.expect(TokenTypes.braceOpen, node);
-        //this.nextNonWhitespaceToken(node);
-        //node.statements = this.parseStatementsUntil(TokenTypes.braceClose);
-        //this.expect(TokenTypes.braceClose, node);
-        //this.nextToken();
         return node;
     }
     parseVariableDeclarationStatement() {
@@ -292,6 +275,7 @@
     }
     parsePackageDeclaration(): PackageDeclaration {
         this.log("parsePackage");
+        this.expectKeyword("package");
         let node = this.create(PackageDeclaration);
         node.statements = [];
         this.nextToken();

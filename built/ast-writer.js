@@ -3,6 +3,9 @@ var AstWriter = (function () {
     function AstWriter() {
         this.map = new Map();
     }
+    /**
+     * every ast node can return a mixed array with nodes/tokens/operators/strings/arrays, any array / inner array with null items will be *skipped*
+     */
     AstWriter.prototype.main = function () {
         this.register(Unit, function (t) { return t.statements; });
         this.register(PackageDeclaration, function (t) { return ["package ", t.name, ";", "\n", t.statements]; });
