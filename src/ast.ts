@@ -117,7 +117,6 @@ class ElseStatement extends Statement {
     statements: Statement[];
 }
 
-
 class PrefixUnaryExpression extends Expression {
     operator: Operator;
     expression: Expression;

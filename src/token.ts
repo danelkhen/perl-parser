@@ -213,7 +213,7 @@ class TokenTypes {
     static identifier = TokenTypes._r(TokenTypes.identifierRegex);
 
 
-    static deref = TokenTypes._r(/\\/);
+    static makeRef = TokenTypes._r(/\\/);
     static not = TokenTypes._r(/\!/);
     static sigil = TokenTypes._r(/[\$@%]/);
 

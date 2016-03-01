@@ -250,7 +250,7 @@ var TokenTypes = (function () {
     TokenTypes.multiplyString = TokenTypes._r(/x/);
     //static label = TokenTypes._r(new RegExp(TokenTypes.identifierRegex.source+"[\t\r\n ]*\:"));
     TokenTypes.identifier = TokenTypes._r(TokenTypes.identifierRegex);
-    TokenTypes.deref = TokenTypes._r(/\\/);
+    TokenTypes.makeRef = TokenTypes._r(/\\/);
     TokenTypes.not = TokenTypes._r(/\!/);
     TokenTypes.sigil = TokenTypes._r(/[\$@%]/);
     return TokenTypes;

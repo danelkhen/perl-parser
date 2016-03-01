@@ -114,7 +114,24 @@
                     throw new Error();
                 return lastExpression;
             }
-            else if (this.token.isAny([TokenTypes.not, TokenTypes.sigil, TokenTypes.deref, TokenTypes.multiply, TokenTypes.codeRef, TokenTypes.lastIndexVar]) || this.token.isAnyKeyword(["not"])) { //multiply: *{"a::b"}{CODE}
+            else if (this.token.is(TokenTypes.sigil)) { //multiply: *{"a::b"}{CODE}
+                let node = this.create(PrefixUnaryExpression);
+                node.operator = new Operator();
+                node.operator.value = this.token.value;
+                this.nextNonWhitespaceToken(node);
+                if (this.token.is(TokenTypes.braceOpen)) {
+                    this.nextNonWhitespaceToken();
+                    node.expression = this.parseExpression();
+                    this.skipWhitespaceAndComments();
+                    this.expect(TokenTypes.braceClose);
+                    this.nextToken();
+                }
+                else {
+                    node.expression = this.parseNonBinaryExpression();
+                }
+                lastExpression = node;
+            }
+            else if (this.token.isAny([TokenTypes.not, TokenTypes.makeRef, TokenTypes.multiply, TokenTypes.codeRef, TokenTypes.lastIndexVar]) || this.token.isAnyKeyword(["not"])) { //multiply: *{"a::b"}{CODE}
                 let node = this.create(PrefixUnaryExpression);
                 node.operator = new Operator();
                 node.operator.value = this.token.value;

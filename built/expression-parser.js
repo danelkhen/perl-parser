@@ -118,7 +118,24 @@ var ExpressionParser = (function (_super) {
                     throw new Error();
                 return lastExpression;
             }
-            else if (this.token.isAny([TokenTypes.not, TokenTypes.sigil, TokenTypes.deref, TokenTypes.multiply, TokenTypes.codeRef, TokenTypes.lastIndexVar]) || this.token.isAnyKeyword(["not"])) {
+            else if (this.token.is(TokenTypes.sigil)) {
+                var node = this.create(PrefixUnaryExpression);
+                node.operator = new Operator();
+                node.operator.value = this.token.value;
+                this.nextNonWhitespaceToken(node);
+                if (this.token.is(TokenTypes.braceOpen)) {
+                    this.nextNonWhitespaceToken();
+                    node.expression = this.parseExpression();
+                    this.skipWhitespaceAndComments();
+                    this.expect(TokenTypes.braceClose);
+                    this.nextToken();
+                }
+                else {
+                    node.expression = this.parseNonBinaryExpression();
+                }
+                lastExpression = node;
+            }
+            else if (this.token.isAny([TokenTypes.not, TokenTypes.makeRef, TokenTypes.multiply, TokenTypes.codeRef, TokenTypes.lastIndexVar]) || this.token.isAnyKeyword(["not"])) {
                 var node = this.create(PrefixUnaryExpression);
                 node.operator = new Operator();
                 node.operator.value = this.token.value;
