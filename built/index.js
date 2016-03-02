@@ -81,7 +81,7 @@ var IndexPage = (function () {
             var writer = new AstWriter();
             writer.main();
             writer.write(unit);
-            $(".generated-code").text(writer.sb.join(""));
+            $(".generated-code").val(writer.sb.join(""));
         });
         //$.create("pre").text(stringifyNodes(statements)).appendTo("body")
     };

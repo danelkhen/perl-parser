@@ -173,6 +173,8 @@ class PostfixUnaryExpression extends Expression {
 }
 
 class ReturnExpression extends Expression {
+    returnToken:Token;
+    returnTokenPost:Token[];
     expression: Expression;
 }
 

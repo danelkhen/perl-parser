@@ -145,7 +145,9 @@ class TokenTypes {
     static pod = TokenTypes._custom(TokenTypes._matchPod);
     //static pod = TokenTypes._r(/=pod.*=cut/m);
     static keyword = TokenTypes._rs([
-        "BEGIN", "package", "use", "my", "our", "sub", "return", "elsif", "else", "unless", "__END__",
+        "BEGIN", "package", 
+        "use",  //TODO: add "no" - like use
+        "my", "our", "sub", "return", "elsif", "else", "unless", "__END__",
         "and", "not",  "eq", "or",
         "foreach", "while", "for",
         "if", "unless", "while", "until", "for", "foreach", "when"    //statement modifiers

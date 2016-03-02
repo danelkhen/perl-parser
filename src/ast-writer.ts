@@ -9,23 +9,23 @@ class AstWriter {
         this.register(PackageDeclaration, t=> { let x = [t.packageToken, t.packageTokenPost, t.name, t.semicolonToken, [t.semicolonTokenPost], t.statements]; console.log(x); return x; });
         this.register(UseStatement, t=> [t.useToken, t.useTokenPost, t.module, [t.modulePostTokens], [t.list], t.semicolonToken, [t.semicolonTokenPost]]);
         this.register(VariableDeclarationStatement, t=> [t.declaration, t.semicolonToken]);
-        this.register(VariableDeclarationExpression, t=> [t.myOurToken, [t.myOurTokenPost], t.variables, [t.assignToken, [t.assignTokenPost], t.initializer]]);
-        this.register(InvocationExpression, t=> [t.target, [t.targetPost], [(t.arrow ? "->" : null)], [t.arguments]]);
-        this.register(ExpressionStatement, t=> [t.expression, [t.expressionPost], t.semicolonToken]);
+        this.register(VariableDeclarationExpression, t=> [t.myOurToken, [t.myOurTokenPost], t.variables, [t.variablesPost], [t.assignToken, [t.assignTokenPost], t.initializer]]);
+        this.register(InvocationExpression, t=> [t.target, [t.targetPost], [t.arrowToken], [t.arguments]]);
+        this.register(ExpressionStatement, t=> [t.expression, [t.expressionPost], [t.semicolonToken]]);
         this.register(ValueExpression, t=> [t.value]);
         this.register(BinaryExpression, t=> [t.left, " ", t.operator, " ", t.right]);
-        this.register(BeginStatement, t=> [t.beginToken, t.beginTokenPost, t.block, [t.semicolonToken]]);
+        this.register(BeginStatement, t=> [t.beginToken, [t.beginTokenPost], t.block, [t.semicolonToken]]);
         this.register(ListDeclaration, t=> [[t.parenOpenToken, t.parenOpenTokenPost], this.zip(t.items, t.itemsSeparators).exceptNulls(), [t.parenCloseToken]]);
         this.register(PrefixUnaryExpression, t=> [t.operator, t.expression]);
         this.register(SubroutineExpression, t=> [t.subToken, t.subTokenPost, t.name, [t.namePost], [":", t.attribute], t.block]);
         this.register(SubroutineDeclaration, t=> [t.declaration, ";", "\n"]);
         this.register(SimpleName, t=> [t.name]);
-        
+
         this.register(HashMemberAccessExpression, t=> [t.target, [t.memberSeparatorToken], "{", t.member, "}"]);
         this.register(ArrayMemberAccessExpression, t=> [t.target, [t.memberSeparatorToken], "[", t.expression, "]"]);
         this.register(MemberExpression, t=> [[t.target, t.memberSeparatorToken], t.name]);
-        
-        this.register(ReturnExpression, t=> ["return ", t.expression]);
+
+        this.register(ReturnExpression, t=> [t.returnToken, [t.returnTokenPost], t.expression]);
         this.register(ArrayRefDeclaration, t=> ["[", t.items.withItemBetweenEach(","), "]"]);
         this.register(IfStatement, t=> ["if", "(", t.expression, ")", "{", "\n", t.statements, "}", [t.else]]);
         this.register(ElsifStatement, t=> ["elsif", "(", t.expression, ")", "{", "\n", t.statements, "}", [t.else]]);
@@ -75,6 +75,8 @@ class AstWriter {
                 return;
             }
             let list = func(node);
+            if (list.some(t=> t == null))
+                console.warn("node generated array with nulls", node, list);
             let all = [[node.whitespaceBefore], list, [node.whitespaceAfter]];
             this.write(all);
         }

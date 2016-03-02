@@ -10,58 +10,10 @@ var ExpressionParser = (function (_super) {
     }
     ExpressionParser.prototype.parseExpression = function () {
         this.log("parseExpression", this.token);
-        var node = this._parseExpression();
-        this.log("parseExpression Finished", this.token, node);
-        return node;
-    };
-    ExpressionParser.prototype.toListDeclaration = function (exp) {
-        if (exp instanceof ListDeclaration)
-            return exp;
-        var node = this.create(ListDeclaration);
-        node.items = [exp];
-        return node;
-    };
-    ExpressionParser.prototype._parseExpression = function () {
-        var i = 0;
         var mbe = this.create(MultiBinaryExpression);
         mbe.expressions = [];
         mbe.operators = [];
-        var tempParser;
-        while (true) {
-            i++;
-            var exp = void 0;
-            if (tempParser != null) {
-                exp = tempParser.call(this);
-                tempParser = null;
-            }
-            else {
-                var whitespaceBeforeExp = this.skipWhitespaceAndComments();
-                exp = this.parseNonBinaryExpression();
-                exp.whitespaceBefore = whitespaceBeforeExp;
-                exp.whitespaceAfter = this.skipWhitespaceAndComments();
-            }
-            mbe.expressions.push(exp);
-            if (this.token == null)
-                break;
-            if (this.token.isAny([
-                TokenTypes.assignment, TokenTypes.concat, TokenTypes.divDiv, TokenTypes.regExpEquals, TokenTypes.regExpNotEquals,
-                TokenTypes.equals, TokenTypes.and, TokenTypes.or, TokenTypes.greaterOrEqualsThan,
-                TokenTypes.greaterThan, TokenTypes.smallerOrEqualsThan, TokenTypes.smallerThan,
-                TokenTypes.numericCompare,
-                TokenTypes.concatAssign, TokenTypes.divideAssign, TokenTypes.subtractAssign,
-                TokenTypes.addAssign, TokenTypes.multiplyAssign, TokenTypes.plus, TokenTypes.minus, TokenTypes.multiply, TokenTypes.multiplyString, TokenTypes.div, TokenTypes.range,
-            ]) || this.token.isAnyKeyword(["if", "unless", "while", "until", "for", "foreach", "when", "and", "eq", "or"])) {
-                if (this.token.isAnyKeyword(["for", "foreach"])) {
-                    tempParser = this.parseSingleOrCommaSeparatedExpressions;
-                }
-                var operator = new Operator();
-                operator.value = this.token.value;
-                mbe.operators.push(operator);
-                this.nextToken();
-            }
-            else
-                break;
-        }
+        this.continueParseExpression(mbe);
         if (mbe.operators.length == 0)
             return mbe.expressions[0];
         if (mbe.operators.length == 1) {
@@ -75,148 +27,206 @@ var ExpressionParser = (function (_super) {
         }
         return mbe;
     };
+    ExpressionParser.prototype.toListDeclaration = function (exp) {
+        if (exp instanceof ListDeclaration)
+            return exp;
+        var node = this.create(ListDeclaration);
+        node.items = [exp];
+        return node;
+    };
+    ExpressionParser.prototype.continueParseExpression = function (mbe) {
+        var tempParser;
+        var exp;
+        if (tempParser != null) {
+            exp = tempParser.call(this);
+            tempParser = null;
+        }
+        else {
+            exp = this.parseNonBinaryExpression();
+        }
+        mbe.expressions.push(exp);
+        if (this.token == null)
+            return;
+        if (this.token.isAny([
+            TokenTypes.assignment, TokenTypes.concat, TokenTypes.divDiv, TokenTypes.regExpEquals, TokenTypes.regExpNotEquals,
+            TokenTypes.equals, TokenTypes.and, TokenTypes.or, TokenTypes.greaterOrEqualsThan,
+            TokenTypes.greaterThan, TokenTypes.smallerOrEqualsThan, TokenTypes.smallerThan,
+            TokenTypes.numericCompare,
+            TokenTypes.concatAssign, TokenTypes.divideAssign, TokenTypes.subtractAssign,
+            TokenTypes.addAssign, TokenTypes.multiplyAssign, TokenTypes.plus, TokenTypes.minus, TokenTypes.multiply, TokenTypes.multiplyString, TokenTypes.div, TokenTypes.range,
+        ]) || this.token.isAnyKeyword(["if", "unless", "while", "until", "for", "foreach", "when", "and", "eq", "or"])) {
+            if (this.token.isAnyKeyword(["for", "foreach"])) {
+                tempParser = this.parseSingleOrCommaSeparatedExpressions;
+            }
+            var operator = new Operator();
+            operator.value = this.token.value;
+            mbe.operators.push(operator);
+            this.nextToken();
+        }
+        else
+            return;
+        this.continueParseExpression(mbe);
+    };
     ExpressionParser.prototype.parseNonBinaryExpression = function (lastExpression) {
+        if (this.token == null && lastExpression != null)
+            return lastExpression;
+        var pos = this.reader.tokenIndex;
         var whitespaceBeforeExp = this.skipWhitespaceAndComments();
+        if (this.token == null) {
+            return lastExpression;
+        }
         var exp = this._parseNonBinaryExpression(lastExpression);
-        if (exp == null)
-            return null;
+        if (exp == lastExpression) {
+            this.reader.goto(pos);
+            return exp;
+        }
         exp.whitespaceBefore = whitespaceBeforeExp;
         if (exp.whitespaceAfter == null)
             exp.whitespaceAfter = this.skipWhitespaceAndComments();
         return exp;
     };
     ExpressionParser.prototype._parseNonBinaryExpression = function (lastExpression) {
-        var i = 0;
-        while (true) {
-            i++;
-            this.log("parseExpression", i, this.token, lastExpression);
-            //this.skipWhitespaceAndComments();
-            if (this.token == null)
-                return lastExpression;
-            if (this.token.isAny([TokenTypes.whitespace, TokenTypes.comment])) {
-                console.warn("_parseNonBinaryExpression: whitespace must be handled before parseNonBinaryExpression");
-                if (lastExpression != null)
-                    lastExpression.whitespaceAfter = this.skipWhitespaceAndComments();
-                else
-                    this.skipWhitespaceAndComments();
-            }
-            if (this.token.is(TokenTypes.bracketOpen)) {
-                if (lastExpression == null)
-                    lastExpression = this.parseArrayRefDeclaration();
-                else
-                    lastExpression = this.parseArrayMemberAccess(lastExpression, false);
-            }
-            else if (this.token.is(TokenTypes.braceOpen)) {
-                if (lastExpression == null)
-                    return this.parseHashRefOrBlockExpression();
-                lastExpression = this.parseHashMemberAccess(lastExpression, false);
-            }
-            else if (this.token.is(TokenTypes.parenOpen)) {
-                if (lastExpression == null)
-                    lastExpression = this.parseParenthesizedList();
-                else
-                    lastExpression = this.parseInvocationExpression(lastExpression);
-            }
-            else if (this.token.isKeyword("my")) {
-                var node = this.parseVariableDeclarationExpression();
-                return node;
-            }
-            else if (this.token.isKeyword("sub")) {
-                if (lastExpression != null)
-                    throw new Error();
-                return this.parseSubroutineExpression();
-            }
-            else if (this.token.isKeyword("return")) {
-                return this.parseReturnExpression();
-            }
-            else if (this.token.isAny([TokenTypes.comma, TokenTypes.semicolon])) {
-                if (lastExpression == null)
-                    throw new Error();
-                return lastExpression;
-            }
-            else if (this.token.is(TokenTypes.sigil) || this.token.is(TokenTypes.multiply)) {
-                var node = this.create(PrefixUnaryExpression);
-                node.operator = new Operator();
-                node.operator.value = this.token.value;
-                this.nextNonWhitespaceToken(node);
-                if (this.token.is(TokenTypes.braceOpen)) {
-                    this.nextNonWhitespaceToken();
-                    node.expression = this.parseExpression();
-                    this.skipWhitespaceAndComments();
-                    this.expect(TokenTypes.braceClose);
-                    this.nextToken();
-                }
-                else {
-                    node.expression = this.parseNonBinaryExpression();
-                }
-                lastExpression = node;
-            }
-            else if (this.token.isAny([TokenTypes.not, TokenTypes.makeRef, TokenTypes.multiply, TokenTypes.codeRef, TokenTypes.lastIndexVar]) || this.token.isAnyKeyword(["not"])) {
-                var node = this.create(PrefixUnaryExpression);
-                node.operator = new Operator();
-                node.operator.value = this.token.value;
-                this.nextNonWhitespaceToken(node);
-                node.expression = this.parseExpression();
-                lastExpression = node;
-            }
-            else if (this.token.isAny([TokenTypes.inc, TokenTypes.dec])) {
-                var node = this.create(PostfixUnaryExpression);
-                node.expression = lastExpression;
-                node.operator = new Operator();
-                node.operator.value = this.token.value;
-                this.nextNonWhitespaceToken(node);
-                lastExpression = node;
-            }
-            else if (this.token.isIdentifier()) {
-                var node = this.parseMemberExpression(lastExpression, false);
-                //node.prev = lastExpression;
-                lastExpression = node;
-                if (this.token.is(TokenTypes.whitespace)) {
-                    var reader2 = this.reader.clone();
-                    reader2.nextNonWhitespaceToken();
-                    if (!reader2.token.isAny([TokenTypes.parenOpen, TokenTypes.arrow, TokenTypes.comma, TokenTypes.fatComma, TokenTypes.keyword, TokenTypes.assignment])) {
-                        lastExpression = this.parseInvocationExpression(node);
-                    }
-                }
-            }
-            else if (this.token.isAny([TokenTypes.sigiledIdentifier, TokenTypes.evalErrorVar])) {
-                var node = this.parseMemberExpression(null, false);
-                node.target = lastExpression;
-                lastExpression = node;
-            }
-            else if (this.token.is(TokenTypes.question)) {
-                var exp = this.create(TrinaryExpression);
-                exp.condition = lastExpression;
-                this.nextNonWhitespaceToken(exp);
-                exp.trueExpression = this.parseExpression();
-                this.skipWhitespaceAndComments();
-                this.expect(TokenTypes.colon);
-                this.nextNonWhitespaceToken();
-                exp.falseExpression = this.parseExpression();
-                lastExpression = exp;
-            }
-            else if (this.token.isAny([TokenTypes.integer, TokenTypes.interpolatedString, TokenTypes.qq, TokenTypes.string, TokenTypes.qw, TokenTypes.qx])) {
-                if (lastExpression != null)
-                    return lastExpression; //shouldn't continue parsing
-                var node = this.create(ValueExpression);
-                node.value = this.token.value; //TODO:
-                lastExpression = node;
-                this.nextToken();
-            }
-            else if (this.token.isAny([TokenTypes.regex, TokenTypes.regexSubstitute, TokenTypes.regexMatch, TokenTypes.qr, TokenTypes.tr])) {
-                var node = this.create(RegexExpression);
-                node.value = this.token.value; //TODO:
-                lastExpression = node;
-                this.nextToken();
-            }
-            else if (this.token.is(TokenTypes.arrow) || this.token.is(TokenTypes.packageSeparator)) {
-                lastExpression = this.parseAnyMemberAccess(lastExpression);
-            }
-            else if (lastExpression != null)
-                return lastExpression;
+        this.log("parseExpression", this.token, lastExpression);
+        //this.skipWhitespaceAndComments();
+        //if (this.token == null)
+        //    return lastExpression;
+        //if (this.token.isAny([TokenTypes.whitespace, TokenTypes.comment])) {
+        //    console.warn("_parseNonBinaryExpression: whitespace must be handled before parseNonBinaryExpression");
+        //    if (lastExpression != null)
+        //        lastExpression.whitespaceAfter = this.skipWhitespaceAndComments();
+        //    else
+        //        this.skipWhitespaceAndComments();
+        //}
+        if (this.token.is(TokenTypes.bracketOpen)) {
+            if (lastExpression == null)
+                lastExpression = this.parseArrayRefDeclaration();
             else
-                return null;
+                lastExpression = this.parseArrayMemberAccess(lastExpression, false);
+            return this.parseNonBinaryExpression(lastExpression);
         }
+        else if (this.token.is(TokenTypes.braceOpen)) {
+            if (lastExpression == null)
+                return this.parseHashRefOrBlockExpression();
+            lastExpression = this.parseHashMemberAccess(lastExpression, false);
+            return this.parseNonBinaryExpression(lastExpression);
+        }
+        else if (this.token.is(TokenTypes.parenOpen)) {
+            if (lastExpression == null)
+                lastExpression = this.parseParenthesizedList();
+            else
+                lastExpression = this.parseInvocationExpression(lastExpression);
+            return this.parseNonBinaryExpression(lastExpression);
+        }
+        else if (this.token.isKeyword("my")) {
+            var node = this.parseVariableDeclarationExpression();
+            return node;
+        }
+        else if (this.token.isKeyword("sub")) {
+            if (lastExpression != null)
+                throw new Error();
+            return this.parseSubroutineExpression();
+        }
+        else if (this.token.isKeyword("return")) {
+            return this.parseReturnExpression();
+        }
+        else if (this.token.isAny([TokenTypes.comma, TokenTypes.semicolon])) {
+            if (lastExpression == null)
+                throw new Error();
+            return lastExpression;
+        }
+        else if (this.token.is(TokenTypes.sigil) || this.token.is(TokenTypes.multiply)) {
+            var node = this.create(PrefixUnaryExpression);
+            node.operator = new Operator();
+            node.operator.value = this.token.value;
+            this.nextNonWhitespaceToken(node);
+            if (this.token.is(TokenTypes.braceOpen)) {
+                this.nextNonWhitespaceToken();
+                node.expression = this.parseExpression();
+                this.skipWhitespaceAndComments();
+                this.expect(TokenTypes.braceClose);
+                this.nextToken();
+            }
+            else {
+                node.expression = this.parseNonBinaryExpression();
+            }
+            lastExpression = node;
+            return this.parseNonBinaryExpression(lastExpression);
+        }
+        else if (this.token.isAny([TokenTypes.not, TokenTypes.makeRef, TokenTypes.multiply, TokenTypes.codeRef, TokenTypes.lastIndexVar]) || this.token.isAnyKeyword(["not"])) {
+            var node = this.create(PrefixUnaryExpression);
+            node.operator = new Operator();
+            node.operator.value = this.token.value;
+            this.nextNonWhitespaceToken(node);
+            node.expression = this.parseExpression();
+            lastExpression = node;
+            return this.parseNonBinaryExpression(lastExpression);
+        }
+        else if (this.token.isAny([TokenTypes.inc, TokenTypes.dec])) {
+            var node = this.create(PostfixUnaryExpression);
+            node.expression = lastExpression;
+            node.operator = new Operator();
+            node.operator.value = this.token.value;
+            this.nextNonWhitespaceToken(node);
+            lastExpression = node;
+            return this.parseNonBinaryExpression(lastExpression);
+        }
+        else if (this.token.isIdentifier()) {
+            if (lastExpression != null)
+                return lastExpression;
+            var node = this.parseMemberExpression(lastExpression, false);
+            //node.prev = lastExpression;
+            lastExpression = node;
+            if (this.token.is(TokenTypes.whitespace)) {
+                var reader2 = this.reader.clone();
+                reader2.nextNonWhitespaceToken();
+                if (!reader2.token.isAny([TokenTypes.parenOpen, TokenTypes.arrow, TokenTypes.comma, TokenTypes.fatComma, TokenTypes.keyword, TokenTypes.assignment])) {
+                    lastExpression = this.parseInvocationExpression(node);
+                }
+            }
+            return this.parseNonBinaryExpression(lastExpression);
+        }
+        else if (this.token.isAny([TokenTypes.sigiledIdentifier, TokenTypes.evalErrorVar])) {
+            var node = this.parseMemberExpression(null, false);
+            node.target = lastExpression;
+            lastExpression = node;
+            return this.parseNonBinaryExpression(lastExpression);
+        }
+        else if (this.token.is(TokenTypes.question)) {
+            var exp = this.create(TrinaryExpression);
+            exp.condition = lastExpression;
+            this.nextNonWhitespaceToken(exp);
+            exp.trueExpression = this.parseExpression();
+            this.skipWhitespaceAndComments();
+            this.expect(TokenTypes.colon);
+            this.nextNonWhitespaceToken();
+            exp.falseExpression = this.parseExpression();
+            lastExpression = exp;
+            return this.parseNonBinaryExpression(lastExpression);
+        }
+        else if (this.token.isAny([TokenTypes.integer, TokenTypes.interpolatedString, TokenTypes.qq, TokenTypes.string, TokenTypes.qw, TokenTypes.qx])) {
+            if (lastExpression != null)
+                return lastExpression; //shouldn't continue parsing
+            var node = this.create(ValueExpression);
+            node.value = this.token.value; //TODO:
+            lastExpression = node;
+            this.nextToken();
+            return this.parseNonBinaryExpression(lastExpression);
+        }
+        else if (this.token.isAny([TokenTypes.regex, TokenTypes.regexSubstitute, TokenTypes.regexMatch, TokenTypes.qr, TokenTypes.tr])) {
+            var node = this.create(RegexExpression);
+            node.value = this.token.value; //TODO:
+            lastExpression = node;
+            this.nextToken();
+            return this.parseNonBinaryExpression(lastExpression);
+        }
+        else if (this.token.is(TokenTypes.arrow) || this.token.is(TokenTypes.packageSeparator)) {
+            lastExpression = this.parseAnyMemberAccess(lastExpression);
+            return this.parseNonBinaryExpression(lastExpression);
+        }
+        else if (lastExpression != null)
+            return lastExpression;
+        else
+            return null;
     };
     ExpressionParser.prototype.parseSubroutineExpression = function () {
         var node = this.create(SubroutineExpression);
@@ -240,9 +250,9 @@ var ExpressionParser = (function (_super) {
         return node;
     };
     ExpressionParser.prototype.parseReturnExpression = function () {
-        this.expectKeyword("return");
         var node = this.create(ReturnExpression);
-        this.nextNonWhitespaceToken(node);
+        node.returnToken = this.expectKeyword("return");
+        node.returnTokenPost = this.nextNonWhitespaceToken(node);
         if (!this.token.is(TokenTypes.semicolon)) {
             node.expression = this.parseSingleOrCommaSeparatedExpressions();
         }
@@ -354,7 +364,7 @@ var ExpressionParser = (function (_super) {
         node.tokens = node2.tokens;
         node.items = node2.items;
         node.itemsSeparators = node2.itemsSeparators;
-        node.parenOpenToken = node2.parenCloseToken;
+        node.parenOpenToken = node2.parenOpenToken;
         node.parenOpenTokenPost = node2.parenOpenTokenPost;
         node.parenCloseToken = node2.parenCloseToken;
         return node;

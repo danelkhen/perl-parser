@@ -37,6 +37,9 @@ body{
 
 .generated-code{
     overflow:auto;
+    width:100%;
+    height:100%;
+    box-sizing:border-box;
 }
 .tree{
     box-sizing:border-box;

@@ -3,60 +3,10 @@
 
     parseExpression(): Expression {
         this.log("parseExpression", this.token);
-        let node = this._parseExpression();
-        this.log("parseExpression Finished", this.token, node);
-        return node;
-    }
-
-    toListDeclaration(exp: Expression): ListDeclaration {
-        if (exp instanceof ListDeclaration)
-            return exp;
-        let node = this.create(ListDeclaration);
-        node.items = [exp];
-        return node;
-    }
-    _parseExpression(): Expression {
-        let i = 0;
         let mbe = this.create(MultiBinaryExpression);
         mbe.expressions = [];
         mbe.operators = [];
-        let tempParser;
-        while (true) {
-            i++;
-            let exp: Expression;
-            if (tempParser != null) {
-                exp = tempParser.call(this);
-                tempParser = null;
-            }
-            else {
-                let whitespaceBeforeExp = this.skipWhitespaceAndComments();
-                exp = this.parseNonBinaryExpression();
-                exp.whitespaceBefore = whitespaceBeforeExp;
-                exp.whitespaceAfter = this.skipWhitespaceAndComments();
-            }
-            mbe.expressions.push(exp);
-            if (this.token == null)
-                break;
-            if (this.token.isAny([
-                TokenTypes.assignment, TokenTypes.concat, TokenTypes.divDiv, TokenTypes.regExpEquals, TokenTypes.regExpNotEquals,
-                TokenTypes.equals, TokenTypes.and, TokenTypes.or, TokenTypes.greaterOrEqualsThan,
-                TokenTypes.greaterThan, TokenTypes.smallerOrEqualsThan, TokenTypes.smallerThan,
-                TokenTypes.numericCompare,
-                TokenTypes.concatAssign, TokenTypes.divideAssign, TokenTypes.subtractAssign,
-                TokenTypes.addAssign, TokenTypes.multiplyAssign, TokenTypes.plus, TokenTypes.minus, TokenTypes.multiply, TokenTypes.multiplyString, TokenTypes.div, TokenTypes.range,
-            ]) || this.token.isAnyKeyword(["if", "unless", "while", "until", "for", "foreach", "when", "and", "eq", "or"])) { //statement modifiers
-                if (this.token.isAnyKeyword(["for", "foreach"])) {           //for,foreach postfix have list after them without parantheses
-                    tempParser = this.parseSingleOrCommaSeparatedExpressions;
-                }
-                let operator = new Operator();
-                operator.value = this.token.value;
-                mbe.operators.push(operator);
-                this.nextToken();
-                //this.nextNonWhitespaceToken(mbe);
-            }
-            else
-                break;
-        }
+        this.continueParseExpression(mbe);
         if (mbe.operators.length == 0)
             return mbe.expressions[0];
         if (mbe.operators.length == 1) {
@@ -71,155 +21,210 @@
         return mbe;
     }
 
+    toListDeclaration(exp: Expression): ListDeclaration {
+        if (exp instanceof ListDeclaration)
+            return exp;
+        let node = this.create(ListDeclaration);
+        node.items = [exp];
+        return node;
+    }
+    continueParseExpression(mbe: MultiBinaryExpression): void {
+        let tempParser;
+        let exp: Expression;
+        if (tempParser != null) {
+            exp = tempParser.call(this);
+            tempParser = null;
+        }
+        else {
+            exp = this.parseNonBinaryExpression();
+        }
+        mbe.expressions.push(exp);
+        if (this.token == null)
+            return;
+        if (this.token.isAny([
+            TokenTypes.assignment, TokenTypes.concat, TokenTypes.divDiv, TokenTypes.regExpEquals, TokenTypes.regExpNotEquals,
+            TokenTypes.equals, TokenTypes.and, TokenTypes.or, TokenTypes.greaterOrEqualsThan,
+            TokenTypes.greaterThan, TokenTypes.smallerOrEqualsThan, TokenTypes.smallerThan,
+            TokenTypes.numericCompare,
+            TokenTypes.concatAssign, TokenTypes.divideAssign, TokenTypes.subtractAssign,
+            TokenTypes.addAssign, TokenTypes.multiplyAssign, TokenTypes.plus, TokenTypes.minus, TokenTypes.multiply, TokenTypes.multiplyString, TokenTypes.div, TokenTypes.range,
+        ]) || this.token.isAnyKeyword(["if", "unless", "while", "until", "for", "foreach", "when", "and", "eq", "or"])) { //statement modifiers
+            if (this.token.isAnyKeyword(["for", "foreach"])) {           //for,foreach postfix have list after them without parantheses
+                tempParser = this.parseSingleOrCommaSeparatedExpressions;
+            }
+            let operator = new Operator();
+            operator.value = this.token.value;
+            mbe.operators.push(operator);
+            this.nextToken();
+            //this.nextNonWhitespaceToken(mbe);
+        }
+        else
+            return;
+        this.continueParseExpression(mbe);
+    }
+
 
     parseNonBinaryExpression(lastExpression?: Expression): Expression {
+        if (this.token == null && lastExpression != null)
+            return lastExpression;
+        let pos = this.reader.tokenIndex;
         let whitespaceBeforeExp = this.skipWhitespaceAndComments();
+        if (this.token == null) {
+            return lastExpression;
+        }
         let exp = this._parseNonBinaryExpression(lastExpression);
-        if (exp == null)
-            return null;
+        if (exp == lastExpression) {
+            this.reader.goto(pos);
+            return exp;
+        }
         exp.whitespaceBefore = whitespaceBeforeExp;
         if (exp.whitespaceAfter == null)
             exp.whitespaceAfter = this.skipWhitespaceAndComments();
         return exp;
     }
     _parseNonBinaryExpression(lastExpression?: Expression): Expression {
-        let i = 0;
-        while (true) {
-            i++;
-            this.log("parseExpression", i, this.token, lastExpression);
-            //this.skipWhitespaceAndComments();
-            if (this.token == null)
-                return lastExpression;
-            if (this.token.isAny([TokenTypes.whitespace, TokenTypes.comment])) {
-                console.warn("_parseNonBinaryExpression: whitespace must be handled before parseNonBinaryExpression");
-                if (lastExpression != null)
-                    lastExpression.whitespaceAfter = this.skipWhitespaceAndComments();
-                else
-                    this.skipWhitespaceAndComments();
-            }
-            if (this.token.is(TokenTypes.bracketOpen)) {
-                if (lastExpression == null)
-                    lastExpression = this.parseArrayRefDeclaration();
-                else
-                    lastExpression = this.parseArrayMemberAccess(lastExpression, false);
-            }
-            else if (this.token.is(TokenTypes.braceOpen)) {
-                if (lastExpression == null)
-                    return this.parseHashRefOrBlockExpression();
-                lastExpression = this.parseHashMemberAccess(lastExpression, false);
-            }
-            else if (this.token.is(TokenTypes.parenOpen)) {
-                if (lastExpression == null)
-                    lastExpression = this.parseParenthesizedList();
-                else
-                    lastExpression = this.parseInvocationExpression(lastExpression);
-            }
-            else if (this.token.isKeyword("my")) {
-                let node = this.parseVariableDeclarationExpression();
-                return node;
-            }
-            else if (this.token.isKeyword("sub")) {
-                if (lastExpression != null)
-                    throw new Error();
-                return this.parseSubroutineExpression();
-            }
-            else if (this.token.isKeyword("return")) {
-                return this.parseReturnExpression();
-            }
-            else if (this.token.isAny([TokenTypes.comma, TokenTypes.semicolon])) {
-                if (lastExpression == null)
-                    throw new Error();
-                return lastExpression;
-            }
-            else if (this.token.is(TokenTypes.sigil) || this.token.is(TokenTypes.multiply)) { //multiply: *{"a::b"}{CODE}
-                let node = this.create(PrefixUnaryExpression);
-                node.operator = new Operator();
-                node.operator.value = this.token.value;
-                this.nextNonWhitespaceToken(node);
-                if (this.token.is(TokenTypes.braceOpen)) {
-                    this.nextNonWhitespaceToken();
-                    node.expression = this.parseExpression();
-                    this.skipWhitespaceAndComments();
-                    this.expect(TokenTypes.braceClose);
-                    this.nextToken();
-                }
-                else {
-                    node.expression = this.parseNonBinaryExpression();
-                }
-                lastExpression = node;
-            }
-            else if (this.token.isAny([TokenTypes.not, TokenTypes.makeRef, TokenTypes.multiply, TokenTypes.codeRef, TokenTypes.lastIndexVar]) || this.token.isAnyKeyword(["not"])) { //multiply: *{"a::b"}{CODE}
-                let node = this.create(PrefixUnaryExpression);
-                node.operator = new Operator();
-                node.operator.value = this.token.value;
-                this.nextNonWhitespaceToken(node);
-                node.expression = this.parseExpression();
-                lastExpression = node;
-            }
-            else if (this.token.isAny([TokenTypes.inc, TokenTypes.dec])) {
-                let node = this.create(PostfixUnaryExpression);
-                node.expression = lastExpression;
-                node.operator = new Operator();
-                node.operator.value = this.token.value;
-                this.nextNonWhitespaceToken(node);
-                lastExpression = node;
-            }
-            else if (this.token.isIdentifier()) { //defined exists ref etc... // || this.token.isKeyword()
-                let node = this.parseMemberExpression(lastExpression, false);
-                //node.prev = lastExpression;
-                lastExpression = node;
-                if (this.token.is(TokenTypes.whitespace)) {   //detect invocation without parantheses
-                    let reader2 = this.reader.clone();
-                    reader2.nextNonWhitespaceToken();
-                    if (!reader2.token.isAny([TokenTypes.parenOpen, TokenTypes.arrow, TokenTypes.comma, TokenTypes.fatComma, TokenTypes.keyword, TokenTypes.assignment])) {
-                        lastExpression = this.parseInvocationExpression(node);
-                    }
-                }
-            }
-            else if (this.token.isAny([TokenTypes.sigiledIdentifier, TokenTypes.evalErrorVar])) {
-                let node = this.parseMemberExpression(null, false);
-                node.target = lastExpression;
-                lastExpression = node;
-            }
-            else if (this.token.is(TokenTypes.question)) {
-                let exp = this.create(TrinaryExpression);
-                exp.condition = lastExpression;
-                this.nextNonWhitespaceToken(exp);
-                exp.trueExpression = this.parseExpression();
-                this.skipWhitespaceAndComments();
-                this.expect(TokenTypes.colon);
-                this.nextNonWhitespaceToken();
-                exp.falseExpression = this.parseExpression();
-                lastExpression = exp;
-            }
-            else if (this.token.isAny([TokenTypes.integer, TokenTypes.interpolatedString, TokenTypes.qq, TokenTypes.string, TokenTypes.qw, TokenTypes.qx])) {
-                if (lastExpression != null)
-                    return lastExpression; //shouldn't continue parsing
-                let node = this.create(ValueExpression);
-                node.value = this.token.value;//TODO:
-                lastExpression = node;
-                this.nextToken();
-            }
-            else if (this.token.isAny([TokenTypes.regex, TokenTypes.regexSubstitute, TokenTypes.regexMatch, TokenTypes.qr, TokenTypes.tr])) {
-                let node = this.create(RegexExpression);
-                node.value = this.token.value;//TODO:
-                lastExpression = node;
-                this.nextToken();
-            }
-            else if (this.token.is(TokenTypes.arrow) || this.token.is(TokenTypes.packageSeparator)) {
-                lastExpression = this.parseAnyMemberAccess(lastExpression);
-                //let node = this.parseNonBinaryExpression(lastExpression);
-                //let node2: HasArrow = <any>node;
-                //node2.arrow = arrow;
-                //if (node2.arrow)
-                //    console.log("arrow=true", node2);
-                //return node;
-            }
-            else if (lastExpression != null)
-                return lastExpression;
+        this.log("parseExpression", this.token, lastExpression);
+        //this.skipWhitespaceAndComments();
+        //if (this.token == null)
+        //    return lastExpression;
+        //if (this.token.isAny([TokenTypes.whitespace, TokenTypes.comment])) {
+        //    console.warn("_parseNonBinaryExpression: whitespace must be handled before parseNonBinaryExpression");
+        //    if (lastExpression != null)
+        //        lastExpression.whitespaceAfter = this.skipWhitespaceAndComments();
+        //    else
+        //        this.skipWhitespaceAndComments();
+        //}
+
+        if (this.token.is(TokenTypes.bracketOpen)) {
+            if (lastExpression == null)
+                lastExpression = this.parseArrayRefDeclaration();
             else
-                return null;
+                lastExpression = this.parseArrayMemberAccess(lastExpression, false);
+            return this.parseNonBinaryExpression(lastExpression);
         }
+        else if (this.token.is(TokenTypes.braceOpen)) {
+            if (lastExpression == null)
+                return this.parseHashRefOrBlockExpression();
+            lastExpression = this.parseHashMemberAccess(lastExpression, false);
+            return this.parseNonBinaryExpression(lastExpression);
+        }
+        else if (this.token.is(TokenTypes.parenOpen)) {
+            if (lastExpression == null)
+                lastExpression = this.parseParenthesizedList();
+            else
+                lastExpression = this.parseInvocationExpression(lastExpression);
+            return this.parseNonBinaryExpression(lastExpression);
+        }
+        else if (this.token.isKeyword("my")) {
+            let node = this.parseVariableDeclarationExpression();
+            return node;
+        }
+        else if (this.token.isKeyword("sub")) {
+            if (lastExpression != null)
+                throw new Error();
+            return this.parseSubroutineExpression();
+        }
+        else if (this.token.isKeyword("return")) {
+            return this.parseReturnExpression();
+        }
+        else if (this.token.isAny([TokenTypes.comma, TokenTypes.semicolon])) {
+            if (lastExpression == null)
+                throw new Error();
+            return lastExpression;
+        }
+        else if (this.token.is(TokenTypes.sigil) || this.token.is(TokenTypes.multiply)) { //multiply: *{"a::b"}{CODE}
+            let node = this.create(PrefixUnaryExpression);
+            node.operator = new Operator();
+            node.operator.value = this.token.value;
+            this.nextNonWhitespaceToken(node);
+            if (this.token.is(TokenTypes.braceOpen)) {
+                this.nextNonWhitespaceToken();
+                node.expression = this.parseExpression();
+                this.skipWhitespaceAndComments();
+                this.expect(TokenTypes.braceClose);
+                this.nextToken();
+            }
+            else {
+                node.expression = this.parseNonBinaryExpression();
+            }
+            lastExpression = node;
+            return this.parseNonBinaryExpression(lastExpression);
+        }
+        else if (this.token.isAny([TokenTypes.not, TokenTypes.makeRef, TokenTypes.multiply, TokenTypes.codeRef, TokenTypes.lastIndexVar]) || this.token.isAnyKeyword(["not"])) { //multiply: *{"a::b"}{CODE}
+            let node = this.create(PrefixUnaryExpression);
+            node.operator = new Operator();
+            node.operator.value = this.token.value;
+            this.nextNonWhitespaceToken(node);
+            node.expression = this.parseExpression();
+            lastExpression = node;
+            return this.parseNonBinaryExpression(lastExpression);
+        }
+        else if (this.token.isAny([TokenTypes.inc, TokenTypes.dec])) {
+            let node = this.create(PostfixUnaryExpression);
+            node.expression = lastExpression;
+            node.operator = new Operator();
+            node.operator.value = this.token.value;
+            this.nextNonWhitespaceToken(node);
+            lastExpression = node;
+            return this.parseNonBinaryExpression(lastExpression);
+        }
+        else if (this.token.isIdentifier()) { //defined exists ref etc... // || this.token.isKeyword()
+            if (lastExpression != null)
+                return lastExpression;
+            let node = this.parseMemberExpression(lastExpression, false);
+            //node.prev = lastExpression;
+            lastExpression = node;
+            if (this.token.is(TokenTypes.whitespace)) {   //detect invocation without parantheses
+                let reader2 = this.reader.clone();
+                reader2.nextNonWhitespaceToken();
+                if (!reader2.token.isAny([TokenTypes.parenOpen, TokenTypes.arrow, TokenTypes.comma, TokenTypes.fatComma, TokenTypes.keyword, TokenTypes.assignment])) {
+                    lastExpression = this.parseInvocationExpression(node);
+                }
+            }
+            return this.parseNonBinaryExpression(lastExpression);
+        }
+        else if (this.token.isAny([TokenTypes.sigiledIdentifier, TokenTypes.evalErrorVar])) {
+            let node = this.parseMemberExpression(null, false);
+            node.target = lastExpression;
+            lastExpression = node;
+            return this.parseNonBinaryExpression(lastExpression);
+        }
+        else if (this.token.is(TokenTypes.question)) {
+            let exp = this.create(TrinaryExpression);
+            exp.condition = lastExpression;
+            this.nextNonWhitespaceToken(exp);
+            exp.trueExpression = this.parseExpression();
+            this.skipWhitespaceAndComments();
+            this.expect(TokenTypes.colon);
+            this.nextNonWhitespaceToken();
+            exp.falseExpression = this.parseExpression();
+            lastExpression = exp;
+            return this.parseNonBinaryExpression(lastExpression);
+        }
+        else if (this.token.isAny([TokenTypes.integer, TokenTypes.interpolatedString, TokenTypes.qq, TokenTypes.string, TokenTypes.qw, TokenTypes.qx])) {
+            if (lastExpression != null)
+                return lastExpression; //shouldn't continue parsing
+            let node = this.create(ValueExpression);
+            node.value = this.token.value;//TODO:
+            lastExpression = node;
+            this.nextToken();
+            return this.parseNonBinaryExpression(lastExpression);
+        }
+        else if (this.token.isAny([TokenTypes.regex, TokenTypes.regexSubstitute, TokenTypes.regexMatch, TokenTypes.qr, TokenTypes.tr])) {
+            let node = this.create(RegexExpression);
+            node.value = this.token.value;//TODO:
+            lastExpression = node;
+            this.nextToken();
+            return this.parseNonBinaryExpression(lastExpression);
+        }
+        else if (this.token.is(TokenTypes.arrow) || this.token.is(TokenTypes.packageSeparator)) {
+            lastExpression = this.parseAnyMemberAccess(lastExpression);
+            return this.parseNonBinaryExpression(lastExpression);
+        }
+        else if (lastExpression != null)
+            return lastExpression;
+        else
+            return null;
     }
 
     parseSubroutineExpression(): SubroutineExpression {
@@ -244,9 +249,9 @@
         return node;
     }
     parseReturnExpression(): ReturnExpression {
-        this.expectKeyword("return");
         let node = this.create(ReturnExpression);
-        this.nextNonWhitespaceToken(node);
+        node.returnToken = this.expectKeyword("return");
+        node.returnTokenPost = this.nextNonWhitespaceToken(node);
         if (!this.token.is(TokenTypes.semicolon)) {
             node.expression = this.parseSingleOrCommaSeparatedExpressions();
         }
@@ -368,7 +373,7 @@
         node.tokens = node2.tokens;
         node.items = node2.items;
         node.itemsSeparators = node2.itemsSeparators;
-        node.parenOpenToken = node2.parenCloseToken;
+        node.parenOpenToken = node2.parenOpenToken;
         node.parenOpenTokenPost = node2.parenOpenTokenPost;
         node.parenCloseToken = node2.parenCloseToken;
         return node;
