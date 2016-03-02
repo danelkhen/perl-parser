@@ -176,6 +176,7 @@ var TokenTypes = (function () {
     TokenTypes.qq = TokenTypes._rs([/qq\|[^|]*\|/, /qq\{[^\}]*\}/]);
     TokenTypes.qw = TokenTypes._rs([/qw\/[^\/]*\//m, /qw<[^>]*>/m, /qw\([^\)]*\)/m]);
     TokenTypes.qr = TokenTypes._rs([/qr\/.*\//, /qr\(.*\)/]); //Regexp-like quote
+    TokenTypes.qx = TokenTypes._rs([/qx\/.*\//, /`.*`/]);
     TokenTypes.tr = TokenTypes._r(/tr\/.*\/.*\//); //token replace
     TokenTypes.pod = TokenTypes._custom(TokenTypes._matchPod);
     //static pod = TokenTypes._r(/=pod.*=cut/m);
@@ -190,7 +191,7 @@ var TokenTypes = (function () {
     TokenTypes.whitespace = TokenTypes._r(/[ \t\r\n]+/);
     TokenTypes.packageSeparator = TokenTypes._r(/\:\:/);
     TokenTypes.semicolon = TokenTypes._r(/;/);
-    TokenTypes.sigiledIdentifier = TokenTypes._r(new RegExp("[\\$@%]" + TokenTypes.identifierRegex.source));
+    TokenTypes.sigiledIdentifier = TokenTypes._r(new RegExp("[\\$@%&*]" + TokenTypes.identifierRegex.source));
     TokenTypes.evalErrorVar = TokenTypes._r(/\$@/);
     TokenTypes.comment = TokenTypes._r(/\#.*/);
     TokenTypes.equals = TokenTypes._r(/==/);
@@ -245,7 +246,7 @@ var TokenTypes = (function () {
     TokenTypes.identifier = TokenTypes._r(TokenTypes.identifierRegex);
     TokenTypes.makeRef = TokenTypes._r(/\\/);
     TokenTypes.not = TokenTypes._r(/\!/);
-    TokenTypes.sigil = TokenTypes._r(/[\$@%]/);
+    TokenTypes.sigil = TokenTypes._r(/[\$@%&]/);
     return TokenTypes;
 }());
 var TextRange2 = (function () {

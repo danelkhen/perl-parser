@@ -300,9 +300,9 @@ var Parser = (function (_super) {
         node.useTokenPost = this.expectAndSkipWhitespace();
         //this.nextToken();
         node.module = this.createExpressionParser().parseNonBinaryExpression();
+        node.modulePostTokens = this.skipWhitespaceAndComments();
         if (!this.token.is(TokenTypes.semicolon)) {
-            node.modulePostTokens = this.skipWhitespaceAndComments();
-            node.list = this.parseExpression();
+            node.list = this.createExpressionParser().parseOptionallyParanthasizedList(); //.parseExpression();
         }
         node.semicolonToken = this.expect(TokenTypes.semicolon);
         node.semicolonTokenPost = this.nextNonWhitespaceToken();

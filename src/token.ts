@@ -140,6 +140,7 @@ class TokenTypes {
     static qq = TokenTypes._rs([/qq\|[^|]*\|/, /qq\{[^\}]*\}/]);
     static qw = TokenTypes._rs([/qw\/[^\/]*\//m, /qw<[^>]*>/m, /qw\([^\)]*\)/m]);
     static qr = TokenTypes._rs([/qr\/.*\//, /qr\(.*\)/]);//Regexp-like quote
+    static qx = TokenTypes._rs([/qx\/.*\//, /`.*`/]);
     static tr = TokenTypes._r(/tr\/.*\/.*\//); //token replace
     static pod = TokenTypes._custom(TokenTypes._matchPod);
     //static pod = TokenTypes._r(/=pod.*=cut/m);
@@ -154,7 +155,7 @@ class TokenTypes {
     static whitespace = TokenTypes._r(/[ \t\r\n]+/);
     static packageSeparator = TokenTypes._r(/\:\:/);
     static semicolon = TokenTypes._r(/;/);
-    static sigiledIdentifier = TokenTypes._r(new RegExp("[\\$@%]" + TokenTypes.identifierRegex.source));
+    static sigiledIdentifier = TokenTypes._r(new RegExp("[\\$@%&*]" + TokenTypes.identifierRegex.source));
     static evalErrorVar = TokenTypes._r(/\$@/);
     static comment = TokenTypes._r(/\#.*/);
     static equals = TokenTypes._r(/==/);
@@ -216,7 +217,7 @@ class TokenTypes {
 
     static makeRef = TokenTypes._r(/\\/);
     static not = TokenTypes._r(/\!/);
-    static sigil = TokenTypes._r(/[\$@%]/);
+    static sigil = TokenTypes._r(/[\$@%&]/);
 
     static _matchPod(tokenizer: Tokenizer): TextRange2 {
         let cursor = tokenizer.cursor;

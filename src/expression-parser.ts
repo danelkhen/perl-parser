@@ -192,7 +192,7 @@
                 exp.falseExpression = this.parseExpression();
                 lastExpression = exp;
             }
-            else if (this.token.isAny([TokenTypes.integer, TokenTypes.interpolatedString, TokenTypes.qq, TokenTypes.string, TokenTypes.qw])) {
+            else if (this.token.isAny([TokenTypes.integer, TokenTypes.interpolatedString, TokenTypes.qq, TokenTypes.string, TokenTypes.qw, TokenTypes.qx])) {
                 if (lastExpression != null)
                     return lastExpression; //shouldn't continue parsing
                 let node = this.create(ValueExpression);
