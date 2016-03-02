@@ -38,6 +38,13 @@ var ListDeclaration = (function (_super) {
     }
     return ListDeclaration;
 }(Expression));
+var HashRefCreationExpression = (function (_super) {
+    __extends(HashRefCreationExpression, _super);
+    function HashRefCreationExpression() {
+        _super.apply(this, arguments);
+    }
+    return HashRefCreationExpression;
+}(Expression));
 var ArrayRefDeclaration = (function (_super) {
     __extends(ArrayRefDeclaration, _super);
     function ArrayRefDeclaration() {
@@ -143,6 +150,8 @@ var BarewordExpression = (function (_super) {
     }
     return BarewordExpression;
 }(Expression));
+//class DerefMemberExpression extends Expression {
+//}
 var QwExpression = (function (_super) {
     __extends(QwExpression, _super);
     function QwExpression() {
@@ -244,13 +253,6 @@ var Operator = (function () {
     Operator.prototype.toString = function () { return this.value + " {Operator}"; };
     return Operator;
 }());
-var HashRefCreationExpression = (function (_super) {
-    __extends(HashRefCreationExpression, _super);
-    function HashRefCreationExpression() {
-        _super.apply(this, arguments);
-    }
-    return HashRefCreationExpression;
-}(Expression));
 /*  LABEL foreach (EXPR; EXPR; EXPR) BLOCK
     LABEL foreach VAR (LIST) BLOCK
     LABEL foreach VAR (LIST) BLOCK continue BLOCK
@@ -276,12 +278,12 @@ var WhileStatement = (function (_super) {
     }
     return WhileStatement;
 }(Statement));
-var BeginBlock = (function (_super) {
-    __extends(BeginBlock, _super);
-    function BeginBlock() {
+var BeginStatement = (function (_super) {
+    __extends(BeginStatement, _super);
+    function BeginStatement() {
         _super.apply(this, arguments);
     }
-    return BeginBlock;
+    return BeginStatement;
 }(Statement));
 var SubroutineExpression = (function (_super) {
     __extends(SubroutineExpression, _super);

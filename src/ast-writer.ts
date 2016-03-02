@@ -8,47 +8,60 @@ class AstWriter {
         this.register(Unit, t=> t.statements);
         this.register(PackageDeclaration, t=> { let x = [t.packageToken, t.packageTokenPost, t.name, t.semicolonToken, [t.semicolonTokenPost], t.statements]; console.log(x); return x; });
         this.register(UseStatement, t=> [t.useToken, t.useTokenPost, t.module, [t.modulePostTokens], [t.list], t.semicolonToken, [t.semicolonTokenPost]]);
-        this.register(VariableDeclarationStatement, t=> [t.declaration, ";", "\n"]);
-        this.register(VariableDeclarationExpression, t=> ["my", " ", t.variables, [" ", "=", " ", t.initializer]]);
-        this.register(MemberExpression, t=> [[t.target, (t.arrow ? "->" : "::")], t.name]);
-        this.register(InvocationExpression, t=> [t.target, [(t.arrow ? "->" : null)], "(", [t.arguments], ")"]);
-        this.register(ExpressionStatement, t=> [t.expression, ";", "\n"]);
+        this.register(VariableDeclarationStatement, t=> [t.declaration, t.semicolonToken]);
+        this.register(VariableDeclarationExpression, t=> [t.myOurToken, [t.myOurTokenPost], t.variables, [t.assignToken, [t.assignTokenPost], t.initializer]]);
+        this.register(InvocationExpression, t=> [t.target, [t.targetPost], [(t.arrow ? "->" : null)], [t.arguments]]);
+        this.register(ExpressionStatement, t=> [t.expression, [t.expressionPost], t.semicolonToken]);
         this.register(ValueExpression, t=> [t.value]);
         this.register(BinaryExpression, t=> [t.left, " ", t.operator, " ", t.right]);
-        this.register(BeginBlock, t=> ["BEGIN", " ", "{", "\n", t.statements, "}", "\n"]);
-        this.register(ListDeclaration, t=> ["(", t.items.withItemBetweenEach(", "), ")"]);
+        this.register(BeginStatement, t=> [t.beginToken, t.beginTokenPost, t.block, [t.semicolonToken]]);
+        this.register(ListDeclaration, t=> [[t.parenOpenToken, t.parenOpenTokenPost], this.zip(t.items, t.itemsSeparators).exceptNulls(), [t.parenCloseToken]]);
         this.register(PrefixUnaryExpression, t=> [t.operator, t.expression]);
-        this.register(SubroutineExpression, t=> ["sub", " ", t.name, [":", t.attribute], "{", "\n", ["(", t.prototype, ")"], t.statements, "}", "\n"]);
+        this.register(SubroutineExpression, t=> [t.subToken, t.subTokenPost, t.name, [t.namePost], [":", t.attribute], t.block]);
         this.register(SubroutineDeclaration, t=> [t.declaration, ";", "\n"]);
         this.register(SimpleName, t=> [t.name]);
-        this.register(HashMemberAccessExpression, t=> [t.target, [(t.arrow ? "->" : null)], "{", t.member, "}"]);
+        
+        this.register(HashMemberAccessExpression, t=> [t.target, [t.memberSeparatorToken], "{", t.member, "}"]);
+        this.register(ArrayMemberAccessExpression, t=> [t.target, [t.memberSeparatorToken], "[", t.expression, "]"]);
+        this.register(MemberExpression, t=> [[t.target, t.memberSeparatorToken], t.name]);
+        
         this.register(ReturnExpression, t=> ["return ", t.expression]);
         this.register(ArrayRefDeclaration, t=> ["[", t.items.withItemBetweenEach(","), "]"]);
         this.register(IfStatement, t=> ["if", "(", t.expression, ")", "{", "\n", t.statements, "}", [t.else]]);
         this.register(ElsifStatement, t=> ["elsif", "(", t.expression, ")", "{", "\n", t.statements, "}", [t.else]]);
         this.register(ElseStatement, t=> ["else", "{", "\n", t.statements, "}"]);
-        this.register(HashRefCreationExpression, t=> ["{", t.items.withItemBetweenEach(","), "}"]);
-        this.register(ForEachStatement, t=> [[t.label, ":"], "for", [t.variable], "(", t.list, ")", "{", "\n", t.statements, "}", "\n"]);
-        this.register(ArrayMemberAccessExpression, t=> [[t.target, (t.arrow ? "->" : "::")], "[", t.expression, "]"]);
-        this.register(BlockExpression, t=> ["{", "\n", t.statements, "}", "\n"]);
-
+        this.register(HashRefCreationExpression, t=> [t.parenOpenToken, [t.parenOpenTokenPost], this.zip(t.items, t.itemsSeparators).exceptNulls(), t.parenCloseToken]);
+        this.register(ForEachStatement, t=> [[t.label, ":"], t.forEachToken, [t.forEachTokenPost], [t.variable, [t.variablePost]], t.list, [t.listPost], t.block]);
+        this.register(ForStatement, t=> [t.forToken, [t.forTokenPost], t.parenOpenToken, [t.parenOpenTokenPost], t.initializer, t.semicolon1Token, [t.semicolon1TokenPost], t.condition, t.semicolon2Token, [t.semicolon2TokenPost], t.iterator, t.parenCloseToken, [t.parenCloseTokenPost], t.block, [t.semicolonToken]]);
+        this.register(BlockExpression, t=> [t.braceOpenToken, [t.braceOpenTokenPost], t.statements, t.braceCloseToken]);
         this.register(RegexExpression, t=> [t.value]);
-
         this.register(TrinaryExpression, t=> [t.condition, " ", "?", " ", t.trueExpression, " ", ":", " ", t.falseExpression]);
         this.register(EndStatement, t=> ["__END__"]);
-
-
 
         this.register(MultiBinaryExpression, t=> {
             if (t.expressions.length != t.operators.length + 1)
                 throw new Error("invalid multiexpression");
-            let list: Array<any> = [t.expressions[0]];
-            t.operators.forEach((op, i) => list.push(op, t.expressions[i + 1]));
-            let res = list.withItemBetweenEach(" ");
-            console.log("Multi", res);
-            return res;
+            let list = this.zip(t.expressions, t.operators).exceptNulls();
+            //let list: Array<any> = [t.expressions[0]];
+            //t.operators.forEach((op, i) => list.push(op, t.expressions[i + 1]));
+            //let res = list.withItemBetweenEach(" ");
+            //console.log("Multi", res);
+            return list;
         });
         this.sb = [];
+    }
+
+    zip<T1, T2>(list1: T1[], list2: T2[]): Array<T1 | T2> {
+        let list: Array<T1 | T2> = [];
+        let max = Math.max(list1.length, list2.length);
+        for (let i = 0; i < max; i++) {
+            let x = list1[i];
+            let y = list2[i];
+            list.push(x);
+            list.push(y);
+        }
+        //t.operators.forEach((op, i) => list.push(op, t.expressions[i + 1]));
+        return list;
     }
     write(obj: any) {
         if (obj == null)
@@ -62,7 +75,8 @@ class AstWriter {
                 return;
             }
             let list = func(node);
-            this.write(list);
+            let all = [[node.whitespaceBefore], list, [node.whitespaceAfter]];
+            this.write(all);
         }
         else if (obj instanceof Array) {
             let list = <Array<any>>obj;

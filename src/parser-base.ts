@@ -23,11 +23,11 @@ class ParserBase {
             return this.token;
         return null;
     }
-    expectAny(types: TokenType[], node?: AstNode) {
+    expectAny(types: TokenType[], node?: AstNode):Token {
         let res = this.reader.expectAny(types);
         if (res && node != null)
             node.tokens.add(this.token);
-        return res;
+        return this.token;
     }
     expect(type: TokenType, node?: AstNode):Token {
         let res = this.reader.expect(type);

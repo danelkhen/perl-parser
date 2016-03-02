@@ -19,7 +19,7 @@ var ParserBase = (function () {
         var res = this.reader.expectAny(types);
         if (res && node != null)
             node.tokens.add(this.token);
-        return res;
+        return this.token;
     };
     ParserBase.prototype.expect = function (type, node) {
         var res = this.reader.expect(type);

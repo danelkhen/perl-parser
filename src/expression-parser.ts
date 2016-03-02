@@ -23,13 +23,16 @@
         let tempParser;
         while (true) {
             i++;
-            let exp;
+            let exp: Expression;
             if (tempParser != null) {
                 exp = tempParser.call(this);
                 tempParser = null;
             }
             else {
+                let whitespaceBeforeExp = this.skipWhitespaceAndComments();
                 exp = this.parseNonBinaryExpression();
+                exp.whitespaceBefore = whitespaceBeforeExp;
+                exp.whitespaceAfter = this.skipWhitespaceAndComments();
             }
             mbe.expressions.push(exp);
             if (this.token == null)
@@ -48,7 +51,8 @@
                 let operator = new Operator();
                 operator.value = this.token.value;
                 mbe.operators.push(operator);
-                this.nextNonWhitespaceToken(mbe);
+                this.nextToken();
+                //this.nextNonWhitespaceToken(mbe);
             }
             else
                 break;
@@ -69,13 +73,30 @@
 
 
     parseNonBinaryExpression(lastExpression?: Expression): Expression {
+        let whitespaceBeforeExp = this.skipWhitespaceAndComments();
+        let exp = this._parseNonBinaryExpression(lastExpression);
+        if (exp == null)
+            return null;
+        exp.whitespaceBefore = whitespaceBeforeExp;
+        if (exp.whitespaceAfter == null)
+            exp.whitespaceAfter = this.skipWhitespaceAndComments();
+        return exp;
+    }
+    _parseNonBinaryExpression(lastExpression?: Expression): Expression {
         let i = 0;
         while (true) {
             i++;
             this.log("parseExpression", i, this.token, lastExpression);
-            this.skipWhitespaceAndComments();
+            //this.skipWhitespaceAndComments();
             if (this.token == null)
                 return lastExpression;
+            if (this.token.isAny([TokenTypes.whitespace, TokenTypes.comment])) {
+                console.warn("_parseNonBinaryExpression: whitespace must be handled before parseNonBinaryExpression");
+                if (lastExpression != null)
+                    lastExpression.whitespaceAfter = this.skipWhitespaceAndComments();
+                else
+                    this.skipWhitespaceAndComments();
+            }
             if (this.token.is(TokenTypes.bracketOpen)) {
                 if (lastExpression == null)
                     lastExpression = this.parseArrayRefDeclaration();
@@ -88,14 +109,10 @@
                 lastExpression = this.parseHashMemberAccess(lastExpression, false);
             }
             else if (this.token.is(TokenTypes.parenOpen)) {
-                if (lastExpression == null) {
+                if (lastExpression == null)
                     lastExpression = this.parseParenthesizedList();
-                }
-                else {
-                    let node = this.parseInvocationExpression();
-                    node.target = lastExpression;
-                    lastExpression = node;
-                }
+                else
+                    lastExpression = this.parseInvocationExpression(lastExpression);
             }
             else if (this.token.isKeyword("my")) {
                 let node = this.parseVariableDeclarationExpression();
@@ -152,11 +169,10 @@
                 //node.prev = lastExpression;
                 lastExpression = node;
                 if (this.token.is(TokenTypes.whitespace)) {   //detect invocation without parantheses
-                    this.skipWhitespaceAndComments();
-                    if (!this.token.isAny([TokenTypes.parenOpen, TokenTypes.arrow, TokenTypes.comma, TokenTypes.fatComma, TokenTypes.keyword, TokenTypes.assignment])) {
-                        let invocation = this.parseInvocationExpression();
-                        invocation.target = node;
-                        lastExpression = invocation;
+                    let reader2 = this.reader.clone();
+                    reader2.nextNonWhitespaceToken();
+                    if (!reader2.token.isAny([TokenTypes.parenOpen, TokenTypes.arrow, TokenTypes.comma, TokenTypes.fatComma, TokenTypes.keyword, TokenTypes.assignment])) {
+                        lastExpression = this.parseInvocationExpression(node);
                     }
                 }
             }
@@ -177,7 +193,7 @@
                 lastExpression = exp;
             }
             else if (this.token.isAny([TokenTypes.integer, TokenTypes.interpolatedString, TokenTypes.qq, TokenTypes.string, TokenTypes.qw])) {
-                if(lastExpression!=null)
+                if (lastExpression != null)
                     return lastExpression; //shouldn't continue parsing
                 let node = this.create(ValueExpression);
                 node.value = this.token.value;//TODO:
@@ -191,9 +207,7 @@
                 this.nextToken();
             }
             else if (this.token.is(TokenTypes.arrow) || this.token.is(TokenTypes.packageSeparator)) {
-                let arrow = this.token.is(TokenTypes.arrow);
-                this.nextToken();
-                lastExpression = this.parseAnyMemberAccess(lastExpression, arrow);
+                lastExpression = this.parseAnyMemberAccess(lastExpression);
                 //let node = this.parseNonBinaryExpression(lastExpression);
                 //let node2: HasArrow = <any>node;
                 //node2.arrow = arrow;
@@ -210,21 +224,23 @@
 
     parseSubroutineExpression(): SubroutineExpression {
         let node = this.create(SubroutineExpression);
-        this.nextNonWhitespaceToken(node);
+        node.subToken = this.expectKeyword("sub");
+        node.subTokenPost = this.nextNonWhitespaceToken(node);
         if (this.token.is(TokenTypes.identifier)) {
             node.name = this.parser.parseSimpleName();
-            this.nextNonWhitespaceToken(node);
+            node.namePost = this.skipWhitespaceAndComments();
         }
         if (this.token.is(TokenTypes.colon)) { //subroutine attributes: sub foo : method { ... }
-            this.nextNonWhitespaceToken(node);
+            node.colonToken = this.token;
+            node.colonTokenPost = this.nextNonWhitespaceToken(node);
             node.attribute = this.parser.parseSimpleName();
-            this.nextNonWhitespaceToken(node);
+            node.attributePost = this.skipWhitespaceAndComments(node);
         }
         if (this.token.is(TokenTypes.parenOpen)) {
             node.prototype = this.parseParenthesizedList();
-            this.skipWhitespaceAndComments(node);
+            node.prototypePost = this.skipWhitespaceAndComments(node);
         }
-        node.statements = this.parser.parseBracedStatements(node);
+        node.block = this.parseBlockExpression();//this.parser.parseBracedStatements(node);
         return node;
     }
     parseReturnExpression(): ReturnExpression {
@@ -249,12 +265,22 @@
     }
 
 
-    parseAnyMemberAccess(target: Expression, arrow: boolean): Expression {
+    parseAnyMemberAccess(target: Expression): Expression {
+        let arrow = this.token.is(TokenTypes.arrow);
+        this.expectAny([TokenTypes.arrow, TokenTypes.packageSeparator]);
+        let memberSeparatorToken = this.token;
+        this.nextToken();
+        let node: HashMemberAccessExpression | ArrayMemberAccessExpression | MemberExpression;
         if (this.token.is(TokenTypes.braceOpen))
-            return this.parseHashMemberAccess(target, arrow);
-        if (this.token.is(TokenTypes.bracketOpen))
-            return this.parseArrayMemberAccess(target, arrow);
-        return this.parseMemberExpression(target, arrow);
+            node = this.parseHashMemberAccess(target, arrow);
+        else if (this.token.is(TokenTypes.bracketOpen))
+            node = this.parseArrayMemberAccess(target, arrow);
+        else
+            node = this.parseMemberExpression(target, arrow);
+
+        node.memberSeparatorToken = memberSeparatorToken;
+        node.arrow = arrow;
+        return node;
     }
     parseArrayMemberAccess(target: Expression, arrow: boolean): ArrayMemberAccessExpression {
         this.expect(TokenTypes.bracketOpen);
@@ -336,28 +362,40 @@
     }
     parseHashRefCreation(): HashRefCreationExpression {
         this.expect(TokenTypes.braceOpen);
-        let exp = this.create(HashRefCreationExpression);
-        exp.items = this.parseBracedCommaSeparatedExpressions(TokenTypes.braceOpen, TokenTypes.braceClose, exp);
-        return exp;
+        let node2 = this.parseParenthesizedList(TokenTypes.braceOpen, TokenTypes.braceClose);
+        let node = this.create(HashRefCreationExpression);
+        node.token = node2.token;
+        node.tokens = node2.tokens;
+        node.items = node2.items;
+        node.itemsSeparators = node2.itemsSeparators;
+        node.parenOpenToken = node2.parenCloseToken;
+        node.parenOpenTokenPost = node2.parenOpenTokenPost;
+        node.parenCloseToken = node2.parenCloseToken;
+        return node;
     }
     parseBlockExpression(): BlockExpression {
-        this.expect(TokenTypes.braceOpen);
         let node = this.create(BlockExpression);
-        node.statements = this.parser.parseBracedStatements(node);
+        node.whitespaceBefore = this.skipWhitespaceAndComments();
+        node.braceOpenToken = this.expect(TokenTypes.braceOpen);
+        node.braceOpenTokenPost = this.nextNonWhitespaceToken(node);
+        node.statements = this.parser.parseStatementsUntil(TokenTypes.braceClose);
+        node.braceCloseToken = this.expect(TokenTypes.braceClose, node);
+        node.whitespaceAfter = this.nextNonWhitespaceToken(node);
         return node;
     }
 
 
 
-    parseInvocationExpression(): InvocationExpression {
+    parseInvocationExpression(target: Expression): InvocationExpression {
         this.log("parseInvocationExpression", this.token);
         let node = this.create(InvocationExpression);
-        if (this.token.is(TokenTypes.parenOpen))
-            node.arguments = this.parseParenthesizedList().items;
-        else
-            node.arguments = this.parseCommaSeparatedExpressions();
+        node.targetPost = this.skipWhitespaceAndComments();
+        node.arguments = this.parseOptionallyParanthasizedList();
+        node.target = target;
+        console.log("INVOCATION", node);
         return node;
     }
+
     parseArrayRefDeclaration(): ArrayRefDeclaration {
         this.log("parseArrayRefDeclaration", this.token);
         this.expect(TokenTypes.bracketOpen);
@@ -377,12 +415,59 @@
         //this.nextToken();
         return node;
     }
-    parseParenthesizedList(): ListDeclaration {
+
+    parseOptionallyParanthasizedList(opener?: TokenType, closer?: TokenType): ListDeclaration {
+        if (opener == null)
+            opener = TokenTypes.parenOpen;
+        if (closer == null)
+            closer = TokenTypes.parenClose;
+        if (this.token.is(opener))
+            return this.parseParenthesizedList();
+        return this.parseNonParenthesizedList();
+    }
+    parseParenthesizedList(opener?: TokenType, closer?: TokenType): ListDeclaration {
+        if (opener == null)
+            opener = TokenTypes.parenOpen;
+        if (closer == null)
+            closer = TokenTypes.parenClose;
         let node = this.create(ListDeclaration);
-        node.items = this.parseBracedCommaSeparatedExpressions(TokenTypes.parenOpen, TokenTypes.parenClose, node);
+        node.parenOpenToken = this.expect(opener);
+        node.parenOpenTokenPost = this.nextNonWhitespaceToken();
+        node.items = [];
+        node.itemsSeparators = [];
+        while (this.token != null) {
+            if (this.token.is(closer))
+                break;
+            let exp = this.parseExpression();
+            node.items.push(exp);
+            let sep = this.skipWhitespaceAndComments(exp);
+            if (this.token.is(closer))
+                break;
+            sep.add(this.expectAny([TokenTypes.comma, TokenTypes.fatComma]));
+            sep.addRange(this.nextNonWhitespaceToken(node));
+            node.itemsSeparators.push(sep);
+        }
+        node.parenCloseToken = this.expect(closer);
+        this.nextToken();
         return node;
     }
-    parseBracedCommaSeparatedExpressions(opener: TokenType, closer: TokenType, node: AstNode): Expression[] {
+    parseNonParenthesizedList(): ListDeclaration {
+        let node = this.create(ListDeclaration);
+        node.items = [];
+        node.itemsSeparators = [];
+        while (this.token != null) {
+            let exp = this.parseExpression();
+            node.items.push(exp);
+            let sep = this.skipWhitespaceAndComments(exp);
+            if (!this.token.isAny([TokenTypes.comma, TokenTypes.fatComma]))
+                break;
+            sep.add(this.token);
+            sep.addRange(this.nextNonWhitespaceToken(node));
+            node.itemsSeparators.push(sep);
+        }
+        return node;
+    }
+    parseBracedCommaSeparatedExpressions(opener: TokenType, closer: TokenType, node: AstNode, stayOnCloser?: boolean): Expression[] {
         this.log("parseBracedCommaSeparatedExpressions", this.token);
         this.expect(opener, node);
         let items: Expression[] = [];
@@ -399,7 +484,8 @@
             this.nextNonWhitespaceToken(node);
         }
         this.expect(closer, node);
-        this.nextToken();
+        if (!stayOnCloser)
+            this.nextToken();
         return items;
     }
     parseCommaSeparatedExpressions(): Expression[] {
@@ -422,9 +508,11 @@
 
     parseVariableDeclarationExpression(): VariableDeclarationExpression {
         let node = this.create(VariableDeclarationExpression);
-        if (!this.token.isKeyword("my"))
+        if (!this.token.isAnyKeyword(["my", "our"]))
             return this.onUnexpectedToken();
-        this.nextNonWhitespaceToken(node);
+        node.myOurToken = this.token;
+        this.nextToken();
+        node.myOurTokenPost = this.skipWhitespaceAndComments(node);
         if (this.token.is(TokenTypes.parenOpen)) {
             node.variables = this.parseParenthesizedList();
         }
@@ -434,10 +522,11 @@
         else {
             this.logger.error("unexpected token in VariableDeclarationExpression", this.token);
         }
-        this.skipWhitespaceAndComments();
+        node.variablesPost = this.skipWhitespaceAndComments();
         if (this.token.is(TokenTypes.assignment)) {   //TODO: doesn't work, variables are evaluated to a binary expression (assignment)
+            node.assignToken = this.token;
             this.nextToken();
-            this.skipWhitespaceAndComments();
+            node.assignTokenPost = this.skipWhitespaceAndComments();
             node.initializer = this.parseExpression();
         }
         return node;

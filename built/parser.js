@@ -32,7 +32,6 @@ var Parser = (function (_super) {
             statements = [];
         while (true) {
             i++;
-            this.skipWhitespaceAndComments();
             if (stopAtTokenType && this.token.is(stopAtTokenType))
                 break;
             var node = this.parseStatement();
@@ -48,14 +47,20 @@ var Parser = (function (_super) {
         if (this.token == null) {
             return null;
         }
-        this.skipWhitespaceAndComments();
+        var whitespaceBefore = this.skipWhitespaceAndComments();
+        var node = this._parseStatement();
+        node.whitespaceBefore = whitespaceBefore;
+        node.whitespaceAfter = this.skipWhitespaceAndComments();
+        return node;
+    };
+    Parser.prototype._parseStatement = function () {
         if (this.token.isKeyword("package"))
             return this.parsePackageDeclaration();
         else if (this.token.isKeyword("BEGIN"))
-            return this.parseBegin();
+            return this.parseBeginStatement();
         else if (this.token.isKeyword("use"))
             return this.parseUse();
-        else if (this.token.isKeyword("my"))
+        else if (this.token.isAnyKeyword(["my", "our"]))
             return this.parseVariableDeclarationStatement();
         else if (this.token.isKeyword("sub"))
             return this.parseSubroutineDeclaration();
@@ -82,17 +87,19 @@ var Parser = (function (_super) {
             return null;
         return this.parseExpressionStatement();
     };
-    //parsePod() {
-    //    let node = new Comment();
-    //    node.token = this.token;
-    //    return node;
-    //}
-    Parser.prototype.parseBegin = function () {
-        this.expectKeyword("BEGIN");
-        var node = this.create(BeginBlock);
-        this.nextNonWhitespaceToken(node);
-        node.statements = this.parseBracedStatements(node, true);
+    Parser.prototype.parseBeginStatement = function () {
+        var node = this.create(BeginStatement);
+        node.beginToken = this.expectKeyword("BEGIN");
+        node.beginTokenPost = this.nextNonWhitespaceToken(node);
+        node.block = this.createExpressionParser().parseBlockExpression();
+        node.semicolonToken = this.parseOptionalSemicolon();
         return node;
+    };
+    Parser.prototype.parseOptionalSemicolon = function () {
+        if (this.token != null && this.token.is(TokenTypes.semicolon)) {
+            return this.token;
+            this.nextToken();
+        }
     };
     Parser.prototype.parseLabel = function () {
         //let node = this.create(SimpleName);
@@ -134,37 +141,42 @@ var Parser = (function (_super) {
         if (!this.token.isAnyKeyword(["foreach", "for"]))
             throw new Error();
         var node = this.create(ForEachStatement);
-        this.nextNonWhitespaceToken(node);
+        node.forEachToken = this.token;
+        node.forEachTokenPost = this.nextNonWhitespaceToken(node);
         if (this.token.isKeyword("my")) {
             node.variable = this.createExpressionParser().parseVariableDeclarationExpression();
+            node.variablePost = this.skipWhitespaceAndComments(node);
         }
         else if (this.token.is(TokenTypes.sigiledIdentifier)) {
             node.variable = this.createExpressionParser().parseMemberExpression(null, false); // .parseNonBinaryExpression();
+            node.variablePost = this.skipWhitespaceAndComments(node);
         }
-        this.skipWhitespaceAndComments(node);
-        this.expect(TokenTypes.parenOpen, node);
+        //TODO: parenthases ?
         node.list = this.createExpressionParser().parseParenthesizedList();
-        this.skipWhitespaceAndComments(node);
-        node.statements = this.parseBracedStatements(node, true);
+        node.listPost = this.skipWhitespaceAndComments(node);
+        node.block = this.createExpressionParser().parseBlockExpression();
+        node.semicolonToken = this.parseOptionalSemicolon();
         return node;
     };
     Parser.prototype.parseForStatement = function () {
         if (!this.token.isAnyKeyword(["foreach", "for"]))
             throw new Error();
         var node = this.create(ForStatement);
-        this.nextNonWhitespaceToken(node);
-        this.expect(TokenTypes.parenOpen, node);
-        this.nextNonWhitespaceToken();
+        node.forToken = this.token;
+        node.forTokenPost = this.nextNonWhitespaceToken(node);
+        node.parenOpenToken = this.expect(TokenTypes.parenOpen, node);
+        node.parenOpenTokenPost = this.nextNonWhitespaceToken();
         node.initializer = this.parseExpression();
-        this.expect(TokenTypes.semicolon, node);
-        this.nextNonWhitespaceToken(node);
+        node.semicolon1Token = this.expect(TokenTypes.semicolon, node);
+        node.semicolon1TokenPost = this.nextNonWhitespaceToken(node);
         node.condition = this.parseExpression();
-        this.expect(TokenTypes.semicolon, node);
-        this.nextNonWhitespaceToken(node);
+        node.semicolon2Token = this.expect(TokenTypes.semicolon, node);
+        node.semicolon2TokenPost = this.nextNonWhitespaceToken(node);
         node.iterator = this.parseExpression();
-        this.expect(TokenTypes.parenClose);
-        this.nextNonWhitespaceToken(node);
-        node.statements = this.parseBracedStatements(node);
+        node.parenCloseToken = this.expect(TokenTypes.parenClose);
+        node.parenCloseTokenPost = this.nextNonWhitespaceToken(node);
+        node.block = this.createExpressionParser().parseBlockExpression();
+        node.semicolonToken = this.parseOptionalSemicolon();
         return node;
     };
     Parser.prototype.parseWhileStatement = function () {
@@ -223,25 +235,31 @@ var Parser = (function (_super) {
         node.statements = this.parseBracedStatements(node);
         return node;
     };
-    Parser.prototype.parseStatementEnd = function (node, semicolonIsOptional) {
-        this.skipWhitespaceAndComments();
-        if (this.token.is(TokenTypes.braceClose))
-            return;
-        if (!this.token.is(TokenTypes.semicolon) && semicolonIsOptional)
-            return;
-        this.expect(TokenTypes.semicolon);
-        this.nextToken();
-        return;
-    };
     Parser.prototype.parseExpressionStatement = function () {
         console.log("parseExpressionStatement", this.token);
         var node = this.create(ExpressionStatement);
         node.expression = this.parseExpression();
         if (node.expression == null)
             throw new Error();
-        this.parseStatementEnd(node, node.expression instanceof BlockExpression);
+        node.expressionPost = this.skipWhitespaceAndComments();
+        if (this.token.is(TokenTypes.braceClose))
+            return node;
+        var semicolonIsOptional = node.expression instanceof BlockExpression;
+        if (!this.token.is(TokenTypes.semicolon) && semicolonIsOptional)
+            return node;
+        node.semicolonToken = this.expect(TokenTypes.semicolon);
+        this.nextToken();
         return node;
     };
+    //parseStatementEnd(node: Statement & HasSemicolonToken, semicolonIsOptional?: boolean) {
+    //    node.semicolonTokenPre = this.skipWhitespaceAndComments();
+    //    if (this.token.is(TokenTypes.braceClose))   //last statement doesn't have to have semicolon
+    //        return;
+    //    if (!this.token.is(TokenTypes.semicolon) && semicolonIsOptional)  //allow scope blocks to end with a closing brace but without semicolon
+    //        return;
+    //    node.semicolonToken = this.expect(TokenTypes.semicolon);
+    //    this.nextToken();
+    //}
     Parser.prototype.parseSubroutineDeclaration = function () {
         console.log("parseSubroutineDeclaration", this.token);
         var node = this.create(SubroutineDeclaration);
@@ -251,7 +269,7 @@ var Parser = (function (_super) {
     Parser.prototype.parseVariableDeclarationStatement = function () {
         var node = this.create(VariableDeclarationStatement);
         node.declaration = this.createExpressionParser().parseVariableDeclarationExpression();
-        this.expect(TokenTypes.semicolon, node);
+        node.semicolonToken = this.expect(TokenTypes.semicolon, node);
         this.nextToken();
         return node;
     };

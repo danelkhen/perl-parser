@@ -27,7 +27,6 @@
             statements = [];
         while (true) {
             i++;
-            this.skipWhitespaceAndComments();
             if (stopAtTokenType && this.token.is(stopAtTokenType))
                 break;
             let node = this.parseStatement();
@@ -37,19 +36,25 @@
         };
         return statements;
     }
-    parseStatement(): AstNode {
+    parseStatement(): Statement {
         this.log("parseStatement");
         if (this.token == null) {
             return null;
         }
-        this.skipWhitespaceAndComments();
+        let whitespaceBefore = this.skipWhitespaceAndComments();
+        let node = this._parseStatement();
+        node.whitespaceBefore = whitespaceBefore;
+        node.whitespaceAfter = this.skipWhitespaceAndComments();
+        return node;
+    }
+    _parseStatement(): Statement {
         if (this.token.isKeyword("package"))
             return this.parsePackageDeclaration();
         else if (this.token.isKeyword("BEGIN"))
-            return this.parseBegin();
+            return this.parseBeginStatement();
         else if (this.token.isKeyword("use"))
             return this.parseUse();
-        else if (this.token.isKeyword("my"))
+        else if (this.token.isAnyKeyword(["my", "our"]))
             return this.parseVariableDeclarationStatement();
         else if (this.token.isKeyword("sub"))
             return this.parseSubroutineDeclaration();
@@ -76,19 +81,23 @@
             return null;
         return this.parseExpressionStatement();
     }
-    //parsePod() {
-    //    let node = new Comment();
-    //    node.token = this.token;
-    //    return node;
-    //}
 
-    parseBegin(): BeginBlock {
-        this.expectKeyword("BEGIN");
-        let node = this.create(BeginBlock);
-        this.nextNonWhitespaceToken(node);
-        node.statements = this.parseBracedStatements(node, true);
+    parseBeginStatement(): BeginStatement {
+        let node = this.create(BeginStatement);
+        node.beginToken = this.expectKeyword("BEGIN");
+        node.beginTokenPost = this.nextNonWhitespaceToken(node);
+        node.block = this.createExpressionParser().parseBlockExpression();
+        node.semicolonToken = this.parseOptionalSemicolon();
         return node;
     }
+
+    parseOptionalSemicolon(): Token {
+        if (this.token != null && this.token.is(TokenTypes.semicolon)) {
+            return this.token;
+            this.nextToken();
+        }
+    }
+
     parseLabel(): SimpleName {
         //let node = this.create(SimpleName);
         //node.name = this.token.value.substr(0, this.token.value.length-1).trim();
@@ -132,18 +141,21 @@
         if (!this.token.isAnyKeyword(["foreach", "for"]))
             throw new Error();
         let node = this.create(ForEachStatement);
-        this.nextNonWhitespaceToken(node);
+        node.forEachToken = this.token;
+        node.forEachTokenPost = this.nextNonWhitespaceToken(node);
         if (this.token.isKeyword("my")) {
             node.variable = this.createExpressionParser().parseVariableDeclarationExpression();
+            node.variablePost = this.skipWhitespaceAndComments(node);
         }
         else if (this.token.is(TokenTypes.sigiledIdentifier)) {
             node.variable = this.createExpressionParser().parseMemberExpression(null, false);// .parseNonBinaryExpression();
+            node.variablePost = this.skipWhitespaceAndComments(node);
         }
-        this.skipWhitespaceAndComments(node);
-        this.expect(TokenTypes.parenOpen, node);
+        //TODO: parenthases ?
         node.list = this.createExpressionParser().parseParenthesizedList();
-        this.skipWhitespaceAndComments(node);
-        node.statements = this.parseBracedStatements(node, true);
+        node.listPost = this.skipWhitespaceAndComments(node);
+        node.block = this.createExpressionParser().parseBlockExpression();
+        node.semicolonToken = this.parseOptionalSemicolon();
         return node;
     }
 
@@ -151,23 +163,26 @@
         if (!this.token.isAnyKeyword(["foreach", "for"]))
             throw new Error();
         let node = this.create(ForStatement);
-        this.nextNonWhitespaceToken(node);
-        this.expect(TokenTypes.parenOpen, node);
-        this.nextNonWhitespaceToken();
+        node.forToken = this.token;
+        node.forTokenPost = this.nextNonWhitespaceToken(node);
+
+        node.parenOpenToken = this.expect(TokenTypes.parenOpen, node);
+        node.parenOpenTokenPost = this.nextNonWhitespaceToken();
 
         node.initializer = this.parseExpression();
-        this.expect(TokenTypes.semicolon, node);
-        this.nextNonWhitespaceToken(node);
+        node.semicolon1Token = this.expect(TokenTypes.semicolon, node);
+        node.semicolon1TokenPost = this.nextNonWhitespaceToken(node);
 
         node.condition = this.parseExpression();
-        this.expect(TokenTypes.semicolon, node);
-        this.nextNonWhitespaceToken(node);
+        node.semicolon2Token = this.expect(TokenTypes.semicolon, node);
+        node.semicolon2TokenPost = this.nextNonWhitespaceToken(node);
 
         node.iterator = this.parseExpression();
-        this.expect(TokenTypes.parenClose);
-        this.nextNonWhitespaceToken(node);
+        node.parenCloseToken = this.expect(TokenTypes.parenClose);
+        node.parenCloseTokenPost = this.nextNonWhitespaceToken(node);
 
-        node.statements = this.parseBracedStatements(node);
+        node.block = this.createExpressionParser().parseBlockExpression();
+        node.semicolonToken = this.parseOptionalSemicolon();
         return node;
     }
     parseWhileStatement(): WhileStatement {
@@ -233,25 +248,36 @@
         node.statements = this.parseBracedStatements(node);
         return node;
     }
-    parseStatementEnd(node: Statement, semicolonIsOptional?: boolean) {
-        this.skipWhitespaceAndComments();
-        if (this.token.is(TokenTypes.braceClose))   //last statement doesn't have to have semicolon
-            return;
-        if (!this.token.is(TokenTypes.semicolon) && semicolonIsOptional)  //allow scope blocks to end with a closing brace but without semicolon
-            return;
-        this.expect(TokenTypes.semicolon);
-        this.nextToken();
-        return;
-    }
+
     parseExpressionStatement(): ExpressionStatement {
         console.log("parseExpressionStatement", this.token);
         let node = this.create(ExpressionStatement);
         node.expression = this.parseExpression();
         if (node.expression == null)
             throw new Error();
-        this.parseStatementEnd(node, node.expression instanceof BlockExpression);
+        node.expressionPost = this.skipWhitespaceAndComments();
+
+        if (this.token.is(TokenTypes.braceClose))   //last statement doesn't have to have semicolon
+            return node;
+
+        let semicolonIsOptional = node.expression instanceof BlockExpression;
+        if (!this.token.is(TokenTypes.semicolon) && semicolonIsOptional)  //allow scope blocks to end with a closing brace but without semicolon
+            return node;
+        node.semicolonToken = this.expect(TokenTypes.semicolon);
+        this.nextToken();
         return node;
     }
+
+    //parseStatementEnd(node: Statement & HasSemicolonToken, semicolonIsOptional?: boolean) {
+    //    node.semicolonTokenPre = this.skipWhitespaceAndComments();
+    //    if (this.token.is(TokenTypes.braceClose))   //last statement doesn't have to have semicolon
+    //        return;
+    //    if (!this.token.is(TokenTypes.semicolon) && semicolonIsOptional)  //allow scope blocks to end with a closing brace but without semicolon
+    //        return;
+    //    node.semicolonToken = this.expect(TokenTypes.semicolon);
+    //    this.nextToken();
+    //}
+
     parseSubroutineDeclaration(): SubroutineDeclaration {
         console.log("parseSubroutineDeclaration", this.token);
         let node = this.create(SubroutineDeclaration);
@@ -261,7 +287,7 @@
     parseVariableDeclarationStatement() {
         let node = this.create(VariableDeclarationStatement);
         node.declaration = this.createExpressionParser().parseVariableDeclarationExpression();
-        this.expect(TokenTypes.semicolon, node);
+        node.semicolonToken = this.expect(TokenTypes.semicolon, node);
         this.nextToken();
         return node;
     }
