@@ -6,37 +6,38 @@ class AstWriter {
      */
     main() {
         this.register(Unit, t=> t.statements);
-        this.register(PackageDeclaration, t=> { let x = [t.packageToken, t.packageTokenPost, t.name, t.semicolonToken, [t.semicolonTokenPost], t.statements]; console.log(x); return x; });
+        this.register(PackageDeclaration, t=> [t.packageToken, t.packageTokenPost, t.name, t.semicolonToken, [t.semicolonTokenPost], t.statements]);
         this.register(UseStatement, t=> [t.useToken, t.useTokenPost, t.module, [t.modulePostTokens], [t.list], t.semicolonToken, [t.semicolonTokenPost]]);
+        this.register(NoStatement, t=> [t.useToken, t.useTokenPost, t.module, [t.modulePostTokens], [t.list], t.semicolonToken, [t.semicolonTokenPost]]);
         this.register(VariableDeclarationStatement, t=> [t.declaration, t.semicolonToken]);
         this.register(VariableDeclarationExpression, t=> [t.myOurToken, [t.myOurTokenPost], t.variables, [t.variablesPost], [t.assignToken, [t.assignTokenPost], t.initializer]]);
         this.register(InvocationExpression, t=> [t.target, [t.targetPost], [t.arrowToken], [t.arguments]]);
         this.register(ExpressionStatement, t=> [t.expression, [t.expressionPost], [t.semicolonToken]]);
         this.register(ValueExpression, t=> [t.value]);
-        this.register(BinaryExpression, t=> [t.left, " ", t.operator, " ", t.right]);
+        this.register(BinaryExpression, t=> [t.left, t.operator, t.right]);
         this.register(BeginStatement, t=> [t.beginToken, [t.beginTokenPost], t.block, [t.semicolonToken]]);
         this.register(ListDeclaration, t=> [[t.parenOpenToken, t.parenOpenTokenPost], this.zip(t.items, t.itemsSeparators).exceptNulls(), [t.parenCloseToken]]);
         this.register(PrefixUnaryExpression, t=> [t.operator, t.expression]);
-        this.register(SubroutineExpression, t=> [t.subToken, t.subTokenPost, t.name, [t.namePost], [":", t.attribute], t.block]);
-        this.register(SubroutineDeclaration, t=> [t.declaration, ";", "\n"]);
+        this.register(SubroutineExpression, t=> [t.subToken, t.subTokenPost, t.name, [t.namePost], [t.colonToken, [t.colonTokenPost], t.attribute], t.block]);
+        this.register(SubroutineDeclaration, t=> [t.declaration, [t.semicolonToken]]);
         this.register(SimpleName, t=> [t.name]);
 
-        this.register(HashMemberAccessExpression, t=> [t.target, [t.memberSeparatorToken], "{", t.member, "}"]);
-        this.register(ArrayMemberAccessExpression, t=> [t.target, [t.memberSeparatorToken], "[", t.expression, "]"]);
+        this.register(HashMemberAccessExpression, t=> [t.target, [t.memberSeparatorToken], t.braceOpenToken, [t.braceOpenTokenPost], t.member, t.braceCloseToken]);
+        this.register(ArrayMemberAccessExpression, t=> [t.target, [t.memberSeparatorToken], t.bracketOpenToken, [t.bracketOpenTokenPost], t.expression, t.bracketCloseToken]);
         this.register(MemberExpression, t=> [[t.target, t.memberSeparatorToken], t.name]);
 
         this.register(ReturnExpression, t=> [t.returnToken, [t.returnTokenPost], t.expression]);
-        this.register(ArrayRefDeclaration, t=> ["[", t.items.withItemBetweenEach(","), "]"]);
-        this.register(IfStatement, t=> ["if", "(", t.expression, ")", "{", "\n", t.statements, "}", [t.else]]);
-        this.register(ElsifStatement, t=> ["elsif", "(", t.expression, ")", "{", "\n", t.statements, "}", [t.else]]);
-        this.register(ElseStatement, t=> ["else", "{", "\n", t.statements, "}"]);
+        this.register(ArrayRefDeclaration, t=> [t.bracketOpenToken, [t.bracketOpenTokenPost], this.zip(t.items, t.itemsSeparators).exceptNulls(), t.bracketCloseToken]);
+        this.register(IfStatement, t=> [t.keywordToken, [t.keywordTokenPost], t.parenOpenToken, [t.parenOpenTokenPost], t.expression, t.parenCloseToken, [t.parenCloseTokenPost], t.block, [t.else], [t.semicolonToken]]);
+        this.register(ElsifStatement, t=> [t.keywordToken, [t.keywordTokenPost], t.parenOpenToken, [t.parenOpenTokenPost], t.expression, t.parenCloseToken, [t.parenCloseTokenPost], t.block, [t.else], [t.semicolonToken]]);
+        this.register(ElseStatement, t=> [t.keywordToken, [t.keywordTokenPost], t.block, [t.semicolonToken]]);
         this.register(HashRefCreationExpression, t=> [t.parenOpenToken, [t.parenOpenTokenPost], this.zip(t.items, t.itemsSeparators).exceptNulls(), t.parenCloseToken]);
         this.register(ForEachStatement, t=> [[t.label, ":"], t.forEachToken, [t.forEachTokenPost], [t.variable, [t.variablePost]], t.list, [t.listPost], t.block]);
         this.register(ForStatement, t=> [t.forToken, [t.forTokenPost], t.parenOpenToken, [t.parenOpenTokenPost], t.initializer, t.semicolon1Token, [t.semicolon1TokenPost], t.condition, t.semicolon2Token, [t.semicolon2TokenPost], t.iterator, t.parenCloseToken, [t.parenCloseTokenPost], t.block, [t.semicolonToken]]);
         this.register(BlockExpression, t=> [t.braceOpenToken, [t.braceOpenTokenPost], t.statements, t.braceCloseToken]);
         this.register(RegexExpression, t=> [t.value]);
-        this.register(TrinaryExpression, t=> [t.condition, " ", "?", " ", t.trueExpression, " ", ":", " ", t.falseExpression]);
-        this.register(EndStatement, t=> ["__END__"]);
+        this.register(TrinaryExpression, t=> [t.condition, t.questionToken, [t.questionTokenPost], t.trueExpression, [t.trueExpressionPost], t.colonToken, [t.colonTokenPost], t.falseExpression]);
+        this.register(EndStatement, t=> [t.endToken]);
 
         this.register(MultiBinaryExpression, t=> {
             if (t.expressions.length != t.operators.length + 1)
@@ -63,6 +64,12 @@ class AstWriter {
         //t.operators.forEach((op, i) => list.push(op, t.expressions[i + 1]));
         return list;
     }
+
+    //getHandler(type:Function) {
+    //    let func = this.map.get(node.constructor);
+    //    if (func == null) 
+    //        return this.getHandler(type.prototype);
+    //}
     write(obj: any) {
         if (obj == null)
             return;

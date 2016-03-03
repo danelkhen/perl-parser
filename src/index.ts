@@ -12,7 +12,6 @@ class IndexPage {
     urlKey: string;
     code: string;
     main() {
-
         this.tbUrl = $("#tbUrl");
         this.urlKey = "perl-parser\turl";
         this.tbRegex = $("#tbRegex");
@@ -114,15 +113,15 @@ class IndexPage {
         }
     }
 
-    createInstanceNode(node: AstNode) {
-        let anp: AstNodeProp = { text: node.constructor.name, node: node, children: [] };
-        anp.children = Object.keys(node).select(prop=> this.createPropertyNode(node, prop)).exceptNulls();
+    createInstanceNode(obj: AstNode) {
+        let anp: AstNodeProp = { text: obj.constructor.name, node: obj, children: [] };
+        anp.children = Object.keys(obj).select(prop=> this.createPropertyNode(obj, prop)).exceptNulls();
         return anp;
     }
 
-    createPropertyNode(parentNode: AstNode, prop: string) {
+    createPropertyNode(parentObj: AstNode, prop: string) {
         let anp: AstNodeProp = { prop: prop, text: prop, node: null, children: [] };
-        let value = parentNode[prop];
+        let value = parentObj[prop];
         if (value == null)
             return anp;
         if (value instanceof AstNode) {

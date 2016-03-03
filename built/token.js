@@ -174,7 +174,7 @@ var TokenTypes = (function () {
     TokenTypes.identifierRegex = /[a-zA-Z_][a-zA-Z_0-9]*/;
     TokenTypes.heredoc = new HereDocTokenType(); // TokenTypes._custom(TokenTypes.match(/<<"([a-zA-Z0-9]+)"[\s\S]*$/m);
     TokenTypes.qq = TokenTypes._rs([/qq\|[^|]*\|/, /qq\{[^\}]*\}/]);
-    TokenTypes.qw = TokenTypes._rs([/qw\/[^\/]*\//m, /qw<[^>]*>/m, /qw\([^\)]*\)/m]);
+    TokenTypes.qw = TokenTypes._rs([/qw\s*\/[^\/]*\//m, /qw\s*<[^>]*>/m, /qw\s*\([^\)]*\)/m, /qw\s*\[[^\]]*\]/m]);
     TokenTypes.qr = TokenTypes._rs([/qr\/.*\//, /qr\(.*\)/]); //Regexp-like quote
     TokenTypes.qx = TokenTypes._rs([/qx\/.*\//, /`.*`/]);
     TokenTypes.tr = TokenTypes._r(/tr\/.*\/.*\//); //token replace
@@ -182,7 +182,7 @@ var TokenTypes = (function () {
     //static pod = TokenTypes._r(/=pod.*=cut/m);
     TokenTypes.keyword = TokenTypes._rs([
         "BEGIN", "package",
-        "use",
+        "use", "no",
         "my", "our", "sub", "return", "elsif", "else", "unless", "__END__",
         "and", "not", "eq", "or",
         "foreach", "while", "for",

@@ -38,7 +38,11 @@ class HashRefCreationExpression extends Expression {
 
 
 class ArrayRefDeclaration extends Expression {
+    bracketOpenToken: Token;
+    bracketOpenTokenPost: Token[];
     items: Expression[];
+    itemsSeparators: Array<Token[]>;
+    bracketCloseToken: Token;
 }
 class Unit extends AstNode {
     statements: Statement[];
@@ -62,17 +66,18 @@ class SimpleName extends Expression {
     name: string;
 }
 class VariableDeclarationExpression extends Expression {
-    myOurToken:Token;
-    myOurTokenPost:Token[];
+    myOurToken: Token;
+    myOurTokenPost: Token[];
     variables: Expression;  //my $name, my ($name, $age)
-    variablesPost:Token[];
-    assignToken:Token;
-    assignTokenPost:Token[];
+    variablesPost: Token[];
+    assignToken: Token;
+    assignTokenPost: Token[];
     initializer: Expression;
 }
 
 class SubroutineDeclaration extends Statement {
     declaration: SubroutineExpression;
+    semicolonToken: Token;
 }
 
 class RegexExpression extends Expression {
@@ -87,7 +92,8 @@ class ExpressionStatement extends Statement {
     semicolonToken: Token;
 
 }
-class UseStatement extends Statement {
+
+class UseOrNoStatement extends Statement {
     useToken: Token;
     useTokenPost: Token[];
     modulePostTokens: Token[];
@@ -96,6 +102,11 @@ class UseStatement extends Statement {
 
     module: Expression;
     list: Expression;
+}
+
+class UseStatement extends UseOrNoStatement {
+}
+class NoStatement extends UseOrNoStatement {
 }
 
 class MemberExpression extends Expression implements HasArrow {
@@ -109,7 +120,11 @@ class HashMemberAccessExpression extends Expression implements HasArrow {
     member: Expression;
     target: Expression;
     arrow: boolean;
+    /// '->'or '::' */
     memberSeparatorToken: Token;
+    braceOpenToken: Token;
+    braceOpenTokenPost: Token[];
+    braceCloseToken: Token;
 }
 
 class ArrayMemberAccessExpression extends Expression implements HasArrow {
@@ -117,14 +132,17 @@ class ArrayMemberAccessExpression extends Expression implements HasArrow {
     target: Expression;
     arrow: boolean;
     memberSeparatorToken: Token;
+    bracketOpenToken: Token;
+    bracketOpenTokenPost: Token[];
+    bracketCloseToken: Token;
 }
 
 class InvocationExpression extends Expression implements HasArrow {
     target: Expression;
-    targetPost:Token[];
+    targetPost: Token[];
     arguments: ListDeclaration;
     arrow: boolean;
-    arrowToken:Token;
+    arrowToken: Token;
 }
 
 class BarewordExpression extends Expression {
@@ -147,12 +165,21 @@ class ValueExpression extends Expression {
 //    expression: Expression;
 //}
 class EndStatement extends Statement {
+    endToken: Token;
 }
+
 class IfStatement extends Statement {
-    value: any;
+    keywordToken: Token;
+    keywordTokenPost: Token[];
+    parenOpenToken: Token;
+    parenOpenTokenPost: Token[];
     expression: Expression;
-    statements: Statement[];
+    parenCloseToken: Token;
+    parenCloseTokenPost: Token[];
+    block: BlockExpression;
+    blockPost: Token[];
     else: Statement;
+    semicolonToken: Token;
 }
 class UnlessStatement extends IfStatement {
 }
@@ -160,7 +187,10 @@ class UnlessStatement extends IfStatement {
 class ElsifStatement extends IfStatement {
 }
 class ElseStatement extends Statement {
-    statements: Statement[];
+    keywordToken: Token;
+    keywordTokenPost: Token[];
+    block: BlockExpression;
+    semicolonToken: Token;
 }
 
 class PrefixUnaryExpression extends Expression {
@@ -173,8 +203,8 @@ class PostfixUnaryExpression extends Expression {
 }
 
 class ReturnExpression extends Expression {
-    returnToken:Token;
-    returnTokenPost:Token[];
+    returnToken: Token;
+    returnTokenPost: Token[];
     expression: Expression;
 }
 
@@ -186,7 +216,12 @@ class BinaryExpression extends Expression {
 
 class TrinaryExpression extends Expression {
     condition: Expression;
+    questionToken: Token;
+    questionTokenPost: Token[];
+    colonToken: Token;
+    colonTokenPost: Token[];
     trueExpression: Expression;
+    trueExpressionPost: Token[];
     falseExpression: Expression;
 }
 
@@ -252,10 +287,6 @@ interface HasArrow {
 }
 
 
-interface HasSemicolonToken {
-    semicolonTokenPre: Token[];
-    semicolonToken: Token;
-}
 
 class SubroutineExpression extends Expression {
     subToken: Token;

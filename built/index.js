@@ -105,16 +105,16 @@ var IndexPage = (function () {
                 div.scrollTop = top2;
         }
     };
-    IndexPage.prototype.createInstanceNode = function (node) {
+    IndexPage.prototype.createInstanceNode = function (obj) {
         var _this = this;
-        var anp = { text: node.constructor.name, node: node, children: [] };
-        anp.children = Object.keys(node).select(function (prop) { return _this.createPropertyNode(node, prop); }).exceptNulls();
+        var anp = { text: obj.constructor.name, node: obj, children: [] };
+        anp.children = Object.keys(obj).select(function (prop) { return _this.createPropertyNode(obj, prop); }).exceptNulls();
         return anp;
     };
-    IndexPage.prototype.createPropertyNode = function (parentNode, prop) {
+    IndexPage.prototype.createPropertyNode = function (parentObj, prop) {
         var _this = this;
         var anp = { prop: prop, text: prop, node: null, children: [] };
-        var value = parentNode[prop];
+        var value = parentObj[prop];
         if (value == null)
             return anp;
         if (value instanceof AstNode) {

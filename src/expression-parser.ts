@@ -115,7 +115,7 @@
                 lastExpression = this.parseInvocationExpression(lastExpression);
             return this.parseNonBinaryExpression(lastExpression);
         }
-        else if (this.token.isKeyword("my")) {
+        else if (this.token.isAnyKeyword(["my", "our"])) {
             let node = this.parseVariableDeclarationExpression();
             return node;
         }
@@ -192,11 +192,12 @@
         else if (this.token.is(TokenTypes.question)) {
             let exp = this.create(TrinaryExpression);
             exp.condition = lastExpression;
-            this.nextNonWhitespaceToken(exp);
+            exp.questionToken = this.token;
+            exp.questionTokenPost = this.nextNonWhitespaceToken(exp);
             exp.trueExpression = this.parseExpression();
-            this.skipWhitespaceAndComments();
-            this.expect(TokenTypes.colon);
-            this.nextNonWhitespaceToken();
+            exp.trueExpressionPost = this.skipWhitespaceAndComments();
+            exp.colonToken = this.expect(TokenTypes.colon);
+            exp.colonTokenPost = this.nextNonWhitespaceToken();
             exp.falseExpression = this.parseExpression();
             lastExpression = exp;
             return this.parseNonBinaryExpression(lastExpression);
@@ -288,23 +289,23 @@
         return node;
     }
     parseArrayMemberAccess(target: Expression, arrow: boolean): ArrayMemberAccessExpression {
-        this.expect(TokenTypes.bracketOpen);
         let node = this.create(ArrayMemberAccessExpression);
-        this.nextNonWhitespaceToken(node);
+        node.bracketOpenToken = this.expect(TokenTypes.bracketOpen);
+        node.bracketOpenTokenPost = this.nextNonWhitespaceToken(node);
         node.expression = this.parseExpression();
         node.target = target;
         node.arrow = arrow;
-        this.expect(TokenTypes.bracketClose, node);
+        node.bracketCloseToken = this.expect(TokenTypes.bracketClose, node);
         this.nextToken();
         return node;
     }
     parseHashMemberAccess(target: Expression, arrow: boolean): HashMemberAccessExpression {
-        this.expect(TokenTypes.braceOpen);
         let node = this.create(HashMemberAccessExpression);
-        this.nextNonWhitespaceToken(node);
+        node.braceOpenToken = this.expect(TokenTypes.braceOpen);
+        node.braceOpenTokenPost = this.nextNonWhitespaceToken(node);
         node.member = this.parseExpression();
         node.arrow = arrow;
-        this.expect(TokenTypes.braceClose, node);
+        node.braceCloseToken = this.expect(TokenTypes.braceClose, node);
         this.nextToken();
         node.target = target;
         return node;
@@ -403,23 +404,37 @@
 
     parseArrayRefDeclaration(): ArrayRefDeclaration {
         this.log("parseArrayRefDeclaration", this.token);
-        this.expect(TokenTypes.bracketOpen);
         let node = this.create(ArrayRefDeclaration);
-        node.items = this.parseBracedCommaSeparatedExpressions(TokenTypes.bracketOpen, TokenTypes.bracketClose, node);
-        //this.nextNonWhitespaceToken();
-        //while (this.token != null) {
-        //    node.items.push(this.parseExpression());
-        //    this.skipWhitespaceAndComments();
-        //    if (this.token.is(TokenTypes.bracketClose))
-        //        break;
-        //    this.expect(TokenTypes.comma);
-        //    this.nextNonWhitespaceToken();
-        //    if (this.token.is(TokenTypes.bracketClose))
-        //        break;
-        //}
-        //this.nextToken();
+        node.bracketOpenToken = this.expect(TokenTypes.bracketOpen);
+        let node2 = this.parseNonParenthesizedList();
+        node.items = node2.items;
+        node.itemsSeparators = node2.itemsSeparators;
+        node.bracketCloseToken = this.expect(TokenTypes.bracketClose);
         return node;
     }
+
+    parseBracedCommaSeparatedExpressions(opener: TokenType, closer: TokenType, node: AstNode, stayOnCloser?: boolean): Expression[] {
+        this.log("parseBracedCommaSeparatedExpressions", this.token);
+        this.expect(opener, node);
+        let items: Expression[] = [];
+        this.nextNonWhitespaceToken(node);
+        while (this.token != null) {
+            if (this.token.is(closer))
+                break;
+            let exp = this.parseExpression();
+            items.push(exp);
+            this.skipWhitespaceAndComments(exp);
+            if (this.token.is(closer))
+                break;
+            this.expectAny([TokenTypes.comma, TokenTypes.fatComma]);
+            this.nextNonWhitespaceToken(node);
+        }
+        this.expect(closer, node);
+        if (!stayOnCloser)
+            this.nextToken();
+        return items;
+    }
+
 
     parseOptionallyParanthasizedList(opener?: TokenType, closer?: TokenType): ListDeclaration {
         if (opener == null)
@@ -471,27 +486,6 @@
             node.itemsSeparators.push(sep);
         }
         return node;
-    }
-    parseBracedCommaSeparatedExpressions(opener: TokenType, closer: TokenType, node: AstNode, stayOnCloser?: boolean): Expression[] {
-        this.log("parseBracedCommaSeparatedExpressions", this.token);
-        this.expect(opener, node);
-        let items: Expression[] = [];
-        this.nextNonWhitespaceToken(node);
-        while (this.token != null) {
-            if (this.token.is(closer))
-                break;
-            let exp = this.parseExpression();
-            items.push(exp);
-            this.skipWhitespaceAndComments(exp);
-            if (this.token.is(closer))
-                break;
-            this.expectAny([TokenTypes.comma, TokenTypes.fatComma]);
-            this.nextNonWhitespaceToken(node);
-        }
-        this.expect(closer, node);
-        if (!stayOnCloser)
-            this.nextToken();
-        return items;
     }
     parseCommaSeparatedExpressions(): Expression[] {
         this.log("parseCommaSeparatedExpressions", this.token);

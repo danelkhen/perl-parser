@@ -138,7 +138,7 @@ class TokenTypes {
     }
     static heredoc = new HereDocTokenType();// TokenTypes._custom(TokenTypes.match(/<<"([a-zA-Z0-9]+)"[\s\S]*$/m);
     static qq = TokenTypes._rs([/qq\|[^|]*\|/, /qq\{[^\}]*\}/]);
-    static qw = TokenTypes._rs([/qw\/[^\/]*\//m, /qw<[^>]*>/m, /qw\([^\)]*\)/m]);
+    static qw = TokenTypes._rs([/qw\s*\/[^\/]*\//m, /qw\s*<[^>]*>/m, /qw\s*\([^\)]*\)/m, /qw\s*\[[^\]]*\]/m]);
     static qr = TokenTypes._rs([/qr\/.*\//, /qr\(.*\)/]);//Regexp-like quote
     static qx = TokenTypes._rs([/qx\/.*\//, /`.*`/]);
     static tr = TokenTypes._r(/tr\/.*\/.*\//); //token replace
@@ -146,7 +146,7 @@ class TokenTypes {
     //static pod = TokenTypes._r(/=pod.*=cut/m);
     static keyword = TokenTypes._rs([
         "BEGIN", "package", 
-        "use",  //TODO: add "no" - like use
+        "use",  "no", 
         "my", "our", "sub", "return", "elsif", "else", "unless", "__END__",
         "and", "not",  "eq", "or",
         "foreach", "while", "for",

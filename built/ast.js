@@ -108,13 +108,27 @@ var ExpressionStatement = (function (_super) {
     }
     return ExpressionStatement;
 }(Statement));
+var UseOrNoStatement = (function (_super) {
+    __extends(UseOrNoStatement, _super);
+    function UseOrNoStatement() {
+        _super.apply(this, arguments);
+    }
+    return UseOrNoStatement;
+}(Statement));
 var UseStatement = (function (_super) {
     __extends(UseStatement, _super);
     function UseStatement() {
         _super.apply(this, arguments);
     }
     return UseStatement;
-}(Statement));
+}(UseOrNoStatement));
+var NoStatement = (function (_super) {
+    __extends(NoStatement, _super);
+    function NoStatement() {
+        _super.apply(this, arguments);
+    }
+    return NoStatement;
+}(UseOrNoStatement));
 var MemberExpression = (function (_super) {
     __extends(MemberExpression, _super);
     function MemberExpression() {
