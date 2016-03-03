@@ -141,13 +141,14 @@ class TokenTypes {
     static qw = TokenTypes._rs([/qw\s*\/[^\/]*\//m, /qw\s*<[^>]*>/m, /qw\s*\([^\)]*\)/m, /qw\s*\[[^\]]*\]/m]);
     static qr = TokenTypes._rs([/qr\/.*\//, /qr\(.*\)/]);//Regexp-like quote
     static qx = TokenTypes._rs([/qx\/.*\//, /`.*`/]);
-    static tr = TokenTypes._r(/tr\/.*\/.*\//); //token replace
+    static tr = TokenTypes._r(/tr\/.*\/.*\/[cdsr]*/); //token replace
     static pod = TokenTypes._custom(TokenTypes._matchPod);
     //static pod = TokenTypes._r(/=pod.*=cut/m);
     static keyword = TokenTypes._rs([
         "BEGIN", "package", 
         "use",  "no", 
-        "my", "our", "sub", "return", "elsif", "else", "unless", "__END__",
+        "my", "our", "local", 
+        "sub", "return", "elsif", "else", "unless", "__END__",
         "and", "not",  "eq", "or",
         "foreach", "while", "for",
         "if", "unless", "while", "until", "for", "foreach", "when"    //statement modifiers
@@ -159,8 +160,10 @@ class TokenTypes {
     static semicolon = TokenTypes._r(/;/);
     static sigiledIdentifier = TokenTypes._r(new RegExp("[\\$@%&*]" + TokenTypes.identifierRegex.source));
     static evalErrorVar = TokenTypes._r(/\$@/);
+    static listSeparatorVar = TokenTypes._r(/\$"/);
     static comment = TokenTypes._r(/\#.*/);
     static equals = TokenTypes._r(/==/);
+    static notEquals = TokenTypes._r(/!=/);
     static concatAssign = TokenTypes._r(/\.=/);
     static addAssign = TokenTypes._r(/\+=/);
     static subtractAssign = TokenTypes._r(/\-=/);
@@ -210,7 +213,7 @@ class TokenTypes {
     static multiply = TokenTypes._r(/\*/);  //also typeglob
     static div = TokenTypes._r(/\//);
     static plus = TokenTypes._r(/\+/);
-    static multiplyString = TokenTypes._r(/x/);
+    static multiplyString = TokenTypes._r(/x\b/);
     
     
     //static label = TokenTypes._r(new RegExp(TokenTypes.identifierRegex.source+"[\t\r\n ]*\:"));

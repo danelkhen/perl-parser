@@ -49,7 +49,7 @@ var ExpressionParser = (function (_super) {
             return;
         if (this.token.isAny([
             TokenTypes.assignment, TokenTypes.concat, TokenTypes.divDiv, TokenTypes.regExpEquals, TokenTypes.regExpNotEquals,
-            TokenTypes.equals, TokenTypes.and, TokenTypes.or, TokenTypes.greaterOrEqualsThan,
+            TokenTypes.equals, TokenTypes.notEquals, TokenTypes.and, TokenTypes.or, TokenTypes.greaterOrEqualsThan,
             TokenTypes.greaterThan, TokenTypes.smallerOrEqualsThan, TokenTypes.smallerThan,
             TokenTypes.numericCompare,
             TokenTypes.concatAssign, TokenTypes.divideAssign, TokenTypes.subtractAssign,
@@ -114,10 +114,10 @@ var ExpressionParser = (function (_super) {
             if (lastExpression == null)
                 lastExpression = this.parseParenthesizedList();
             else
-                lastExpression = this.parseInvocationExpression(lastExpression);
+                lastExpression = this.parseInvocationExpression(lastExpression, false);
             return this.parseNonBinaryExpression(lastExpression);
         }
-        else if (this.token.isAnyKeyword(["my", "our"])) {
+        else if (this.token.isAnyKeyword(["my", "our", "local"])) {
             var node = this.parseVariableDeclarationExpression();
             return node;
         }
@@ -156,7 +156,7 @@ var ExpressionParser = (function (_super) {
             var node = this.create(PrefixUnaryExpression);
             node.operator = new Operator();
             node.operator.value = this.token.value;
-            this.nextNonWhitespaceToken(node);
+            node.operatorPost = this.nextNonWhitespaceToken(node);
             node.expression = this.parseExpression();
             lastExpression = node;
             return this.parseNonBinaryExpression(lastExpression);
@@ -166,7 +166,7 @@ var ExpressionParser = (function (_super) {
             node.expression = lastExpression;
             node.operator = new Operator();
             node.operator.value = this.token.value;
-            this.nextNonWhitespaceToken(node);
+            node.operaatorPost = this.nextNonWhitespaceToken(node);
             lastExpression = node;
             return this.parseNonBinaryExpression(lastExpression);
         }
@@ -180,12 +180,12 @@ var ExpressionParser = (function (_super) {
                 var reader2 = this.reader.clone();
                 reader2.nextNonWhitespaceToken();
                 if (!reader2.token.isAny([TokenTypes.parenOpen, TokenTypes.arrow, TokenTypes.comma, TokenTypes.fatComma, TokenTypes.keyword, TokenTypes.assignment])) {
-                    lastExpression = this.parseInvocationExpression(node);
+                    lastExpression = this.parseInvocationExpression(node, false);
                 }
             }
             return this.parseNonBinaryExpression(lastExpression);
         }
-        else if (this.token.isAny([TokenTypes.sigiledIdentifier, TokenTypes.evalErrorVar])) {
+        else if (this.token.isAny([TokenTypes.sigiledIdentifier, TokenTypes.evalErrorVar, TokenTypes.listSeparatorVar])) {
             var node = this.parseMemberExpression(null, false);
             node.target = lastExpression;
             lastExpression = node;
@@ -260,14 +260,18 @@ var ExpressionParser = (function (_super) {
         return node;
     };
     ExpressionParser.prototype.parseSingleOrCommaSeparatedExpressions = function () {
-        var returnItems = this.parseCommaSeparatedExpressions();
-        if (returnItems.length == 1)
-            return returnItems[0];
-        var list = new ListDeclaration();
-        list.items = returnItems;
-        list.tokens = [returnItems[0].token];
-        list.token = returnItems[0].token;
+        var list = this.parseNonParenthesizedList();
+        if (list.items.length == 1)
+            return list.items[0]; //TODO: handle tokens, whitespace
         return list;
+        //let returnItems = this.parseCommaSeparatedExpressions();
+        //if (returnItems.length == 1)
+        //    return returnItems[0];
+        //let list = new ListDeclaration();
+        //list.items = returnItems;
+        //list.tokens = [returnItems[0].token];
+        //list.token = returnItems[0].token;
+        //return list;
     };
     ExpressionParser.prototype.parseAnyMemberAccess = function (target) {
         var arrow = this.token.is(TokenTypes.arrow);
@@ -279,6 +283,8 @@ var ExpressionParser = (function (_super) {
             node = this.parseHashMemberAccess(target, arrow);
         else if (this.token.is(TokenTypes.bracketOpen))
             node = this.parseArrayMemberAccess(target, arrow);
+        else if (this.token.is(TokenTypes.parenOpen))
+            node = this.parseInvocationExpression(target, arrow);
         else
             node = this.parseMemberExpression(target, arrow);
         node.memberSeparatorToken = memberSeparatorToken;
@@ -380,12 +386,18 @@ var ExpressionParser = (function (_super) {
         node.whitespaceAfter = this.nextNonWhitespaceToken(node);
         return node;
     };
-    ExpressionParser.prototype.parseInvocationExpression = function (target) {
+    ExpressionParser.prototype.parseInvocationExpression = function (target, arrow) {
         this.log("parseInvocationExpression", this.token);
         var node = this.create(InvocationExpression);
-        node.targetPost = this.skipWhitespaceAndComments();
-        node.arguments = this.parseOptionallyParanthasizedList();
+        node.arrow = arrow;
         node.target = target;
+        node.targetPost = this.skipWhitespaceAndComments();
+        node.arguments = this.parseOptionallyParenthesizedList();
+        //temp hack:  map { $self->bla(), } qw(a b c);
+        if (node.arguments.items.length == 1 && node.arguments.itemsSeparators.length == 0 && (node.arguments.items[0] instanceof BlockExpression || node.arguments.items[0] instanceof HashRefCreationExpression)) {
+            var next = this.parseExpression();
+            node.arguments.items.add(next);
+        }
         console.log("INVOCATION", node);
         return node;
     };
@@ -393,10 +405,18 @@ var ExpressionParser = (function (_super) {
         this.log("parseArrayRefDeclaration", this.token);
         var node = this.create(ArrayRefDeclaration);
         node.bracketOpenToken = this.expect(TokenTypes.bracketOpen);
-        var node2 = this.parseNonParenthesizedList();
-        node.items = node2.items;
-        node.itemsSeparators = node2.itemsSeparators;
+        node.bracketOpenTokenPost = this.nextNonWhitespaceToken();
+        if (this.token.is(TokenTypes.bracketClose)) {
+            node.items = [];
+            node.itemsSeparators = [];
+        }
+        else {
+            var node2 = this.parseNonParenthesizedList();
+            node.items = node2.items;
+            node.itemsSeparators = node2.itemsSeparators;
+        }
         node.bracketCloseToken = this.expect(TokenTypes.bracketClose);
+        this.nextToken();
         return node;
     };
     ExpressionParser.prototype.parseBracedCommaSeparatedExpressions = function (opener, closer, node, stayOnCloser) {
@@ -420,7 +440,7 @@ var ExpressionParser = (function (_super) {
             this.nextToken();
         return items;
     };
-    ExpressionParser.prototype.parseOptionallyParanthasizedList = function (opener, closer) {
+    ExpressionParser.prototype.parseOptionallyParenthesizedList = function (opener, closer) {
         if (opener == null)
             opener = TokenTypes.parenOpen;
         if (closer == null)
@@ -490,7 +510,7 @@ var ExpressionParser = (function (_super) {
     };
     ExpressionParser.prototype.parseVariableDeclarationExpression = function () {
         var node = this.create(VariableDeclarationExpression);
-        if (!this.token.isAnyKeyword(["my", "our"]))
+        if (!this.token.isAnyKeyword(["my", "our", "local"]))
             return this.onUnexpectedToken();
         node.myOurToken = this.token;
         this.nextToken();
@@ -502,7 +522,7 @@ var ExpressionParser = (function (_super) {
             node.variables = this.parseMemberExpression(null, false);
         }
         else {
-            this.logger.error("unexpected token in VariableDeclarationExpression", this.token);
+            node.variables = this.parseNonBinaryExpression(); //local ${"a::b::c} = sub { ... }
         }
         node.variablesPost = this.skipWhitespaceAndComments();
         if (this.token.is(TokenTypes.assignment)) {

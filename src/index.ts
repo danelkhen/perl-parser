@@ -11,6 +11,7 @@ class IndexPage {
     tbRegex: JQuery;
     urlKey: string;
     code: string;
+    firstTime: boolean = true;
     main() {
         this.tbUrl = $("#tbUrl");
         this.urlKey = "perl-parser\turl";
@@ -30,7 +31,7 @@ class IndexPage {
             }
         });
         let lastUrl = localStorage[this.urlKey];
-        if (lastUrl != null)
+        if (lastUrl != null && lastUrl != "")
             this.tbUrl.val(lastUrl);
         this.tbUrl.change(e=> this.update());
         this.update();
@@ -59,11 +60,18 @@ class IndexPage {
         }
     }
     parse(filename: string, data: string) {
+        if (localStorage.getItem("pause") == "1" && this.firstTime) {
+            console.warn("not running parse, last time crashed unexpectedly");
+            this.firstTime = false;
+            return;
+        }
+        this.firstTime = false;
         this.code = data;
         let codeEl = $(".code").empty().text(data);
         let file = new File2(filename, data);
         let tok = new Tokenizer();
         tok.file = file;
+        localStorage.setItem("pause", "1");
         safeTry(() => tok.main()).catch(e=> console.error(e)).then(() => {
             let parser = new Parser();
             parser.logger = new Logger();
@@ -89,6 +97,7 @@ class IndexPage {
             writer.main();
             writer.write(unit);
             $(".generated-code").val(writer.sb.join(""));
+            localStorage.removeItem("pause");
         });
         //$.create("pre").text(stringifyNodes(statements)).appendTo("body")
     }

@@ -14,13 +14,14 @@ var AstWriter = (function () {
         this.register(NoStatement, function (t) { return [t.useToken, t.useTokenPost, t.module, [t.modulePostTokens], [t.list], t.semicolonToken, [t.semicolonTokenPost]]; });
         this.register(VariableDeclarationStatement, function (t) { return [t.declaration, t.semicolonToken]; });
         this.register(VariableDeclarationExpression, function (t) { return [t.myOurToken, [t.myOurTokenPost], t.variables, [t.variablesPost], [t.assignToken, [t.assignTokenPost], t.initializer]]; });
-        this.register(InvocationExpression, function (t) { return [t.target, [t.targetPost], [t.arrowToken], [t.arguments]]; });
+        this.register(InvocationExpression, function (t) { return [t.target, [t.targetPost], [t.memberSeparatorToken], [t.arguments]]; });
         this.register(ExpressionStatement, function (t) { return [t.expression, [t.expressionPost], [t.semicolonToken]]; });
         this.register(ValueExpression, function (t) { return [t.value]; });
         this.register(BinaryExpression, function (t) { return [t.left, t.operator, t.right]; });
         this.register(BeginStatement, function (t) { return [t.beginToken, [t.beginTokenPost], t.block, [t.semicolonToken]]; });
         this.register(ListDeclaration, function (t) { return [[t.parenOpenToken, t.parenOpenTokenPost], _this.zip(t.items, t.itemsSeparators).exceptNulls(), [t.parenCloseToken]]; });
-        this.register(PrefixUnaryExpression, function (t) { return [t.operator, t.expression]; });
+        this.register(PrefixUnaryExpression, function (t) { return [t.operator, [t.operatorPost], t.expression]; });
+        this.register(PostfixUnaryExpression, function (t) { return [t.expression, t.operator, [t.operatorPost]]; });
         this.register(SubroutineExpression, function (t) { return [t.subToken, t.subTokenPost, t.name, [t.namePost], [t.colonToken, [t.colonTokenPost], t.attribute], t.block]; });
         this.register(SubroutineDeclaration, function (t) { return [t.declaration, [t.semicolonToken]]; });
         this.register(SimpleName, function (t) { return [t.name]; });

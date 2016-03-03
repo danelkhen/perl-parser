@@ -1,5 +1,4 @@
 ﻿class Parser extends ParserBase {
-
     public doParse(): Statement[] {
         this.nextToken();
         let statements: Statement[] = [];
@@ -54,7 +53,7 @@
             return this.parseBeginStatement();
         else if (this.token.isAnyKeyword(["use", "no"]))
             return this.parseUseOrNoStatement();
-        else if (this.token.isAnyKeyword(["my", "our"]))
+        else if (this.token.isAnyKeyword(["my", "our", "local"]))
             return this.parseVariableDeclarationStatement();
         else if (this.token.isKeyword("sub"))
             return this.parseSubroutineDeclaration();
@@ -92,10 +91,11 @@
     }
 
     parseOptionalSemicolon(): Token {
-        if (this.token != null && this.token.is(TokenTypes.semicolon)) {
-            return this.token;
-            this.nextToken();
-        }
+        if (this.token == null || !this.token.is(TokenTypes.semicolon))
+            return null;
+        let token = this.token;
+        this.nextToken();
+        return token;
     }
 
     parseLabel(): SimpleName {
@@ -320,9 +320,9 @@
     }
     parseUseOrNoStatement(): UseOrNoStatement {
         let node: UseOrNoStatement;
-        if(this.token.isKeyword("use"))
+        if (this.token.isKeyword("use"))
             node = this.create(UseStatement);
-        else if(this.token.isKeyword("no"))
+        else if (this.token.isKeyword("no"))
             node = this.create(NoStatement);
         else
             throw new Error();
@@ -333,7 +333,7 @@
         node.module = this.createExpressionParser().parseNonBinaryExpression();
         node.modulePostTokens = this.skipWhitespaceAndComments();
         if (!this.token.is(TokenTypes.semicolon)) {
-            node.list = this.createExpressionParser().parseOptionallyParanthasizedList();//.parseExpression();
+            node.list = this.createExpressionParser().parseOptionallyParenthesizedList();//.parseExpression();
         }
         node.semicolonToken = this.expect(TokenTypes.semicolon);
         node.semicolonTokenPost = this.nextNonWhitespaceToken();

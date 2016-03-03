@@ -6,6 +6,7 @@ function main() {
 var IndexPage = (function () {
     function IndexPage() {
         this.tokenToElement = new Map();
+        this.firstTime = true;
     }
     IndexPage.prototype.main = function () {
         var _this = this;
@@ -27,7 +28,7 @@ var IndexPage = (function () {
             }
         });
         var lastUrl = localStorage[this.urlKey];
-        if (lastUrl != null)
+        if (lastUrl != null && lastUrl != "")
             this.tbUrl.val(lastUrl);
         this.tbUrl.change(function (e) { return _this.update(); });
         this.update();
@@ -54,11 +55,18 @@ var IndexPage = (function () {
     };
     IndexPage.prototype.parse = function (filename, data) {
         var _this = this;
+        if (localStorage.getItem("pause") == "1" && this.firstTime) {
+            console.warn("not running parse, last time crashed unexpectedly");
+            this.firstTime = false;
+            return;
+        }
+        this.firstTime = false;
         this.code = data;
         var codeEl = $(".code").empty().text(data);
         var file = new File2(filename, data);
         var tok = new Tokenizer();
         tok.file = file;
+        localStorage.setItem("pause", "1");
         safeTry(function () { return tok.main(); }).catch(function (e) { return console.error(e); }).then(function () {
             var parser = new Parser();
             parser.logger = new Logger();
@@ -82,6 +90,7 @@ var IndexPage = (function () {
             writer.main();
             writer.write(unit);
             $(".generated-code").val(writer.sb.join(""));
+            localStorage.removeItem("pause");
         });
         //$.create("pre").text(stringifyNodes(statements)).appendTo("body")
     };

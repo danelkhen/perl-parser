@@ -2,6 +2,7 @@
     padding:0;
     margin:0;
     height:100%;
+    font-family:Arial;
 }
 body{
     padding:0;
@@ -100,6 +101,11 @@ body{
 .tree .node.collapsed > .children{
     display:none;
 }
+
+.height100{
+    height:100%;
+}
+
 .code .qq{color:red;}
 .code .pod{color:darkgreen;}
 .code .keyword{color:blue;}

@@ -60,7 +60,7 @@ var Parser = (function (_super) {
             return this.parseBeginStatement();
         else if (this.token.isAnyKeyword(["use", "no"]))
             return this.parseUseOrNoStatement();
-        else if (this.token.isAnyKeyword(["my", "our"]))
+        else if (this.token.isAnyKeyword(["my", "our", "local"]))
             return this.parseVariableDeclarationStatement();
         else if (this.token.isKeyword("sub"))
             return this.parseSubroutineDeclaration();
@@ -96,10 +96,11 @@ var Parser = (function (_super) {
         return node;
     };
     Parser.prototype.parseOptionalSemicolon = function () {
-        if (this.token != null && this.token.is(TokenTypes.semicolon)) {
-            return this.token;
-            this.nextToken();
-        }
+        if (this.token == null || !this.token.is(TokenTypes.semicolon))
+            return null;
+        var token = this.token;
+        this.nextToken();
+        return token;
     };
     Parser.prototype.parseLabel = function () {
         //let node = this.create(SimpleName);
@@ -314,7 +315,7 @@ var Parser = (function (_super) {
         node.module = this.createExpressionParser().parseNonBinaryExpression();
         node.modulePostTokens = this.skipWhitespaceAndComments();
         if (!this.token.is(TokenTypes.semicolon)) {
-            node.list = this.createExpressionParser().parseOptionallyParanthasizedList(); //.parseExpression();
+            node.list = this.createExpressionParser().parseOptionallyParenthesizedList(); //.parseExpression();
         }
         node.semicolonToken = this.expect(TokenTypes.semicolon);
         node.semicolonTokenPost = this.nextNonWhitespaceToken();

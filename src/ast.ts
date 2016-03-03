@@ -140,9 +140,10 @@ class ArrayMemberAccessExpression extends Expression implements HasArrow {
 class InvocationExpression extends Expression implements HasArrow {
     target: Expression;
     targetPost: Token[];
+    memberSeparatorToken: Token;
     arguments: ListDeclaration;
     arrow: boolean;
-    arrowToken: Token;
+    //arrowToken: Token;
 }
 
 class BarewordExpression extends Expression {
@@ -195,11 +196,13 @@ class ElseStatement extends Statement {
 
 class PrefixUnaryExpression extends Expression {
     operator: Operator;
+    operatorPost:Token[];
     expression: Expression;
 }
 class PostfixUnaryExpression extends Expression {
     expression: Expression;
     operator: Operator;
+    operatorPost:Token[];
 }
 
 class ReturnExpression extends Expression {

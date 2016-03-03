@@ -22,7 +22,9 @@
         <tr>
             <td>
                 <form class="bar">
-                    <textarea id="tbUrl"></textarea>
+                    <label>code or url to a file:</label>
+                    <textarea id="tbUrl">my $x = "hello world";</textarea>
+                    <label>run regex:</label>
                     <input id="tbRegex" />
                 </form>
             </td>
@@ -31,6 +33,11 @@
             <td>
                 <table class="layout" id="layout2">
                     <tr>
+                        <td>code</td>
+                        <td>generated code</td>
+                        <td>ast</td>
+                    </tr>
+                    <tr class="height100">
                         <td class="col">
                             <div class="code-container">
                                 <div class="line-numbers"></div>

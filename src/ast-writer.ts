@@ -11,13 +11,14 @@ class AstWriter {
         this.register(NoStatement, t=> [t.useToken, t.useTokenPost, t.module, [t.modulePostTokens], [t.list], t.semicolonToken, [t.semicolonTokenPost]]);
         this.register(VariableDeclarationStatement, t=> [t.declaration, t.semicolonToken]);
         this.register(VariableDeclarationExpression, t=> [t.myOurToken, [t.myOurTokenPost], t.variables, [t.variablesPost], [t.assignToken, [t.assignTokenPost], t.initializer]]);
-        this.register(InvocationExpression, t=> [t.target, [t.targetPost], [t.arrowToken], [t.arguments]]);
+        this.register(InvocationExpression, t=> [t.target, [t.targetPost], [t.memberSeparatorToken], [t.arguments]]);
         this.register(ExpressionStatement, t=> [t.expression, [t.expressionPost], [t.semicolonToken]]);
         this.register(ValueExpression, t=> [t.value]);
         this.register(BinaryExpression, t=> [t.left, t.operator, t.right]);
         this.register(BeginStatement, t=> [t.beginToken, [t.beginTokenPost], t.block, [t.semicolonToken]]);
         this.register(ListDeclaration, t=> [[t.parenOpenToken, t.parenOpenTokenPost], this.zip(t.items, t.itemsSeparators).exceptNulls(), [t.parenCloseToken]]);
-        this.register(PrefixUnaryExpression, t=> [t.operator, t.expression]);
+        this.register(PrefixUnaryExpression, t=> [t.operator, [t.operatorPost], t.expression]);
+        this.register(PostfixUnaryExpression, t=> [t.expression, t.operator, [t.operatorPost]]);
         this.register(SubroutineExpression, t=> [t.subToken, t.subTokenPost, t.name, [t.namePost], [t.colonToken, [t.colonTokenPost], t.attribute], t.block]);
         this.register(SubroutineDeclaration, t=> [t.declaration, [t.semicolonToken]]);
         this.register(SimpleName, t=> [t.name]);

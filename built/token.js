@@ -177,13 +177,14 @@ var TokenTypes = (function () {
     TokenTypes.qw = TokenTypes._rs([/qw\s*\/[^\/]*\//m, /qw\s*<[^>]*>/m, /qw\s*\([^\)]*\)/m, /qw\s*\[[^\]]*\]/m]);
     TokenTypes.qr = TokenTypes._rs([/qr\/.*\//, /qr\(.*\)/]); //Regexp-like quote
     TokenTypes.qx = TokenTypes._rs([/qx\/.*\//, /`.*`/]);
-    TokenTypes.tr = TokenTypes._r(/tr\/.*\/.*\//); //token replace
+    TokenTypes.tr = TokenTypes._r(/tr\/.*\/.*\/[cdsr]*/); //token replace
     TokenTypes.pod = TokenTypes._custom(TokenTypes._matchPod);
     //static pod = TokenTypes._r(/=pod.*=cut/m);
     TokenTypes.keyword = TokenTypes._rs([
         "BEGIN", "package",
         "use", "no",
-        "my", "our", "sub", "return", "elsif", "else", "unless", "__END__",
+        "my", "our", "local",
+        "sub", "return", "elsif", "else", "unless", "__END__",
         "and", "not", "eq", "or",
         "foreach", "while", "for",
         "if", "unless", "while", "until", "for", "foreach", "when" //statement modifiers
@@ -195,8 +196,10 @@ var TokenTypes = (function () {
     TokenTypes.semicolon = TokenTypes._r(/;/);
     TokenTypes.sigiledIdentifier = TokenTypes._r(new RegExp("[\\$@%&*]" + TokenTypes.identifierRegex.source));
     TokenTypes.evalErrorVar = TokenTypes._r(/\$@/);
+    TokenTypes.listSeparatorVar = TokenTypes._r(/\$"/);
     TokenTypes.comment = TokenTypes._r(/\#.*/);
     TokenTypes.equals = TokenTypes._r(/==/);
+    TokenTypes.notEquals = TokenTypes._r(/!=/);
     TokenTypes.concatAssign = TokenTypes._r(/\.=/);
     TokenTypes.addAssign = TokenTypes._r(/\+=/);
     TokenTypes.subtractAssign = TokenTypes._r(/\-=/);
@@ -243,7 +246,7 @@ var TokenTypes = (function () {
     TokenTypes.multiply = TokenTypes._r(/\*/); //also typeglob
     TokenTypes.div = TokenTypes._r(/\//);
     TokenTypes.plus = TokenTypes._r(/\+/);
-    TokenTypes.multiplyString = TokenTypes._r(/x/);
+    TokenTypes.multiplyString = TokenTypes._r(/x\b/);
     //static label = TokenTypes._r(new RegExp(TokenTypes.identifierRegex.source+"[\t\r\n ]*\:"));
     TokenTypes.identifier = TokenTypes._r(TokenTypes.identifierRegex);
     TokenTypes.makeRef = TokenTypes._r(/\\/);
