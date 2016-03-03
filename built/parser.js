@@ -56,6 +56,8 @@ var Parser = (function (_super) {
     Parser.prototype._parseStatement = function () {
         if (this.token.isKeyword("package"))
             return this.parsePackageDeclaration();
+        else if (this.token.is(TokenTypes.semicolon))
+            return this.parseEmptyStatement();
         else if (this.token.isKeyword("BEGIN"))
             return this.parseBeginStatement();
         else if (this.token.isAnyKeyword(["use", "no"]))
@@ -87,11 +89,17 @@ var Parser = (function (_super) {
             return null;
         return this.parseExpressionStatement();
     };
+    Parser.prototype.parseEmptyStatement = function () {
+        var node = this.create(EmptyStatement);
+        node.semicolonToken = this.expect(TokenTypes.semicolon);
+        this.nextToken();
+        return node;
+    };
     Parser.prototype.parseBeginStatement = function () {
         var node = this.create(BeginStatement);
         node.beginToken = this.expectKeyword("BEGIN");
         node.beginTokenPost = this.nextNonWhitespaceToken(node);
-        node.block = this.createExpressionParser().parseBlockExpression();
+        node.block = this.parseBlock();
         node.semicolonToken = this.parseOptionalSemicolon();
         return node;
     };
@@ -155,7 +163,7 @@ var Parser = (function (_super) {
         //TODO: parenthases ?
         node.list = this.createExpressionParser().parseParenthesizedList();
         node.listPost = this.skipWhitespaceAndComments(node);
-        node.block = this.createExpressionParser().parseBlockExpression();
+        node.block = this.parseBlock();
         node.semicolonToken = this.parseOptionalSemicolon();
         return node;
     };
@@ -176,7 +184,7 @@ var Parser = (function (_super) {
         node.iterator = this.parseExpression();
         node.parenCloseToken = this.expect(TokenTypes.parenClose);
         node.parenCloseTokenPost = this.nextNonWhitespaceToken(node);
-        node.block = this.createExpressionParser().parseBlockExpression();
+        node.block = this.parseBlock();
         node.semicolonToken = this.parseOptionalSemicolon();
         return node;
     };
@@ -222,7 +230,7 @@ var Parser = (function (_super) {
         node.expression = this.parseExpression();
         node.parenCloseToken = this.expect(TokenTypes.parenClose, node);
         node.parenCloseTokenPost = this.nextNonWhitespaceToken(node);
-        node.block = this.createExpressionParser().parseBlockExpression();
+        node.block = this.parseBlock();
         //node.block this.parseBracedStatements(node, true);
         node.blockPost = this.skipWhitespaceAndComments(node);
         if (this.token == null)
@@ -237,7 +245,7 @@ var Parser = (function (_super) {
         var node = this.create(ElseStatement);
         node.keywordToken = this.expectKeyword("else");
         node.keywordTokenPost = this.nextNonWhitespaceToken(node);
-        node.block = this.createExpressionParser().parseBlockExpression();
+        node.block = this.parseBlock();
         node.semicolonToken = this.parseOptionalSemicolon();
         return node;
     };
@@ -250,7 +258,7 @@ var Parser = (function (_super) {
         node.expressionPost = this.skipWhitespaceAndComments();
         if (this.token.is(TokenTypes.braceClose))
             return node;
-        var semicolonIsOptional = node.expression instanceof BlockExpression;
+        var semicolonIsOptional = node.expression instanceof Block;
         if (!this.token.is(TokenTypes.semicolon) && semicolonIsOptional)
             return node;
         node.semicolonToken = this.expect(TokenTypes.semicolon);
@@ -319,6 +327,16 @@ var Parser = (function (_super) {
         }
         node.semicolonToken = this.expect(TokenTypes.semicolon);
         node.semicolonTokenPost = this.nextNonWhitespaceToken();
+        return node;
+    };
+    Parser.prototype.parseBlock = function () {
+        var node = this.create(Block);
+        node.whitespaceBefore = this.skipWhitespaceAndComments();
+        node.braceOpenToken = this.expect(TokenTypes.braceOpen);
+        node.braceOpenTokenPost = this.nextNonWhitespaceToken(node);
+        node.statements = this.parseStatementsUntil(TokenTypes.braceClose);
+        node.braceCloseToken = this.expect(TokenTypes.braceClose, node);
+        node.whitespaceAfter = this.nextNonWhitespaceToken(node);
         return node;
     };
     Parser.prototype.parseExpression = function () { return this.createExpressionParser().parseExpression(); };

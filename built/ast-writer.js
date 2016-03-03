@@ -33,13 +33,14 @@ var AstWriter = (function () {
         this.register(IfStatement, function (t) { return [t.keywordToken, [t.keywordTokenPost], t.parenOpenToken, [t.parenOpenTokenPost], t.expression, t.parenCloseToken, [t.parenCloseTokenPost], t.block, [t.else], [t.semicolonToken]]; });
         this.register(ElsifStatement, function (t) { return [t.keywordToken, [t.keywordTokenPost], t.parenOpenToken, [t.parenOpenTokenPost], t.expression, t.parenCloseToken, [t.parenCloseTokenPost], t.block, [t.else], [t.semicolonToken]]; });
         this.register(ElseStatement, function (t) { return [t.keywordToken, [t.keywordTokenPost], t.block, [t.semicolonToken]]; });
-        this.register(HashRefCreationExpression, function (t) { return [t.parenOpenToken, [t.parenOpenTokenPost], _this.zip(t.items, t.itemsSeparators).exceptNulls(), t.parenCloseToken]; });
+        this.register(HashRefCreationExpression, function (t) { return [t.braceOpenToken, [t.braceOpenTokenPost], _this.zip(t.items, t.itemsSeparators).exceptNulls(), t.braceCloseToken]; });
         this.register(ForEachStatement, function (t) { return [[t.label, ":"], t.forEachToken, [t.forEachTokenPost], [t.variable, [t.variablePost]], t.list, [t.listPost], t.block]; });
         this.register(ForStatement, function (t) { return [t.forToken, [t.forTokenPost], t.parenOpenToken, [t.parenOpenTokenPost], t.initializer, t.semicolon1Token, [t.semicolon1TokenPost], t.condition, t.semicolon2Token, [t.semicolon2TokenPost], t.iterator, t.parenCloseToken, [t.parenCloseTokenPost], t.block, [t.semicolonToken]]; });
-        this.register(BlockExpression, function (t) { return [t.braceOpenToken, [t.braceOpenTokenPost], t.statements, t.braceCloseToken]; });
+        this.register(Block, function (t) { return [t.braceOpenToken, [t.braceOpenTokenPost], t.statements, t.braceCloseToken]; });
         this.register(RegexExpression, function (t) { return [t.value]; });
         this.register(TrinaryExpression, function (t) { return [t.condition, t.questionToken, [t.questionTokenPost], t.trueExpression, [t.trueExpressionPost], t.colonToken, [t.colonTokenPost], t.falseExpression]; });
         this.register(EndStatement, function (t) { return [t.endToken]; });
+        this.register(EmptyStatement, function (t) { return [t.semicolonToken]; });
         this.register(MultiBinaryExpression, function (t) {
             if (t.expressions.length != t.operators.length + 1)
                 throw new Error("invalid multiexpression");
@@ -50,6 +51,8 @@ var AstWriter = (function () {
             //console.log("Multi", res);
             return list;
         });
+        this.register(NativeInvocation_BlockAndListOrExprCommaList, function (t) { return [t.keywordToken, t.keywordTokenPost, [t.block, t.blockPost, t.list], [t.expr, t.exprPost, t.commaToken, [t.commaTokenPost], t.list]]; });
+        this.register(NativeInvocation_BlockOrExpr, function (t) { return [t.keywordToken, [t.keywordTokenPost], [t.block], [t.expr]]; });
         this.sb = [];
     };
     AstWriter.prototype.zip = function (list1, list2) {

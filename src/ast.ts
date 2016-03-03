@@ -6,14 +6,19 @@ class AstNode {
     whitespaceAfter: Token[];
 }
 class Statement extends AstNode {
+    isStatement = true;
 }
 
+class EmptyStatement extends Statement {
+    isStatement = true;
+    semicolonToken:Token;
+}
 
 class Expression extends AstNode {
-
+    isExpression = true;
 }
 
-class BlockExpression extends Expression {
+class Block extends AstNode {
     braceOpenToken: Token;
     braceOpenTokenPost: Token[];
     statements: Statement[];
@@ -29,11 +34,11 @@ class ListDeclaration extends Expression {
 }
 
 class HashRefCreationExpression extends Expression {
-    parenOpenToken: Token;
-    parenOpenTokenPost: Token[];
+    braceOpenToken: Token;
+    braceOpenTokenPost: Token[];
     itemsSeparators: Array<Token[]>;
     items: Expression[];
-    parenCloseToken: Token;
+    braceCloseToken: Token;
 }
 
 
@@ -177,7 +182,7 @@ class IfStatement extends Statement {
     expression: Expression;
     parenCloseToken: Token;
     parenCloseTokenPost: Token[];
-    block: BlockExpression;
+    block: Block;
     blockPost: Token[];
     else: Statement;
     semicolonToken: Token;
@@ -190,19 +195,19 @@ class ElsifStatement extends IfStatement {
 class ElseStatement extends Statement {
     keywordToken: Token;
     keywordTokenPost: Token[];
-    block: BlockExpression;
+    block: Block;
     semicolonToken: Token;
 }
 
 class PrefixUnaryExpression extends Expression {
     operator: Operator;
-    operatorPost:Token[];
+    operatorPost: Token[];
     expression: Expression;
 }
 class PostfixUnaryExpression extends Expression {
     expression: Expression;
     operator: Operator;
-    operatorPost:Token[];
+    operatorPost: Token[];
 }
 
 class ReturnExpression extends Expression {
@@ -250,7 +255,7 @@ class ForEachStatement extends Statement {
     variablePost: Token[];
     variable: Expression;
     list: Expression;
-    block: BlockExpression;
+    block: Block;
     semicolonToken: Token;
 }
 class ForStatement extends Statement {
@@ -268,7 +273,7 @@ class ForStatement extends Statement {
     condition: Expression;
     iterator: Expression;
     //statements: Statement[];
-    block: BlockExpression;
+    block: Block;
     semicolonToken: Token;
 }
 class WhileStatement extends Statement {
@@ -278,7 +283,7 @@ class WhileStatement extends Statement {
 class BeginStatement extends Statement {
     beginToken: Token;
     beginTokenPost: Token[];
-    block: BlockExpression;
+    block: Block;
     semicolonToken: Token;
 }
 
@@ -305,7 +310,34 @@ class SubroutineExpression extends Expression {
     attribute: SimpleName;
     
     //statements: Statement[];
-    block: BlockExpression;
+    block: Block;
 }
 
+class NativeFunctionInvocation extends Expression {
+}
 
+/// map BLOCK LIST
+/// map EXPR,LIST
+class NativeInvocation_BlockAndListOrExprCommaList extends NativeFunctionInvocation {
+    keywordToken: Token;
+    keywordTokenPost: Token[];
+
+    block: Block;
+    blockPost: Token[];
+
+    expr: Expression;
+    exprPost: Token[];
+    commaToken: Token;
+    commaTokenPost: Token[];
+    list: Expression;
+}
+
+/// eval BLOCK
+/// eval EXPR
+class NativeInvocation_BlockOrExpr extends NativeFunctionInvocation {
+    keywordToken: Token;
+    keywordTokenPost: Token[];
+
+    block: Block;
+    expr: Expression;
+}

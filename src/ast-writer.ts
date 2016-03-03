@@ -32,13 +32,14 @@ class AstWriter {
         this.register(IfStatement, t=> [t.keywordToken, [t.keywordTokenPost], t.parenOpenToken, [t.parenOpenTokenPost], t.expression, t.parenCloseToken, [t.parenCloseTokenPost], t.block, [t.else], [t.semicolonToken]]);
         this.register(ElsifStatement, t=> [t.keywordToken, [t.keywordTokenPost], t.parenOpenToken, [t.parenOpenTokenPost], t.expression, t.parenCloseToken, [t.parenCloseTokenPost], t.block, [t.else], [t.semicolonToken]]);
         this.register(ElseStatement, t=> [t.keywordToken, [t.keywordTokenPost], t.block, [t.semicolonToken]]);
-        this.register(HashRefCreationExpression, t=> [t.parenOpenToken, [t.parenOpenTokenPost], this.zip(t.items, t.itemsSeparators).exceptNulls(), t.parenCloseToken]);
+        this.register(HashRefCreationExpression, t=> [t.braceOpenToken, [t.braceOpenTokenPost], this.zip(t.items, t.itemsSeparators).exceptNulls(), t.braceCloseToken]);
         this.register(ForEachStatement, t=> [[t.label, ":"], t.forEachToken, [t.forEachTokenPost], [t.variable, [t.variablePost]], t.list, [t.listPost], t.block]);
         this.register(ForStatement, t=> [t.forToken, [t.forTokenPost], t.parenOpenToken, [t.parenOpenTokenPost], t.initializer, t.semicolon1Token, [t.semicolon1TokenPost], t.condition, t.semicolon2Token, [t.semicolon2TokenPost], t.iterator, t.parenCloseToken, [t.parenCloseTokenPost], t.block, [t.semicolonToken]]);
-        this.register(BlockExpression, t=> [t.braceOpenToken, [t.braceOpenTokenPost], t.statements, t.braceCloseToken]);
+        this.register(Block, t=> [t.braceOpenToken, [t.braceOpenTokenPost], t.statements, t.braceCloseToken]);
         this.register(RegexExpression, t=> [t.value]);
         this.register(TrinaryExpression, t=> [t.condition, t.questionToken, [t.questionTokenPost], t.trueExpression, [t.trueExpressionPost], t.colonToken, [t.colonTokenPost], t.falseExpression]);
         this.register(EndStatement, t=> [t.endToken]);
+        this.register(EmptyStatement, t=> [t.semicolonToken]);
 
         this.register(MultiBinaryExpression, t=> {
             if (t.expressions.length != t.operators.length + 1)
@@ -50,6 +51,12 @@ class AstWriter {
             //console.log("Multi", res);
             return list;
         });
+
+        this.register(NativeInvocation_BlockAndListOrExprCommaList, t=> [t.keywordToken, t.keywordTokenPost, [t.block, t.blockPost, t.list], [t.expr, t.exprPost, t.commaToken, [t.commaTokenPost], t.list]]);
+        this.register(NativeInvocation_BlockOrExpr, t=> [t.keywordToken, [t.keywordTokenPost],  [t.block], [t.expr]]);
+         
+
+
         this.sb = [];
     }
 

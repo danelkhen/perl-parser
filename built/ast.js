@@ -14,23 +14,33 @@ var Statement = (function (_super) {
     __extends(Statement, _super);
     function Statement() {
         _super.apply(this, arguments);
+        this.isStatement = true;
     }
     return Statement;
 }(AstNode));
+var EmptyStatement = (function (_super) {
+    __extends(EmptyStatement, _super);
+    function EmptyStatement() {
+        _super.apply(this, arguments);
+        this.isStatement = true;
+    }
+    return EmptyStatement;
+}(Statement));
 var Expression = (function (_super) {
     __extends(Expression, _super);
     function Expression() {
         _super.apply(this, arguments);
+        this.isExpression = true;
     }
     return Expression;
 }(AstNode));
-var BlockExpression = (function (_super) {
-    __extends(BlockExpression, _super);
-    function BlockExpression() {
+var Block = (function (_super) {
+    __extends(Block, _super);
+    function Block() {
         _super.apply(this, arguments);
     }
-    return BlockExpression;
-}(Expression));
+    return Block;
+}(AstNode));
 var ListDeclaration = (function (_super) {
     __extends(ListDeclaration, _super);
     function ListDeclaration() {
@@ -306,3 +316,28 @@ var SubroutineExpression = (function (_super) {
     }
     return SubroutineExpression;
 }(Expression));
+var NativeFunctionInvocation = (function (_super) {
+    __extends(NativeFunctionInvocation, _super);
+    function NativeFunctionInvocation() {
+        _super.apply(this, arguments);
+    }
+    return NativeFunctionInvocation;
+}(Expression));
+/// map BLOCK LIST
+/// map EXPR,LIST
+var NativeInvocation_BlockAndListOrExprCommaList = (function (_super) {
+    __extends(NativeInvocation_BlockAndListOrExprCommaList, _super);
+    function NativeInvocation_BlockAndListOrExprCommaList() {
+        _super.apply(this, arguments);
+    }
+    return NativeInvocation_BlockAndListOrExprCommaList;
+}(NativeFunctionInvocation));
+/// eval BLOCK
+/// eval EXPR
+var NativeInvocation_BlockOrExpr = (function (_super) {
+    __extends(NativeInvocation_BlockOrExpr, _super);
+    function NativeInvocation_BlockOrExpr() {
+        _super.apply(this, arguments);
+    }
+    return NativeInvocation_BlockOrExpr;
+}(NativeFunctionInvocation));

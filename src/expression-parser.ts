@@ -104,7 +104,7 @@
         }
         else if (this.token.is(TokenTypes.braceOpen)) {
             if (lastExpression == null)
-                return this.parseHashRefOrBlockExpression();
+                return this.parseHashRefCreation();// this.parseHashRefOrBlockExpression();
             lastExpression = this.parseHashMemberAccess(lastExpression, false);
             return this.parseNonBinaryExpression(lastExpression);
         }
@@ -114,6 +114,14 @@
             else
                 lastExpression = this.parseInvocationExpression(lastExpression, false);
             return this.parseNonBinaryExpression(lastExpression);
+        }
+        else if (this.token.isAnyIdentifier(["map", "grep"])) {
+            let node = this.parseNativeInvocation_BlockAndListOrExprCommaList(this.token.value);
+            return node;
+        }
+        else if (this.token.isAnyIdentifier(["eval"])) {
+            let node = this.parseNativeInvocation_BlockOrExpr(this.token.value);
+            return node;
         }
         else if (this.token.isAnyKeyword(["my", "our", "local"])) {
             let node = this.parseVariableDeclarationExpression();
@@ -246,7 +254,7 @@
             node.prototype = this.parseParenthesizedList();
             node.prototypePost = this.skipWhitespaceAndComments(node);
         }
-        node.block = this.parseBlockExpression();//this.parser.parseBracedStatements(node);
+        node.block = this.parser.parseBlock();//this.parser.parseBracedStatements(node);
         return node;
     }
     parseReturnExpression(): ReturnExpression {
@@ -350,13 +358,16 @@
                 break;
             reader2.nextNonWhitespaceToken();
         }
+        this.skipWhitespaceAndComments();
+        //if(this.token.is(TokenTypes.comma))
+        //    return true;
         return false;
     }
 
-    parseHashRefOrBlockExpression(): Expression {
+    parseHashRefOrBlockExpression(): Expression | Block {
         let isBlock = this.isBlockExpression();
         if (isBlock)
-            return this.parseBlockExpression();
+            return this.parser.parseBlock();
         return this.parseHashRefCreation();
 
         //let index = this.reader.clone().findClosingBraceIndex(TokenTypes.braceOpen, TokenTypes.braceClose);
@@ -380,19 +391,9 @@
         node.tokens = node2.tokens;
         node.items = node2.items;
         node.itemsSeparators = node2.itemsSeparators;
-        node.parenOpenToken = node2.parenOpenToken;
-        node.parenOpenTokenPost = node2.parenOpenTokenPost;
-        node.parenCloseToken = node2.parenCloseToken;
-        return node;
-    }
-    parseBlockExpression(): BlockExpression {
-        let node = this.create(BlockExpression);
-        node.whitespaceBefore = this.skipWhitespaceAndComments();
-        node.braceOpenToken = this.expect(TokenTypes.braceOpen);
-        node.braceOpenTokenPost = this.nextNonWhitespaceToken(node);
-        node.statements = this.parser.parseStatementsUntil(TokenTypes.braceClose);
-        node.braceCloseToken = this.expect(TokenTypes.braceClose, node);
-        node.whitespaceAfter = this.nextNonWhitespaceToken(node);
+        node.braceOpenToken = node2.parenOpenToken;
+        node.braceOpenTokenPost = node2.parenOpenTokenPost;
+        node.braceCloseToken = node2.parenCloseToken;
         return node;
     }
 
@@ -575,6 +576,75 @@
     //    return node;
     //}
 
+    tryBlockToHashRefCreation(block: Block): HashRefCreationExpression {
+        if (block.statements.length != 1)
+            return null;
+        throw new Error();
+        let node = new HashRefCreationExpression();
+        node.token = block.token;
+        node.tokens = block.tokens;
+        //node.items = (<ExpressionStatement>block.statements[0]).expression;
+        return node;
+    }
+    tryHashRefCreationToBlock(node: HashRefCreationExpression): Block {
+        let node2 = new Block();
+        node2.braceOpenToken = node.braceOpenToken;
+        node2.braceOpenTokenPost = node.braceOpenTokenPost;
+        node2.braceCloseToken = node.braceCloseToken;
+        let st = new ExpressionStatement(); //TODO: validate length, transfer tokens
+        st.expression = node.items[0];
+        node2.statements = [st];
+        return node2;
+    }
 
+    parseBlockOrExpr(): Block | Expression {
+        if (this.token.is(TokenTypes.braceOpen))
+            return this.parseHashRefOrBlockExpression();
+        return this.parseExpression();
+    }
+    parseNativeInvocation_BlockAndListOrExprCommaList(keyword: string): NativeInvocation_BlockAndListOrExprCommaList {
+        let node = this.create(NativeInvocation_BlockAndListOrExprCommaList);
+        node.keywordToken = this.expectIdentifier(keyword);
+        node.keywordTokenPost = this.nextNonWhitespaceToken();
+
+        let blockOrExpr = this.parseBlockOrExpr();
+        let post = this.skipWhitespaceAndComments();
+        if (!this.token.is(TokenTypes.comma) && blockOrExpr instanceof HashRefCreationExpression) {
+            blockOrExpr = this.tryHashRefCreationToBlock(<HashRefCreationExpression>blockOrExpr);
+        }
+        if (blockOrExpr instanceof Block) {
+            node.block = blockOrExpr;
+            node.blockPost = post;
+            node.list = this.parseExpression();
+        }
+        else if (blockOrExpr instanceof Expression) {
+            node.expr = blockOrExpr;
+            node.exprPost = post;
+            node.commaToken = this.expect(TokenTypes.comma);
+            node.commaTokenPost = this.nextNonWhitespaceToken();
+            node.list = this.parseExpression();
+        }
+        else
+            throw new Error();
+
+        return node;
+
+
+    }
+    parseNativeInvocation_BlockOrExpr(keyword: string): NativeInvocation_BlockOrExpr {
+        let node = this.create(NativeInvocation_BlockOrExpr);
+        node.keywordToken = this.expectIdentifier(keyword);
+        node.keywordTokenPost = this.nextNonWhitespaceToken();
+
+        let blockOrExpr = this.parseBlockOrExpr();
+        let post = this.skipWhitespaceAndComments();
+        if (blockOrExpr instanceof Block) 
+            node.block = blockOrExpr;
+        else if (blockOrExpr instanceof Expression) 
+            node.expr = blockOrExpr;
+        else
+            throw new Error();
+        return node;
+    }
 
 }

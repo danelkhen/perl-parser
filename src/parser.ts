@@ -49,6 +49,8 @@
     _parseStatement(): Statement {
         if (this.token.isKeyword("package"))
             return this.parsePackageDeclaration();
+        else if (this.token.is(TokenTypes.semicolon))
+            return this.parseEmptyStatement();
         else if (this.token.isKeyword("BEGIN"))
             return this.parseBeginStatement();
         else if (this.token.isAnyKeyword(["use", "no"]))
@@ -81,11 +83,17 @@
         return this.parseExpressionStatement();
     }
 
+    parseEmptyStatement(): EmptyStatement {
+        let node  = this.create(EmptyStatement);
+        node.semicolonToken = this.expect(TokenTypes.semicolon);
+        this.nextToken();
+        return node;
+    }
     parseBeginStatement(): BeginStatement {
         let node = this.create(BeginStatement);
         node.beginToken = this.expectKeyword("BEGIN");
         node.beginTokenPost = this.nextNonWhitespaceToken(node);
-        node.block = this.createExpressionParser().parseBlockExpression();
+        node.block = this.parseBlock();
         node.semicolonToken = this.parseOptionalSemicolon();
         return node;
     }
@@ -154,7 +162,7 @@
         //TODO: parenthases ?
         node.list = this.createExpressionParser().parseParenthesizedList();
         node.listPost = this.skipWhitespaceAndComments(node);
-        node.block = this.createExpressionParser().parseBlockExpression();
+        node.block = this.parseBlock();
         node.semicolonToken = this.parseOptionalSemicolon();
         return node;
     }
@@ -181,7 +189,7 @@
         node.parenCloseToken = this.expect(TokenTypes.parenClose);
         node.parenCloseTokenPost = this.nextNonWhitespaceToken(node);
 
-        node.block = this.createExpressionParser().parseBlockExpression();
+        node.block = this.parseBlock();
         node.semicolonToken = this.parseOptionalSemicolon();
         return node;
     }
@@ -233,7 +241,7 @@
         node.expression = this.parseExpression();
         node.parenCloseToken = this.expect(TokenTypes.parenClose, node);
         node.parenCloseTokenPost = this.nextNonWhitespaceToken(node);
-        node.block = this.createExpressionParser().parseBlockExpression();
+        node.block = this.parseBlock();
         //node.block this.parseBracedStatements(node, true);
         node.blockPost = this.skipWhitespaceAndComments(node);
         if (this.token == null)
@@ -249,7 +257,7 @@
         let node = this.create(ElseStatement);
         node.keywordToken = this.expectKeyword("else");
         node.keywordTokenPost = this.nextNonWhitespaceToken(node);
-        node.block = this.createExpressionParser().parseBlockExpression();
+        node.block = this.parseBlock();
         node.semicolonToken = this.parseOptionalSemicolon();
         return node;
     }
@@ -265,7 +273,7 @@
         if (this.token.is(TokenTypes.braceClose))   //last statement doesn't have to have semicolon
             return node;
 
-        let semicolonIsOptional = node.expression instanceof BlockExpression;
+        let semicolonIsOptional = node.expression instanceof Block;
         if (!this.token.is(TokenTypes.semicolon) && semicolonIsOptional)  //allow scope blocks to end with a closing brace but without semicolon
             return node;
         node.semicolonToken = this.expect(TokenTypes.semicolon);
@@ -339,6 +347,18 @@
         node.semicolonTokenPost = this.nextNonWhitespaceToken();
         return node;
     }
+
+    parseBlock(): Block {
+        let node = this.create(Block);
+        node.whitespaceBefore = this.skipWhitespaceAndComments();
+        node.braceOpenToken = this.expect(TokenTypes.braceOpen);
+        node.braceOpenTokenPost = this.nextNonWhitespaceToken(node);
+        node.statements = this.parseStatementsUntil(TokenTypes.braceClose);
+        node.braceCloseToken = this.expect(TokenTypes.braceClose, node);
+        node.whitespaceAfter = this.nextNonWhitespaceToken(node);
+        return node;
+    }
+
     parseExpression(): Expression { return this.createExpressionParser().parseExpression(); }
     parseMemberExpression(): MemberExpression {
         let node = this.parseExpression();

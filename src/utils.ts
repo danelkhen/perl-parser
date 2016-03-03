@@ -79,17 +79,17 @@ class TokenReader {
         }
         return skipped;
     }
-    expectIdentifier(value?: string) {
+    expectIdentifier(value?: string):Token {
         return this.expect(TokenTypes.identifier, value);
     }
     expectKeyword(value?: string) {
         return this.expect(TokenTypes.keyword, value);
     }
-    expect(type: TokenType, value?: string) {
+    expect(type: TokenType, value?: string):Token {
         let res = this.token.is(type, value);
         if (!res)
             this.onUnexpectedToken();
-        return res;
+        return this.token;
     }
     expectAny(types: TokenType[]): boolean {
         let res = this.token.isAny(types);

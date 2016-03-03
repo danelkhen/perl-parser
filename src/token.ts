@@ -65,6 +65,9 @@ class Token {
     isIdentifier(value?: string) {
         return this.is(TokenTypes.identifier, value);
     }
+    isAnyIdentifier(values: string[]) {
+        return this.is(TokenTypes.identifier) && values.contains(this.value);
+    }
 
 }
 

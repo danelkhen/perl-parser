@@ -15,7 +15,7 @@ class ParserBase {
         this.reader.onUnexpectedToken();
         return null;
     }
-    expectIdentifier(value?: string) {
+    expectIdentifier(value?: string):Token {
         return this.reader.expectIdentifier(value);
     }
     expectKeyword(value?: string):Token {

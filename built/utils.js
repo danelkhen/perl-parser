@@ -101,7 +101,7 @@ var TokenReader = (function () {
         var res = this.token.is(type, value);
         if (!res)
             this.onUnexpectedToken();
-        return res;
+        return this.token;
     };
     TokenReader.prototype.expectAny = function (types) {
         var res = this.token.isAny(types);

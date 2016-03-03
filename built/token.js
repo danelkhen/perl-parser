@@ -56,6 +56,9 @@ var Token = (function () {
     Token.prototype.isIdentifier = function (value) {
         return this.is(TokenTypes.identifier, value);
     };
+    Token.prototype.isAnyIdentifier = function (values) {
+        return this.is(TokenTypes.identifier) && values.contains(this.value);
+    };
     return Token;
 }());
 var HereDocTokenType = (function (_super) {
