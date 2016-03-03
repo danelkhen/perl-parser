@@ -166,7 +166,7 @@ var ExpressionParser = (function (_super) {
             node.expression = lastExpression;
             node.operator = new Operator();
             node.operator.value = this.token.value;
-            node.operaatorPost = this.nextNonWhitespaceToken(node);
+            node.operatorPost = this.nextNonWhitespaceToken(node);
             lastExpression = node;
             return this.parseNonBinaryExpression(lastExpression);
         }
@@ -393,11 +393,11 @@ var ExpressionParser = (function (_super) {
         node.target = target;
         node.targetPost = this.skipWhitespaceAndComments();
         node.arguments = this.parseOptionallyParenthesizedList();
-        //temp hack:  map { $self->bla(), } qw(a b c);
-        if (node.arguments.items.length == 1 && node.arguments.itemsSeparators.length == 0 && (node.arguments.items[0] instanceof BlockExpression || node.arguments.items[0] instanceof HashRefCreationExpression)) {
-            var next = this.parseExpression();
-            node.arguments.items.add(next);
-        }
+        ////temp hack:  map { $self->bla(), } qw(a b c);
+        //if (node.arguments.items.length == 1 && node.arguments.itemsSeparators.length == 0 && (node.arguments.items[0] instanceof BlockExpression || node.arguments.items[0] instanceof HashRefCreationExpression)) {
+        //    let next = this.parseExpression();
+        //    node.arguments.items.add(next);
+        //}
         console.log("INVOCATION", node);
         return node;
     };
