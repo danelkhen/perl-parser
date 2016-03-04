@@ -1,6 +1,7 @@
 ﻿class ExpressionParser extends ParserBase {
     parser: Parser;
 
+
     parseExpression(): Expression {
         this.log("parseExpression", this.token);
         let mbe = this.create(MultiBinaryExpression);
@@ -120,7 +121,7 @@
             let node = this.parseNativeInvocation_BlockAndListOrExprCommaList(this.token.value);
             return node;
         }
-        else if (this.token.isAnyIdentifier(["eval"])) {
+        else if (this.token.isAnyIdentifier(["eval", "ref"])) {
             let node = this.parseNativeInvocation_BlockOrExpr(this.token.value);
             return node;
         }

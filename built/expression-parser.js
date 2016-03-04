@@ -122,7 +122,7 @@ var ExpressionParser = (function (_super) {
             var node = this.parseNativeInvocation_BlockAndListOrExprCommaList(this.token.value);
             return node;
         }
-        else if (this.token.isAnyIdentifier(["eval"])) {
+        else if (this.token.isAnyIdentifier(["eval", "ref"])) {
             var node = this.parseNativeInvocation_BlockOrExpr(this.token.value);
             return node;
         }
