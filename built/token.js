@@ -11,6 +11,9 @@ var TokenType = (function () {
     TokenType.prototype.create = function (range) {
         return new Token(range, this);
     };
+    TokenType.prototype.create2 = function (value) {
+        return new Token(null, this, value);
+    };
     TokenType.prototype.match = function (tokenizer) {
         throw new Error();
     };
@@ -28,10 +31,13 @@ var TokenType = (function () {
     return TokenType;
 }());
 var Token = (function () {
-    function Token(range, type) {
+    function Token(range, type, value) {
         this.range = range;
         this.type = type;
-        this.value = this.range.text;
+        if (this.range == null)
+            this.value = value;
+        else
+            this.value = this.range.text;
     }
     Token.prototype.toString = function () {
         return this.type.name + " " + this.value;

@@ -79,13 +79,13 @@ class TokenReader {
         }
         return skipped;
     }
-    expectIdentifier(value?: string):Token {
+    expectIdentifier(value?: string): Token {
         return this.expect(TokenTypes.identifier, value);
     }
     expectKeyword(value?: string) {
         return this.expect(TokenTypes.keyword, value);
     }
-    expect(type: TokenType, value?: string):Token {
+    expect(type: TokenType, value?: string): Token {
         let res = this.token.is(type, value);
         if (!res)
             this.onUnexpectedToken();
@@ -156,3 +156,31 @@ Array.prototype.withItemBetweenEach = function (item) {
     }
     return list;
 }
+
+class AstNodeFixator {
+    process(node: AstNode) {
+        let props = Object.keys(node);
+        props.forEach(prop=> {
+            if (prop == "parentNode")
+                return;
+            let value = node[prop];
+            this.processProp(node, prop, value);
+        });
+    }
+
+    processProp(node: AstNode, prop: string, value: any) {
+        if (value == null)
+            return;
+        if (value instanceof AstNode) {
+            let child = <AstNode>value;
+            child.parentNode = node;
+            child.parentNodeProp = prop;
+            this.process(child);
+        }
+        else if (value instanceof Array) {
+            value.forEach(t=> this.processProp(node, prop, t));
+        }
+    }
+}
+
+

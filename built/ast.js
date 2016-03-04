@@ -22,7 +22,6 @@ var EmptyStatement = (function (_super) {
     __extends(EmptyStatement, _super);
     function EmptyStatement() {
         _super.apply(this, arguments);
-        this.isStatement = true;
     }
     return EmptyStatement;
 }(Statement));

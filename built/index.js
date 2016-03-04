@@ -13,6 +13,7 @@ var IndexPage = (function () {
         this.tbUrl = $("#tbUrl");
         this.urlKey = "perl-parser\turl";
         this.tbRegex = $("#tbRegex");
+        $("#btnRefactor").click(function (e) { return _this.refactor(); });
         this.tbRegex.keyup(function (e) {
             var s = _this.tbRegex.val();
             try {
@@ -73,35 +74,71 @@ var IndexPage = (function () {
             parser.reader = new TokenReader();
             parser.reader.logger = parser.logger;
             parser.reader.tokens = tok.tokens;
-            codeEl.empty();
-            if (tok.tokens.length > 0) {
-                tok.tokens.forEach(function (token) {
-                    var span = $.create("span").addClass(token.type.name).text(token.value).appendTo(codeEl)[0];
-                    _this.tokenToElement.set(token, span);
-                });
-                _this.renderLineNumbers(tok.tokens.last().range.end.line);
-            }
+            _this.tokens = tok.tokens;
+            _this.renderTokens();
             var statements = parser.doParse();
             console.log(statements);
             var unit = new Unit();
             unit.statements = statements;
-            $(".tree").empty().getAppend("ul").append(_this.createTree(_this.createInstanceNode(unit)));
-            var writer = new AstWriter();
-            writer.main();
-            writer.write(unit);
-            $(".generated-code").val(writer.sb.join(""));
+            _this.unit = unit;
+            _this.renderTree();
+            _this.generateCode();
             localStorage.removeItem("pause");
+            _this.renderGeneratedCode();
         });
         //$.create("pre").text(stringifyNodes(statements)).appendTo("body")
+    };
+    IndexPage.prototype.generateCode = function () {
+        var writer = new AstWriter();
+        writer.main();
+        writer.write(this.unit);
+        this.generatedCode = writer.sb.join("");
+    };
+    IndexPage.prototype.render = function () {
+        $(".code").empty().text(this.code);
+        this.renderTokens();
+        this.renderGeneratedCode();
+        this.renderTree();
+    };
+    IndexPage.prototype.renderTree = function () {
+        $(".tree").empty().getAppend("ul").append(this.createTree(this.createInstanceNode(this.unit)));
+    };
+    IndexPage.prototype.renderTokens = function () {
+        var _this = this;
+        var codeEl = $(".code");
+        codeEl.empty();
+        if (this.tokens == null || this.tokens.length == 0)
+            return;
+        this.tokens.forEach(function (token) {
+            var span = $.create("span").addClass(token.type.name).text(token.value).appendTo(codeEl)[0];
+            _this.tokenToElement.set(token, span);
+        });
+        this.renderLineNumbers(this.tokens.last().range.end.line);
+    };
+    IndexPage.prototype.renderGeneratedCode = function () {
+        $(".generated-code").val(this.generatedCode);
+    };
+    IndexPage.prototype.refactor = function () {
+        new AstNodeFixator().process(this.unit);
+        new FindEvalsWithout1AtTheEnd().process(this.unit);
+        this.generateCode();
+        this.render();
     };
     IndexPage.prototype.onMouseOverNode = function (e, node) {
         var _this = this;
         $(".selected").removeClass("selected");
-        if (node == null)
-            return;
+        //let obj = node.obj;
+        //if (obj == null)
+        //    return;
+        //if (!(obj instanceof AstNode))
+        //    return;
+        var tokens = this.getTokens(node.value, true);
+        if (tokens.length == 0)
+            tokens = this.getTokens(node.obj, true);
+        //let astNode = <AstNode>obj;
         $(e.target).closest(".self").addClass("selected");
-        node.tokens.forEach(function (token) { return $(_this.tokenToElement.get(token)).addClass("selected"); });
-        var el = this.tokenToElement.get(node.token);
+        tokens.forEach(function (token) { return $(_this.tokenToElement.get(token)).addClass("selected"); });
+        var el = this.tokenToElement.get(tokens[0]);
         if (el != null) {
             var div = $(".code")[0];
             var top_1 = div.scrollTop;
@@ -116,21 +153,30 @@ var IndexPage = (function () {
     };
     IndexPage.prototype.createInstanceNode = function (obj) {
         var _this = this;
-        var anp = { text: obj.constructor.name, node: obj, children: [] };
+        if (typeof (obj) != "object") {
+            var anp2 = { text: obj.constructor.name, value: obj, children: [] };
+            return anp2;
+        }
+        var anp = { text: obj.constructor.name, obj: obj, children: [] };
+        if (obj instanceof Token) {
+            anp.text = obj.type.name + " { Token }";
+            return anp;
+        }
         anp.children = Object.keys(obj).select(function (prop) { return _this.createPropertyNode(obj, prop); }).exceptNulls();
         return anp;
     };
     IndexPage.prototype.createPropertyNode = function (parentObj, prop) {
         var _this = this;
-        var anp = { prop: prop, text: prop, node: null, children: [] };
-        var value = parentObj[prop];
-        if (value == null)
+        if (["parentNode", "parentNodeProp", "tokens", "token", "isStatement", "isExpression" /*, "whitespaceBefore", "whitespaceAfter"*/].contains(prop))
+            return null;
+        var anp = { prop: prop, text: prop, obj: parentObj, children: [], value: parentObj[prop] };
+        if (anp.value == null)
             return anp;
-        if (value instanceof AstNode) {
-            anp.children = [this.createInstanceNode(value)];
-        }
-        else if (value instanceof Array) {
-            anp.children = value.where(function (t) { return t instanceof AstNode; }).select(function (t) { return _this.createInstanceNode(t); });
+        if (typeof (anp.value) == "object") {
+            if (anp.value instanceof Array)
+                anp.children = anp.value.select(function (t) { return _this.createInstanceNode(t); });
+            else
+                anp.children = [this.createInstanceNode(anp.value)];
         }
         return anp;
     };
@@ -139,7 +185,7 @@ var IndexPage = (function () {
         var li = $.create("li.node");
         var ul = $.create("ul.children");
         var span = li.getAppend("span.self").text(node.text);
-        span.mouseover(function (e) { return _this.onMouseOverNode(e, node.node); });
+        span.mouseover(function (e) { return _this.onMouseOverNode(e, node); });
         if (node.children.length > 0) {
             li.addClass("collapsed");
             ul.append(node.children.select(function (t) { return _this.createTree(t); }));
@@ -147,6 +193,28 @@ var IndexPage = (function () {
             span.mousedown(function (e) { li.toggleClass("collapsed"); li.toggleClass("expanded"); });
         }
         return li[0];
+    };
+    IndexPage.prototype.getTokens = function (obj, deep) {
+        var _this = this;
+        if (obj == null)
+            return [];
+        if (typeof (obj) != "object")
+            return [];
+        if (obj instanceof Token) {
+            return [obj];
+        }
+        else if (obj instanceof Array) {
+            if (deep)
+                return obj.select(function (t) { return _this.getTokens(t, false); });
+            return obj.where(function (t) { return t instanceof Token; });
+        }
+        else {
+            if (deep)
+                return Object.keys(obj).selectMany(function (value) { return _this.getTokens(obj[value], false); });
+            return [];
+        }
+        console.log("can't getTokens for", obj);
+        return null;
     };
     return IndexPage;
 }());
@@ -176,3 +244,77 @@ function stringifyNodes(node) {
     stringify(node);
     return sb.join(" ");
 }
+var FindEvalsWithout1AtTheEnd = (function () {
+    function FindEvalsWithout1AtTheEnd() {
+    }
+    FindEvalsWithout1AtTheEnd.prototype.getChildren = function (node) {
+        var list = [];
+        Object.keys(node).where(function (key) { return key != "parentNode"; }).select(function (key) { return node[key]; }).forEach(function (obj) {
+            if (obj instanceof Array)
+                list.addRange(obj.where(function (t) { return t instanceof AstNode; }));
+            else if (obj instanceof AstNode)
+                list.add(obj);
+        });
+        return list;
+    };
+    FindEvalsWithout1AtTheEnd.prototype.getDescendants = function (node) {
+    };
+    FindEvalsWithout1AtTheEnd.prototype.first = function (node, predicate) {
+        var children = this.getChildren(node);
+        for (var _i = 0, children_1 = children; _i < children_1.length; _i++) {
+            var child = children_1[_i];
+            if (predicate(child))
+                return child;
+            var res = this.first(child, predicate);
+            if (res != null)
+                return res;
+        }
+        return null;
+    };
+    FindEvalsWithout1AtTheEnd.prototype.process = function (root) {
+        var node = this.first(root, function (t) { return t instanceof NativeInvocation_BlockOrExpr && t.keywordToken.value == "eval"; });
+        var lastStatement = node.block.statements.last();
+        var valueExp = lastStatement.expression;
+        var endsWithOne = valueExp.token.value == "1";
+        console.log("this eval ends with 1; ?", endsWithOne);
+        if (endsWithOne)
+            return;
+        node.block.statements.add(CodeBuilder.value("1").statement()); // new ExpressionStatement());
+        //this.replaceNode(node, node.block || node.expr);
+    };
+    FindEvalsWithout1AtTheEnd.prototype.replaceNode = function (oldNode, newNode) {
+        var parentNode = oldNode.parentNode;
+        var prop = oldNode.parentNodeProp;
+        var value = parentNode[prop];
+        if (value instanceof Array) {
+            var index = value.indexOf(oldNode);
+            value[index] = newNode;
+        }
+        else {
+            parentNode[prop] = newNode;
+        }
+        newNode.parentNode = parentNode;
+        newNode.parentNodeProp = prop;
+    };
+    return FindEvalsWithout1AtTheEnd;
+}());
+var CodeBuilder = (function () {
+    function CodeBuilder(node) {
+        this.node = node;
+    }
+    CodeBuilder.value = function (value) {
+        var node = new ValueExpression();
+        node.token = TokenTypes.string.create2(JSON.stringify(value));
+        node.value = value;
+        return new CodeBuilder(node);
+    };
+    CodeBuilder.prototype.statement = function () {
+        var node = new ExpressionStatement();
+        node.expression = this.node;
+        node.semicolonToken = TokenTypes.semicolon.create2(";");
+        node.whitespaceBefore = [TokenTypes.whitespace.create2("    ")];
+        node.whitespaceAfter = [TokenTypes.whitespace.create2("\n    ")];
+        return node;
+    };
+    return CodeBuilder;
+}());

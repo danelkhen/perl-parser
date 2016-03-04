@@ -12,6 +12,9 @@ class TokenType {
     create(range: TextRange2) {
         return new Token(range, this);
     }
+    create2(value:string) {
+        return new Token(null, this, value);
+    }
     match(tokenizer: Tokenizer): TextRange2 {
         throw new Error();
     }
@@ -39,10 +42,13 @@ interface TokenMatcher {
 }
 
 class Token {
-    constructor(public range: TextRange2, public type: TokenType) {
-        this.value = this.range.text;
+    constructor(public range: TextRange2, public type: TokenType, value?: string) {
+        if (this.range == null)
+            this.value = value;
+        else
+            this.value = this.range.text;
     }
-    value: string
+    value: string;
     toString() {
         return this.type.name + " " + this.value;
     }
@@ -148,11 +154,11 @@ class TokenTypes {
     static pod = TokenTypes._custom(TokenTypes._matchPod);
     //static pod = TokenTypes._r(/=pod.*=cut/m);
     static keyword = TokenTypes._rs([
-        "BEGIN", "package", 
-        "use",  "no", 
-        "my", "our", "local", 
+        "BEGIN", "package",
+        "use", "no",
+        "my", "our", "local",
         "sub", "return", "elsif", "else", "unless", "__END__",
-        "and", "not",  "eq", "or",
+        "and", "not", "eq", "or",
         "foreach", "while", "for",
         "if", "unless", "while", "until", "for", "foreach", "when"    //statement modifiers
     ].map(t=> new RegExp(t + "\\b"))); //\b|use\b|my\b|sub\b|return\b|if\b|defined\b/

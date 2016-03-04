@@ -54,6 +54,7 @@
             }
             let operator = new Operator();
             operator.value = this.token.value;
+            operator.token = this.token;
             mbe.operators.push(operator);
             this.nextToken();
             //this.nextNonWhitespaceToken(mbe);
@@ -144,6 +145,8 @@
             let node = this.create(PrefixUnaryExpression);
             node.operator = new Operator();
             node.operator.value = this.token.value;
+            node.operator.token = this.token;
+
             this.nextNonWhitespaceToken(node);
             if (this.token.is(TokenTypes.braceOpen)) {
                 this.nextNonWhitespaceToken();
@@ -162,6 +165,7 @@
             let node = this.create(PrefixUnaryExpression);
             node.operator = new Operator();
             node.operator.value = this.token.value;
+            node.operator.token = this.token;
             node.operatorPost = this.nextNonWhitespaceToken(node);
             node.expression = this.parseExpression();
             lastExpression = node;
@@ -172,6 +176,7 @@
             node.expression = lastExpression;
             node.operator = new Operator();
             node.operator.value = this.token.value;
+            node.operator.token = this.token;
             node.operatorPost = this.nextNonWhitespaceToken(node);
             lastExpression = node;
             return this.parseNonBinaryExpression(lastExpression);
@@ -580,11 +585,11 @@
         if (block.statements.length != 1)
             return null;
         throw new Error();
-        let node = new HashRefCreationExpression();
-        node.token = block.token;
-        node.tokens = block.tokens;
-        //node.items = (<ExpressionStatement>block.statements[0]).expression;
-        return node;
+        //let node = new HashRefCreationExpression();
+        //node.token = block.token;
+        //node.tokens = block.tokens;
+        ////node.items = (<ExpressionStatement>block.statements[0]).expression;
+        //return node;
     }
     tryHashRefCreationToBlock(node: HashRefCreationExpression): Block {
         let node2 = new Block();
@@ -638,9 +643,9 @@
 
         let blockOrExpr = this.parseBlockOrExpr();
         let post = this.skipWhitespaceAndComments();
-        if (blockOrExpr instanceof Block) 
+        if (blockOrExpr instanceof Block)
             node.block = blockOrExpr;
-        else if (blockOrExpr instanceof Expression) 
+        else if (blockOrExpr instanceof Expression)
             node.expr = blockOrExpr;
         else
             throw new Error();

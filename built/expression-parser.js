@@ -60,6 +60,7 @@ var ExpressionParser = (function (_super) {
             }
             var operator = new Operator();
             operator.value = this.token.value;
+            operator.token = this.token;
             mbe.operators.push(operator);
             this.nextToken();
         }
@@ -146,6 +147,7 @@ var ExpressionParser = (function (_super) {
             var node = this.create(PrefixUnaryExpression);
             node.operator = new Operator();
             node.operator.value = this.token.value;
+            node.operator.token = this.token;
             this.nextNonWhitespaceToken(node);
             if (this.token.is(TokenTypes.braceOpen)) {
                 this.nextNonWhitespaceToken();
@@ -164,6 +166,7 @@ var ExpressionParser = (function (_super) {
             var node = this.create(PrefixUnaryExpression);
             node.operator = new Operator();
             node.operator.value = this.token.value;
+            node.operator.token = this.token;
             node.operatorPost = this.nextNonWhitespaceToken(node);
             node.expression = this.parseExpression();
             lastExpression = node;
@@ -174,6 +177,7 @@ var ExpressionParser = (function (_super) {
             node.expression = lastExpression;
             node.operator = new Operator();
             node.operator.value = this.token.value;
+            node.operator.token = this.token;
             node.operatorPost = this.nextNonWhitespaceToken(node);
             lastExpression = node;
             return this.parseNonBinaryExpression(lastExpression);
@@ -560,11 +564,11 @@ var ExpressionParser = (function (_super) {
         if (block.statements.length != 1)
             return null;
         throw new Error();
-        var node = new HashRefCreationExpression();
-        node.token = block.token;
-        node.tokens = block.tokens;
-        //node.items = (<ExpressionStatement>block.statements[0]).expression;
-        return node;
+        //let node = new HashRefCreationExpression();
+        //node.token = block.token;
+        //node.tokens = block.tokens;
+        ////node.items = (<ExpressionStatement>block.statements[0]).expression;
+        //return node;
     };
     ExpressionParser.prototype.tryHashRefCreationToBlock = function (node) {
         var node2 = new Block();

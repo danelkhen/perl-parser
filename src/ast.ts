@@ -1,5 +1,9 @@
 ﻿"use strict";
 class AstNode {
+    
+    parentNode:AstNode;
+    parentNodeProp:string;
+
     token: Token;
     tokens: Token[] = [];
     whitespaceBefore: Token[];
@@ -10,7 +14,6 @@ class Statement extends AstNode {
 }
 
 class EmptyStatement extends Statement {
-    isStatement = true;
     semicolonToken:Token;
 }
 
@@ -239,6 +242,7 @@ class MultiBinaryExpression extends Expression {
 }
 
 class Operator {
+    token:Token;
     value: string;
     toString() { return this.value + " {Operator}"; }
 }

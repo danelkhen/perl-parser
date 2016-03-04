@@ -152,3 +152,32 @@ Array.prototype.withItemBetweenEach = function (item) {
     }
     return list;
 };
+var AstNodeFixator = (function () {
+    function AstNodeFixator() {
+    }
+    AstNodeFixator.prototype.process = function (node) {
+        var _this = this;
+        var props = Object.keys(node);
+        props.forEach(function (prop) {
+            if (prop == "parentNode")
+                return;
+            var value = node[prop];
+            _this.processProp(node, prop, value);
+        });
+    };
+    AstNodeFixator.prototype.processProp = function (node, prop, value) {
+        var _this = this;
+        if (value == null)
+            return;
+        if (value instanceof AstNode) {
+            var child = value;
+            child.parentNode = node;
+            child.parentNodeProp = prop;
+            this.process(child);
+        }
+        else if (value instanceof Array) {
+            value.forEach(function (t) { return _this.processProp(node, prop, t); });
+        }
+    };
+    return AstNodeFixator;
+}());
