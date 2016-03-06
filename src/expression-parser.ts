@@ -2,60 +2,40 @@
     parser: Parser;
 
 
-    parseExpression(): Expression {
+    parseFlatExpressionsAndOperators(): FlatExpressionsAndOperators {
         console.log("parseExpression", this.token);
         let mbe = this.create(FlatExpressionsAndOperators);
         mbe.nodes = [];
         while (true) {
             if (this.token == null)
                 break;
-            //if (this.token.is(TokenTypes.whitespace)) {
-            //    this.skipWhitespaceAndComments();//TODO: save these
-            //    //mbe.nodes.last()
-            //    continue;
-            //}
-            let exp = this.parseNonBinaryExpression();
+            let exp = this.parseExpressionOrOperator();
             console.log("exp", exp);
-            if (exp == null) 
+            if (exp == null)
                 break;
-                mbe.nodes.add(exp);
-            //}
-            //else {
-            //    let op = this.parseOperator();
-            //    console.log("op", op);
-            //    if (op == null)
-            //        break;
-            //    mbe.nodes.add(op);
-
-            //}
+            mbe.nodes.add(exp);
         }
-        //if (mbe.operators.length == 0)
-        //    return mbe.expressions[0];
-        //if (mbe.operators.length == 1) {
-        //    let be = new BinaryExpression();
-        //    be.left = mbe.expressions[0];
-        //    be.tokens = mbe.tokens;
-        //    be.token = mbe.token;
-        //    be.right = mbe.expressions[1];
-        //    be.operator = mbe.operators[0];
-        //    return be;
-        //}
+        return mbe;
+    }
+    resolveFlatExpressionsAndOperators(mbe:FlatExpressionsAndOperators): Expression {
+        let mbe2 = new PrecedenceResolver(mbe).resolve();
+        return mbe2;
+    }
+    parseExpression(): Expression {
+        let mbe = this.parseFlatExpressionsAndOperators();
         let mbe2 = new PrecedenceResolver(mbe).resolve();
         return mbe2;
     }
 
-    toListDeclaration(exp: Expression): ListDeclaration {
-        if (exp instanceof ListDeclaration)
+    toListDeclaration(exp: Expression): ParenthesizedList {
+        if (exp instanceof ParenthesizedList)
             return exp;
-        let node = this.create(ListDeclaration);
+        let node = this.create(ParenthesizedList);
         node.items = [exp];
         return node;
     }
 
-    parseOperator() {
-    }
-
-    _parseNonBinaryExpression(lastExpression?: Expression): Expression|Operator {
+    _parseExpressionOrOperator(lastExpression?: Expression): Expression | Operator {
         this.log("parseExpression", this.token, lastExpression);
         if (this.token.isAny([
             TokenTypes.assignment, TokenTypes.concat, TokenTypes.divDiv, TokenTypes.regexEquals, TokenTypes.regexNotEquals,
@@ -66,14 +46,15 @@
             TokenTypes.addAssign, TokenTypes.multiplyAssign, TokenTypes.plus, TokenTypes.minus, TokenTypes.multiply, TokenTypes.multiplyString, TokenTypes.div, TokenTypes.range,
             TokenTypes.arrow, TokenTypes.packageSeparator,
             TokenTypes.inc, TokenTypes.dec,
-            TokenTypes.question, TokenTypes.colon
+            TokenTypes.question, TokenTypes.colon,
+            TokenTypes.comma, TokenTypes.fatComma,
         ]) || this.token.isAnyKeyword(["if", "unless", "while", "until", "for", "foreach", "when", "and", "eq", "or"])) { //statement modifiers
             
             if (this.token.isAnyKeyword(["for", "foreach"])) {           //for,foreach postfix have list after them without parantheses
                 //  tempParser = this.parseSingleOrCommaSeparatedExpressions;
                 throw new Error("not implemented");
             }
-            if(lastExpression!=null)
+            if (lastExpression != null)
                 return lastExpression;
             let operator = new Operator();
             operator.value = this.token.value;
@@ -88,7 +69,7 @@
                 lastExpression = this.parseArrayRefDeclaration();
             else
                 lastExpression = this.parseArrayMemberAccess(lastExpression, false);
-            return this.parseNonBinaryExpression(lastExpression);
+            return this.parseExpressionOrOperator(lastExpression);
         }
         else if (this.token.is(TokenTypes.braceOpen)) {
             //TODO:
@@ -100,11 +81,12 @@
             //return this.parseNonBinaryExpression(lastExpression);
         }
         else if (this.token.is(TokenTypes.parenOpen)) {
-            if (lastExpression == null)
-                lastExpression = this.parseParenthesizedList();
-            else
-                lastExpression = this.parseInvocationExpression(lastExpression, false);
-            return this.parseNonBinaryExpression(lastExpression);
+            return this.parseParenthesizedList();
+            //if (lastExpression == null)
+            //    lastExpression = this.parseParenthesizedList();
+            //else
+            //    lastExpression = this.parseInvocationExpression(lastExpression, false);
+            //return this.parseNonBinaryExpression(lastExpression);
         }
         else if (this.token.isAnyIdentifier(["map", "grep"])) {
             let node = this.parseNativeInvocation_BlockAndListOrExprCommaList(this.token.value);
@@ -152,7 +134,8 @@
             if (lastExpression != null)
                 return lastExpression;
             let node = this.parseMemberExpression(lastExpression, false);
-            return this.parseNonBinaryExpression(node);
+            return node;
+            //return this.parseNonBinaryExpression(node);
             //node.prev = lastExpression;
             //lastExpression = node;
             //if (this.token.is(TokenTypes.whitespace)) {   //detect invocation without parantheses
@@ -169,7 +152,7 @@
             let node = this.parseMemberExpression(null, false);
             node.target = lastExpression;
             lastExpression = node;
-            return this.parseNonBinaryExpression(lastExpression);
+            return this.parseExpressionOrOperator(lastExpression);
         }
         //else if (this.token.is(TokenTypes.question)) {
         //    return this.parseTrinaryExpression(lastExpression);
@@ -193,7 +176,7 @@
         else
             return null;
     }
-    parseNonBinaryExpression(lastExpression?: Expression): Expression|Operator {
+    parseExpressionOrOperator(lastExpression?: Expression): Expression | Operator {
         if (this.token == null && lastExpression != null)
             return lastExpression;
         let pos = this.reader.tokenIndex;
@@ -201,7 +184,7 @@
         if (this.token == null) {
             return lastExpression;
         }
-        let node = this._parseNonBinaryExpression(lastExpression);
+        let node = this._parseExpressionOrOperator(lastExpression);
         if (node == lastExpression) {
             this.reader.goto(pos);
             return node;
@@ -220,7 +203,7 @@
         node.operator.token = this.token;
         node.operatorPost = this.nextNonWhitespaceToken(node);
         node.expression = this.parseExpression();
-        return this.parseNonBinaryExpression(node);
+        return this.parseExpressionOrOperator(node);
     }
     //parseTrinaryExpression(lastExpression: Expression): Expression {
     //    let exp = this.create(TrinaryExpression);
@@ -239,13 +222,13 @@
         let node = this.create(ValueExpression);
         node.value = this.token.value;//TODO:
         this.nextToken();
-        return this.parseNonBinaryExpression(node);
+        return this.parseExpressionOrOperator(node);
     }
     parseRegexExpression() {
         let node = this.create(RegexExpression);
         node.value = this.token.value;//TODO:
         this.nextToken();
-        return this.parseNonBinaryExpression(node);
+        return this.parseExpressionOrOperator(node);
     }
 
     parseSigilPrefixUnary() {
@@ -263,9 +246,9 @@
             this.nextToken();
         }
         else {
-            node.expression = <Expression>this.parseNonBinaryExpression();
+            node.expression = <Expression>this.parseExpressionOrOperator();
         }
-        return this.parseNonBinaryExpression(node);
+        return this.parseExpressionOrOperator(node);
     }
 
     parseSubroutineExpression(): SubroutineExpression {
@@ -489,7 +472,7 @@
     }
 
 
-    parseOptionallyParenthesizedList(opener?: TokenType, closer?: TokenType): ListDeclaration {
+    parseOptionallyParenthesizedList(opener?: TokenType, closer?: TokenType): ParenthesizedList {
         if (opener == null)
             opener = TokenTypes.parenOpen;
         if (closer == null)
@@ -498,14 +481,16 @@
             return this.parseParenthesizedList();
         return this.parseNonParenthesizedList();
     }
-    parseParenthesizedList(opener?: TokenType, closer?: TokenType): ListDeclaration {
+    parseParenthesizedList(opener?: TokenType, closer?: TokenType): ParenthesizedList {
         if (opener == null)
             opener = TokenTypes.parenOpen;
         if (closer == null)
             closer = TokenTypes.parenClose;
-        let node = this.create(ListDeclaration);
+        let node = this.create(ParenthesizedList);
         node.parenOpenToken = this.expect(opener);
         node.parenOpenTokenPost = this.nextNonWhitespaceToken();
+        let node2 = this.parseExpression();
+        
         node.items = [];
         node.itemsSeparators = [];
         while (this.token != null) {
@@ -524,8 +509,8 @@
         this.nextToken();
         return node;
     }
-    parseNonParenthesizedList(): ListDeclaration {
-        let node = this.create(ListDeclaration);
+    parseNonParenthesizedList(): ParenthesizedList {
+        let node = this.create(ParenthesizedList);
         node.items = [];
         node.itemsSeparators = [];
         while (this.token != null) {
@@ -572,7 +557,7 @@
             node.variables = this.parseMemberExpression(null, false);
         }
         else {
-            node.variables = <Expression>this.parseNonBinaryExpression(); //local ${"a::b::c} = sub { ... }
+            node.variables = <Expression>this.parseExpressionOrOperator(); //local ${"a::b::c} = sub { ... }
             //this.logger.error("unexpected token in VariableDeclarationExpression", this.token);
         }
         node.variablesPost = this.skipWhitespaceAndComments();

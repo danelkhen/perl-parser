@@ -28,12 +28,28 @@ class Block extends AstNode {
     braceCloseToken: Token;
 }
 
-class ListDeclaration extends Expression {
+class ParenthesizedExpression extends Expression {
     parenOpenToken: Token;
     parenOpenTokenPost: Token[];
+    expression: Expression;
+    parenCloseToken: Token;
+}
+
+class ParenthesizedList extends Expression {
+    public ParenthesizedList() {
+        this.list = new NonParenthesizedList();
+    }
+    parenOpenToken: Token;
+    parenOpenTokenPost: Token[];
+    list: NonParenthesizedList;
+    get itemsSeparators(): Array<Token[]> { return this.list.itemsSeparators; }
+    get items(): Expression[] { return this.list.items; }
+    parenCloseToken: Token;
+}
+
+class NonParenthesizedList extends Expression {
     itemsSeparators: Array<Token[]>;
     items: Expression[];
-    parenCloseToken: Token;
 }
 
 class HashRefCreationExpression extends Expression {
@@ -62,7 +78,7 @@ class PackageDeclaration extends Statement {
     semicolonToken: Token;
     semicolonTokenPost: Token[];
     statements: Statement[];
-    name: MemberExpression;
+    name: Expression;//TODO:MemberExpression;
 }
 
 class VariableDeclarationStatement extends Statement {
@@ -149,7 +165,7 @@ class InvocationExpression extends Expression implements HasArrow {
     target: Expression;
     targetPost: Token[];
     memberSeparatorToken: Token;
-    arguments: ListDeclaration;
+    arguments: Expression;
     arrow: boolean;
     //arrowToken: Token;
 }
@@ -245,7 +261,7 @@ class MultiBinaryExpression extends Expression {
 
 }
 class FlatExpressionsAndOperators extends Expression {
-    nodes: Array<Expression|Operator>;
+    nodes: Array<Expression | Operator>;
 }
 
 class Operator {

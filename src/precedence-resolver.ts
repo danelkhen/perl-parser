@@ -4,17 +4,19 @@
     }
     nodes: Array<Expression | Operator>;
     resolve() {
+        //TEMP HACK
+        this.nodes.ofType(Operator).where(t=> t.token.is(TokenTypes.packageSeparator)).forEach(t=> this.resolveBinary(t));
         console.log("unresolved", Q.copy(this.mbe.nodes));
         //    left terms and list operators (leftward)
         //    left	->
-        this.nodes.ofType(Operator).where(t=> t.token.is(TokenTypes.arrow)).forEach(t=> this.resolveBinary(<Operator>t));
+        this.nodes.ofType(Operator).where(t=> t.token.is(TokenTypes.arrow)).forEach(t=> this.resolveBinary(t));
         console.log("resolved", this.nodes);
         //    nonassoc	++ --
         this.nodes.ofType(Operator).where(t=> t.token.isAny([TokenTypes.inc, TokenTypes.dec])).forEach(t=> this.resolveAutoIncDec(<Operator>t));
         console.log("resolved", this.nodes);
         //    right	**
         //    right	! ~ \ and unary + and - //TODO: \
-        this.nodes.ofType(Operator).where(t=> t.token.isAny([TokenTypes.not, TokenTypes.tilda, TokenTypes.plus, TokenTypes.minus])).forEach(t=> this.resolveBinary(t));
+        this.nodes.ofType(Operator).where(t=> t.token.isAny([TokenTypes.not, TokenTypes.tilda/*TODO:, TokenTypes.plus, TokenTypes.minus*/])).forEach(t=> this.resolvePrefixUnary(t));
         console.log("resolved", this.nodes);
         //    left	=~ !~
         this.nodes.ofType(Operator).where(t=> t.token.isAny([TokenTypes.regexEquals, TokenTypes.regexNotEquals])).forEach(t=> this.resolveBinary(t));
@@ -29,27 +31,48 @@
         //        nonassoc	named unary operators
         this.nodes.ofType(Expression).where(t=> this.isNamedUnaryOperator(t)).forEach(t=> this.resolveNamedUnaryOperator(t));
         console.log("resolved", this.nodes);
-        //        nonassoc	< > <= >= lt gt le ge
+        //        nonassoc	< > <= >= lt gt le ge            //TODO: lt gt le ge
         this.nodes.ofType(Operator).where(t=> t.token.isAny([
-            TokenTypes.greaterThan, TokenTypes.greaterOrEqualsThan, 
-            TokenTypes.smallerThan, TokenTypes.smallerOrEqualsThan, 
-            //TODO: lt gt le ge
-            ])).forEach(t=> this.resolveBinary(<Operator>t));
+            TokenTypes.greaterThan, TokenTypes.greaterOrEqualsThan,
+            TokenTypes.smallerThan, TokenTypes.smallerOrEqualsThan,
+        ])).forEach(t=> this.resolveBinary(<Operator>t));
         console.log("resolved", this.nodes);
         //        nonassoc	== != <=> eq ne cmp ~~
+        this.nodes.ofType(Operator).where(t=>
+            t.token.isAny([TokenTypes.equals, TokenTypes.notEquals, TokenTypes.numericCompare, ])
+            ||
+            t.token.isAnyKeyword(["eq", "ne", "cmp", ]))
+            .forEach(t=> this.resolveBinary(t));
+        console.log("resolved", this.nodes);
         //        left	&
         //        left	| ^
         //        left	&&
+        this.nodes.ofType(Operator).where(t=> t.token.is(TokenTypes.and)).forEach(t=> this.resolveBinary(<Operator>t));
         //        left	|| //
-        //    nonassoc	..  ...
+        this.nodes.ofType(Operator).where(t=> t.token.isAny([TokenTypes.or, TokenTypes.divDiv])).forEach(t=> this.resolveBinary(<Operator>t));
+        //    nonassoc	..  ... //TODO: ...
+        this.nodes.ofType(Operator).where(t=> t.token.isAny([TokenTypes.range])).forEach(t=> this.resolveBinary(<Operator>t));
         //    right	?:
         //    right	= += -= *= etc. goto last next redo dump
+        this.nodes.ofType(Operator).where(t=> t.token.isAny([
+            TokenTypes.assignment,
+            TokenTypes.addAssign,
+            TokenTypes.subtractAssign,
+            TokenTypes.multiplyAssign,
+            TokenTypes.divideAssign,
+        ])).forEach(t=> this.resolveBinary(<Operator>t));
         //    left	, =>
+        this.nodes.ofType(Operator).where(t=> t.token.isAny([TokenTypes.comma, TokenTypes.fatComma])).forEach(t=> this.resolveComma(t));
         //    nonassoc	list operators (rightward)
         //    right	not
         //    left	and
+        this.nodes.ofType(Operator).where(t=> t.token.isKeyword("and")).forEach(t=> this.resolveBinary(<Operator>t));
         //    left	or xor
         this.nodes.ofType(Operator).where(t=> t.value == "or").forEach(t=> this.resolveBinary(t));
+
+
+        //hack: assume any consecutive expression is invocation
+        this.nodes.ofType(Expression).where(t=> true).forEach(t=> this.resolveInvocation(t));
         console.log("resolved", this.nodes);
         if (this.nodes.length > 1)
             throw new Error("mbe not completely resolved");
@@ -58,23 +81,95 @@
         //return this.mbe;
     }
 
+    resolveComma(op: Operator) {
+        let index = this.nodes.indexOf(op);
+        let left = this.nodes[index - 1];
+        let right = this.nodes[index + 1];
+        if (left instanceof NonParenthesizedList && right instanceof NonParenthesizedList) {
+            left.items.addRange(right.items);
+            left.itemsSeparators.addRange(right.itemsSeparators);
+            this.nodes.removeAt(index);
+            this.nodes.removeAt(index);
+            return left;
+        }
+        else if (left instanceof NonParenthesizedList && right instanceof Expression) {
+            left.items.add(right);
+            left.itemsSeparators.add([op.token]);
+            this.nodes.removeAt(index);
+            this.nodes.removeAt(index);
+            return left;
+        }
+        else if (left instanceof Expression && right instanceof NonParenthesizedList) {
+            right.items.insert(0, left);
+            right.itemsSeparators.insert(0, [op.token]);
+            this.nodes.removeAt(index - 1);
+            this.nodes.removeAt(index - 1);
+            return right;
+        }
+        else if (left instanceof Expression && right instanceof Expression) {
+            let list = new NonParenthesizedList();
+            list.items = [left, right];
+            list.itemsSeparators = [[op.token]];
+            this.nodes.removeAt(index - 1);
+            this.nodes.removeAt(index - 1);
+            this.nodes[index - 1] = list;
+            return list;
+        }
+        else if (left instanceof Expression && right==null) {
+            let list = new NonParenthesizedList();
+            list.items = [left];
+            list.itemsSeparators = [[op.token]];
+            this.nodes.removeAt(index - 1);
+            this.nodes[index - 1] = list;
+            return list;
+        }
+        else
+            throw new Error();
+    }
 
+    // a b c =>a(b,c)
+    resolveInvocation(target: Expression) {
+        let index = this.nodes.indexOf(target);
+        let args = [];
+        let i = index;
+        while (true) {
+            i++;
+            let arg = this.nodes[i];
+            if (arg == null || !(arg instanceof Expression)) {
+                break;
+            }
+            args.push(arg);
+        }
+        if (args.length == 0)
+            return target;
+        let node2 = new InvocationExpression();
+        node2.target = target;
+        let list = new NonParenthesizedList();
+        list.items = args;//TODO:
+        node2.arguments = list;// new ParenthesizedList();
+        //node2.arguments.items = args;
+        this.nodes.splice(index, i - index, node2);
+        return node2;
+    }
     isWhitespaceOperator(op: Operator) {
         return op.token.is(TokenTypes.whitespace);
     }
     resolveNamedUnaryOperator(node: Expression) {
         let index = this.nodes.indexOf(node);
         let nextNode = this.nodes[index + 1];
-        let node2 = new InvocationExpression();
-        node2.arguments = new ListDeclaration();
 
         if (nextNode instanceof Expression) {
-            node2.arguments.items.add(nextNode);
+            let node2 = new InvocationExpression();
+            //node2.arguments = new ParenthesizedList();
+            node2.arguments = nextNode;
+            //.items.add(nextNode);
             this.nodes.removeAt(index);
             this.nodes.removeAt(index);
+            this.nodes[index] = node2;
+            return node2;
         }
+        return node;
 
-        return node2;
     }
     isNamedUnaryOperator(node: Expression): boolean {
         return node instanceof MemberExpression && this.namedUnaryOperators.contains(node.name);
@@ -112,8 +207,8 @@
         let index = this.nodes.indexOf(op);
         node.operator = op;
         node.expression = <Expression>this.nodes[index - 1];
-        this.nodes.removeAt(index-1);
-        this.nodes[index-1] = node;
+        this.nodes.removeAt(index - 1);
+        this.nodes[index - 1] = node;
         return node;
     }
     resolvePrefixUnary(op: Operator) {

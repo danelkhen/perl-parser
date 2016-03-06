@@ -16,7 +16,8 @@ class AstWriter {
         this.register(ValueExpression, t=> [t.value]);
         this.register(BinaryExpression, t=> [t.left, t.operator, t.right]);
         this.register(BeginStatement, t=> [t.beginToken, [t.beginTokenPost], t.block, [t.semicolonToken]]);
-        this.register(ListDeclaration, t=> [[t.parenOpenToken, t.parenOpenTokenPost], this.zip(t.items, t.itemsSeparators).exceptNulls(), [t.parenCloseToken]]);
+        this.register(ParenthesizedList, t=> [[t.parenOpenToken, t.parenOpenTokenPost], t.list, [t.parenCloseToken]]);
+        this.register(NonParenthesizedList, t=> [this.zip(t.items, t.itemsSeparators).exceptNulls()]);
         this.register(PrefixUnaryExpression, t=> [t.operator, [t.operatorPost], t.expression]);
         this.register(PostfixUnaryExpression, t=> [t.expression, t.operator, [t.operatorPost]]);
         this.register(SubroutineExpression, t=> [t.subToken, t.subTokenPost, t.name, [t.namePost], [t.colonToken, [t.colonTokenPost], t.attribute], t.block]);

@@ -302,7 +302,7 @@ var Parser = (function (_super) {
         this.nextToken();
         node.packageTokenPost = this.expectAndSkipWhitespace();
         this.expect(TokenTypes.identifier);
-        node.name = this.parseMemberExpression();
+        node.name = this.createExpressionParser().parseExpression(); //.parseMemberExpression();
         node.semicolonToken = this.expect(TokenTypes.semicolon);
         node.semicolonTokenPost = this.nextNonWhitespaceToken();
         node.statements = this.parseStatementsUntil();
@@ -320,7 +320,7 @@ var Parser = (function (_super) {
         this.nextToken();
         node.useTokenPost = this.expectAndSkipWhitespace();
         //this.nextToken();
-        node.module = this.createExpressionParser().parseNonBinaryExpression();
+        node.module = this.createExpressionParser().parseExpressionOrOperator();
         node.modulePostTokens = this.skipWhitespaceAndComments();
         if (!this.token.is(TokenTypes.semicolon)) {
             node.list = this.createExpressionParser().parseOptionallyParenthesizedList(); //.parseExpression();

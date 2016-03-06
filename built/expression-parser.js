@@ -8,48 +8,38 @@ var ExpressionParser = (function (_super) {
     function ExpressionParser() {
         _super.apply(this, arguments);
     }
-    ExpressionParser.prototype.parseExpression = function () {
+    ExpressionParser.prototype.parseFlatExpressionsAndOperators = function () {
         console.log("parseExpression", this.token);
         var mbe = this.create(FlatExpressionsAndOperators);
         mbe.nodes = [];
         while (true) {
             if (this.token == null)
                 break;
-            //if (this.token.is(TokenTypes.whitespace)) {
-            //    this.skipWhitespaceAndComments();//TODO: save these
-            //    //mbe.nodes.last()
-            //    continue;
-            //}
-            var exp = this.parseNonBinaryExpression();
+            var exp = this.parseExpressionOrOperator();
             console.log("exp", exp);
             if (exp == null)
                 break;
             mbe.nodes.add(exp);
         }
-        //if (mbe.operators.length == 0)
-        //    return mbe.expressions[0];
-        //if (mbe.operators.length == 1) {
-        //    let be = new BinaryExpression();
-        //    be.left = mbe.expressions[0];
-        //    be.tokens = mbe.tokens;
-        //    be.token = mbe.token;
-        //    be.right = mbe.expressions[1];
-        //    be.operator = mbe.operators[0];
-        //    return be;
-        //}
+        return mbe;
+    };
+    ExpressionParser.prototype.resolveFlatExpressionsAndOperators = function (mbe) {
+        var mbe2 = new PrecedenceResolver(mbe).resolve();
+        return mbe2;
+    };
+    ExpressionParser.prototype.parseExpression = function () {
+        var mbe = this.parseFlatExpressionsAndOperators();
         var mbe2 = new PrecedenceResolver(mbe).resolve();
         return mbe2;
     };
     ExpressionParser.prototype.toListDeclaration = function (exp) {
-        if (exp instanceof ListDeclaration)
+        if (exp instanceof ParenthesizedList)
             return exp;
-        var node = this.create(ListDeclaration);
+        var node = this.create(ParenthesizedList);
         node.items = [exp];
         return node;
     };
-    ExpressionParser.prototype.parseOperator = function () {
-    };
-    ExpressionParser.prototype._parseNonBinaryExpression = function (lastExpression) {
+    ExpressionParser.prototype._parseExpressionOrOperator = function (lastExpression) {
         this.log("parseExpression", this.token, lastExpression);
         if (this.token.isAny([
             TokenTypes.assignment, TokenTypes.concat, TokenTypes.divDiv, TokenTypes.regexEquals, TokenTypes.regexNotEquals,
@@ -60,7 +50,8 @@ var ExpressionParser = (function (_super) {
             TokenTypes.addAssign, TokenTypes.multiplyAssign, TokenTypes.plus, TokenTypes.minus, TokenTypes.multiply, TokenTypes.multiplyString, TokenTypes.div, TokenTypes.range,
             TokenTypes.arrow, TokenTypes.packageSeparator,
             TokenTypes.inc, TokenTypes.dec,
-            TokenTypes.question, TokenTypes.colon
+            TokenTypes.question, TokenTypes.colon,
+            TokenTypes.comma, TokenTypes.fatComma,
         ]) || this.token.isAnyKeyword(["if", "unless", "while", "until", "for", "foreach", "when", "and", "eq", "or"])) {
             if (this.token.isAnyKeyword(["for", "foreach"])) {
                 //  tempParser = this.parseSingleOrCommaSeparatedExpressions;
@@ -79,7 +70,7 @@ var ExpressionParser = (function (_super) {
                 lastExpression = this.parseArrayRefDeclaration();
             else
                 lastExpression = this.parseArrayMemberAccess(lastExpression, false);
-            return this.parseNonBinaryExpression(lastExpression);
+            return this.parseExpressionOrOperator(lastExpression);
         }
         else if (this.token.is(TokenTypes.braceOpen)) {
             //TODO:
@@ -90,11 +81,7 @@ var ExpressionParser = (function (_super) {
             return this.parseHashRefCreation();
         }
         else if (this.token.is(TokenTypes.parenOpen)) {
-            if (lastExpression == null)
-                lastExpression = this.parseParenthesizedList();
-            else
-                lastExpression = this.parseInvocationExpression(lastExpression, false);
-            return this.parseNonBinaryExpression(lastExpression);
+            return this.parseParenthesizedList();
         }
         else if (this.token.isAnyIdentifier(["map", "grep"])) {
             var node = this.parseNativeInvocation_BlockAndListOrExprCommaList(this.token.value);
@@ -134,7 +121,7 @@ var ExpressionParser = (function (_super) {
             if (lastExpression != null)
                 return lastExpression;
             var node = this.parseMemberExpression(lastExpression, false);
-            return this.parseNonBinaryExpression(node);
+            return node;
         }
         else if (this.token.isAny([TokenTypes.sigiledIdentifier, TokenTypes.evalErrorVar, TokenTypes.listSeparatorVar])) {
             if (lastExpression != null)
@@ -142,7 +129,7 @@ var ExpressionParser = (function (_super) {
             var node = this.parseMemberExpression(null, false);
             node.target = lastExpression;
             lastExpression = node;
-            return this.parseNonBinaryExpression(lastExpression);
+            return this.parseExpressionOrOperator(lastExpression);
         }
         else if (this.token.isAny([TokenTypes.integer, TokenTypes.interpolatedString, TokenTypes.qq, TokenTypes.string, TokenTypes.qw, TokenTypes.qx])) {
             if (lastExpression != null)
@@ -160,7 +147,7 @@ var ExpressionParser = (function (_super) {
         else
             return null;
     };
-    ExpressionParser.prototype.parseNonBinaryExpression = function (lastExpression) {
+    ExpressionParser.prototype.parseExpressionOrOperator = function (lastExpression) {
         if (this.token == null && lastExpression != null)
             return lastExpression;
         var pos = this.reader.tokenIndex;
@@ -168,7 +155,7 @@ var ExpressionParser = (function (_super) {
         if (this.token == null) {
             return lastExpression;
         }
-        var node = this._parseNonBinaryExpression(lastExpression);
+        var node = this._parseExpressionOrOperator(lastExpression);
         if (node == lastExpression) {
             this.reader.goto(pos);
             return node;
@@ -186,7 +173,7 @@ var ExpressionParser = (function (_super) {
         node.operator.token = this.token;
         node.operatorPost = this.nextNonWhitespaceToken(node);
         node.expression = this.parseExpression();
-        return this.parseNonBinaryExpression(node);
+        return this.parseExpressionOrOperator(node);
     };
     //parseTrinaryExpression(lastExpression: Expression): Expression {
     //    let exp = this.create(TrinaryExpression);
@@ -204,13 +191,13 @@ var ExpressionParser = (function (_super) {
         var node = this.create(ValueExpression);
         node.value = this.token.value; //TODO:
         this.nextToken();
-        return this.parseNonBinaryExpression(node);
+        return this.parseExpressionOrOperator(node);
     };
     ExpressionParser.prototype.parseRegexExpression = function () {
         var node = this.create(RegexExpression);
         node.value = this.token.value; //TODO:
         this.nextToken();
-        return this.parseNonBinaryExpression(node);
+        return this.parseExpressionOrOperator(node);
     };
     ExpressionParser.prototype.parseSigilPrefixUnary = function () {
         var node = this.create(PrefixUnaryExpression);
@@ -226,9 +213,9 @@ var ExpressionParser = (function (_super) {
             this.nextToken();
         }
         else {
-            node.expression = this.parseNonBinaryExpression();
+            node.expression = this.parseExpressionOrOperator();
         }
-        return this.parseNonBinaryExpression(node);
+        return this.parseExpressionOrOperator(node);
     };
     ExpressionParser.prototype.parseSubroutineExpression = function () {
         var node = this.create(SubroutineExpression);
@@ -448,9 +435,10 @@ var ExpressionParser = (function (_super) {
             opener = TokenTypes.parenOpen;
         if (closer == null)
             closer = TokenTypes.parenClose;
-        var node = this.create(ListDeclaration);
+        var node = this.create(ParenthesizedList);
         node.parenOpenToken = this.expect(opener);
         node.parenOpenTokenPost = this.nextNonWhitespaceToken();
+        var node2 = this.parseExpression();
         node.items = [];
         node.itemsSeparators = [];
         while (this.token != null) {
@@ -470,7 +458,7 @@ var ExpressionParser = (function (_super) {
         return node;
     };
     ExpressionParser.prototype.parseNonParenthesizedList = function () {
-        var node = this.create(ListDeclaration);
+        var node = this.create(ParenthesizedList);
         node.items = [];
         node.itemsSeparators = [];
         while (this.token != null) {
@@ -516,7 +504,7 @@ var ExpressionParser = (function (_super) {
             node.variables = this.parseMemberExpression(null, false);
         }
         else {
-            node.variables = this.parseNonBinaryExpression(); //local ${"a::b::c} = sub { ... }
+            node.variables = this.parseExpressionOrOperator(); //local ${"a::b::c} = sub { ... }
         }
         node.variablesPost = this.skipWhitespaceAndComments();
         if (this.token.is(TokenTypes.assignment)) {
