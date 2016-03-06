@@ -12,7 +12,7 @@ class TokenType {
     create(range: TextRange2) {
         return new Token(range, this);
     }
-    create2(value:string) {
+    create2(value: string) {
         return new Token(null, this, value);
     }
     match(tokenizer: Tokenizer): TextRange2 {
@@ -158,7 +158,9 @@ class TokenTypes {
         "use", "no",
         "my", "our", "local",
         "sub", "return", "elsif", "else", "unless", "__END__",
-        "and", "not", "eq", "or",
+        "and", "not", "or",
+        "eq", "ne", "cmp", 
+        "lt", "gt", "le", "ge", 
         "foreach", "while", "for",
         "if", "unless", "while", "until", "for", "foreach", "when"    //statement modifiers
     ].map(t=> new RegExp(t + "\\b"))); //\b|use\b|my\b|sub\b|return\b|if\b|defined\b/
@@ -205,8 +207,8 @@ class TokenTypes {
     
     //binary
     static numericCompare = TokenTypes._r(/\<=\>/);
-    static regExpEquals = TokenTypes._r(/=\~/);
-    static regExpNotEquals = TokenTypes._r(/\!\~/);
+    static regexEquals = TokenTypes._r(/=\~/);
+    static regexNotEquals = TokenTypes._r(/\!\~/);
     static smallerThan = TokenTypes._r(/\</);
     static greaterThan = TokenTypes._r(/\>/);
     static arrow = TokenTypes._r(/\-\>/);
@@ -282,6 +284,8 @@ class TokenTypes {
         console.log("Detected regex", res.text, lastToken);
         return res;
     }
+
+
 
 }
 

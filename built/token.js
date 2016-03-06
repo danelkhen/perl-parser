@@ -194,7 +194,9 @@ var TokenTypes = (function () {
         "use", "no",
         "my", "our", "local",
         "sub", "return", "elsif", "else", "unless", "__END__",
-        "and", "not", "eq", "or",
+        "and", "not", "or",
+        "eq", "ne", "cmp",
+        "lt", "gt", "le", "ge",
         "foreach", "while", "for",
         "if", "unless", "while", "until", "for", "foreach", "when" //statement modifiers
     ].map(function (t) { return new RegExp(t + "\\b"); })); //\b|use\b|my\b|sub\b|return\b|if\b|defined\b/
@@ -238,8 +240,8 @@ var TokenTypes = (function () {
     TokenTypes.lastIndexVar = TokenTypes._r(/\$#/);
     //binary
     TokenTypes.numericCompare = TokenTypes._r(/\<=\>/);
-    TokenTypes.regExpEquals = TokenTypes._r(/=\~/);
-    TokenTypes.regExpNotEquals = TokenTypes._r(/\!\~/);
+    TokenTypes.regexEquals = TokenTypes._r(/=\~/);
+    TokenTypes.regexNotEquals = TokenTypes._r(/\!\~/);
     TokenTypes.smallerThan = TokenTypes._r(/\</);
     TokenTypes.greaterThan = TokenTypes._r(/\>/);
     TokenTypes.arrow = TokenTypes._r(/\-\>/);

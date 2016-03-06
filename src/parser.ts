@@ -338,7 +338,7 @@
         this.nextToken();
         node.useTokenPost = this.expectAndSkipWhitespace();
         //this.nextToken();
-        node.module = this.createExpressionParser().parseNonBinaryExpression();
+        node.module = <Expression>this.createExpressionParser().parseNonBinaryExpression();
         node.modulePostTokens = this.skipWhitespaceAndComments();
         if (!this.token.is(TokenTypes.semicolon)) {
             node.list = this.createExpressionParser().parseOptionallyParenthesizedList();//.parseExpression();

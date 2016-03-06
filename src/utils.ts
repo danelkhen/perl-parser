@@ -31,7 +31,17 @@ class TokenReader {
     getNextToken() {
         return this.tokens[this.tokenIndex + 1];
     }
-    getNextNonWhitespaceToken() {
+    getPrevNonWhitespaceToken(): Token {
+        let index = this.tokenIndex;
+        while (index > 0) {
+            index--;
+            let token = this.tokens[index];
+            if(!token.is(TokenTypes.whitespace))
+                return token;
+        }
+        return null;
+    }
+    getNextNonWhitespaceToken(): Token {
         let r = this.clone();
         r.nextNonWhitespaceToken();
         return r.token;
@@ -145,6 +155,10 @@ function safeTry<T>(action: (...args: any[]) => T): Promise<T> {
 
 interface Array<T> {
     withItemBetweenEach<R>(item: R): Array<T | R>;
+    ofType<R extends T>(type:Type<R>): Array<R>;
+}
+Array.prototype.ofType = function (ctor) {
+    return this.where(t=>t instanceof ctor);
 }
 
 Array.prototype.withItemBetweenEach = function (item) {

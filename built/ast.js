@@ -268,7 +268,17 @@ var MultiBinaryExpression = (function (_super) {
     function MultiBinaryExpression() {
         _super.apply(this, arguments);
     }
+    MultiBinaryExpression.prototype.endsWithAnExpression = function () {
+        return this.expressions.length > this.operators.length;
+    };
     return MultiBinaryExpression;
+}(Expression));
+var FlatExpressionsAndOperators = (function (_super) {
+    __extends(FlatExpressionsAndOperators, _super);
+    function FlatExpressionsAndOperators() {
+        _super.apply(this, arguments);
+    }
+    return FlatExpressionsAndOperators;
 }(Expression));
 var Operator = (function () {
     function Operator() {
@@ -340,3 +350,24 @@ var NativeInvocation_BlockOrExpr = (function (_super) {
     }
     return NativeInvocation_BlockOrExpr;
 }(NativeFunctionInvocation));
+//A TERM has the highest precedence in Perl. They include:
+// variables,  $hello
+// quote and quote-like operators,  qq<abc>
+// any expression in parentheses,   (7 + 8)
+//and any function whose arguments are parenthesized.   $myFunc()
+//Actually, there aren't really functions in this sense, just list operators and unary operators behaving as functions because you put parentheses around the arguments. These are all documented in perlfunc.
+//If any list operator (print(), etc.) or any unary operator (chdir(), etc.) is followed by a left parenthesis as the next token, the operator and arguments within parentheses are taken to be of highest precedence, just like a normal function call.
+//In the absence of parentheses, the precedence of list operators such as print, sort, or chmod is either very high or very low depending on whether you are looking at the left side or the right side of the operator. For example, in
+//class TERM {
+//}
+//class BracedExpression extends Expression {
+//    toHashRefCreationExpression(): HashRefCreationExpression {
+//        throw new Error();
+//    }
+//    toHashMemberAccessExpression(): HashMemberAccessExpression{
+//        throw new Error();
+//    }
+//    toBlock(): Block {
+//        throw new Error();
+//    }
+//}

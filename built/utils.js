@@ -43,6 +43,16 @@ var TokenReader = (function () {
     TokenReader.prototype.getNextToken = function () {
         return this.tokens[this.tokenIndex + 1];
     };
+    TokenReader.prototype.getPrevNonWhitespaceToken = function () {
+        var index = this.tokenIndex;
+        while (index > 0) {
+            index--;
+            var token = this.tokens[index];
+            if (!token.is(TokenTypes.whitespace))
+                return token;
+        }
+        return null;
+    };
     TokenReader.prototype.getNextNonWhitespaceToken = function () {
         var r = this.clone();
         r.nextNonWhitespaceToken();
@@ -143,6 +153,9 @@ function safeTry(action) {
         }
     });
 }
+Array.prototype.ofType = function (ctor) {
+    return this.where(function (t) { return t instanceof ctor; });
+};
 Array.prototype.withItemBetweenEach = function (item) {
     var list = [];
     for (var i = 0; i < this.length; i++) {
