@@ -187,11 +187,12 @@ var TokenTypes = (function () {
     TokenTypes.qr = TokenTypes._rs([/qr\/.*\//, /qr\(.*\)/]); //Regexp-like quote
     TokenTypes.qx = TokenTypes._rs([/qx\/.*\//, /`.*`/]);
     TokenTypes.tr = TokenTypes._r(/tr\/.*\/.*\/[cdsr]*/); //token replace
+    TokenTypes.q = TokenTypes._rs([/q\{[^\}]*\}/]);
     TokenTypes.pod = TokenTypes._custom(TokenTypes._matchPod);
     //static pod = TokenTypes._r(/=pod.*=cut/m);
     TokenTypes.keyword = TokenTypes._rs([
         "BEGIN", "package",
-        "use", "no",
+        //"use", "no", removed temporarily
         "my", "our", "local",
         "sub", "return", "elsif", "else", "unless", "__END__",
         "and", "not", "or",

@@ -28,22 +28,24 @@ class Block extends AstNode {
     braceCloseToken: Token;
 }
 
-class ParenthesizedExpression extends Expression {
-    parenOpenToken: Token;
-    parenOpenTokenPost: Token[];
-    expression: Expression;
-    parenCloseToken: Token;
-}
+//class ParenthesizedExpression extends Expression {
+//    parenOpenToken: Token;
+//    parenOpenTokenPost: Token[];
+//    expression: Expression;
+//    parenCloseToken: Token;
+//}
+
 
 class ParenthesizedList extends Expression {
-    public ParenthesizedList() {
-        this.list = new NonParenthesizedList();
-    }
+    //constructor() {
+    //    super();
+    //    this.list = new NonParenthesizedList();
+    //}
     parenOpenToken: Token;
     parenOpenTokenPost: Token[];
     list: NonParenthesizedList;
-    get itemsSeparators(): Array<Token[]> { return this.list.itemsSeparators; }
-    get items(): Expression[] { return this.list.items; }
+    //get itemsSeparators(): Array<Token[]> { return this.list.itemsSeparators; }
+    //get items(): Expression[] { return this.list.items; }
     parenCloseToken: Token;
 }
 
@@ -53,10 +55,15 @@ class NonParenthesizedList extends Expression {
 }
 
 class HashRefCreationExpression extends Expression {
+    //constructor() {
+    //    super();
+    //    this.list = new NonParenthesizedList();
+    //}
     braceOpenToken: Token;
     braceOpenTokenPost: Token[];
-    itemsSeparators: Array<Token[]>;
-    items: Expression[];
+    list: NonParenthesizedList;
+    //get itemsSeparators(): Array<Token[]> { return this.list.itemsSeparators; }
+    //get items(): Expression[] { return this.list.items; }
     braceCloseToken: Token;
 }
 

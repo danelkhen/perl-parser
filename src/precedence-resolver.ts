@@ -3,9 +3,16 @@
         this.nodes = mbe.nodes.toArray();
     }
     nodes: Array<Expression | Operator>;
+
+    //isOperatorOrKeyword(node:Expression | Operator, operators: TokenType[], keywords: string[]) {
+
+    //}
     resolve() {
-        //TEMP HACK
+        //TEMP HACKS
         this.nodes.ofType(Operator).where(t=> t.token.is(TokenTypes.packageSeparator)).forEach(t=> this.resolveBinary(t));
+        //Statement modifiers (hack)
+        this.nodes.ofType(Operator).where(t=> t.token.isAnyKeyword(["for", "if","while","foreach"])).forEach(t=> this.resolveBinary(t));
+
         console.log("unresolved", Q.copy(this.mbe.nodes));
         //    left terms and list operators (leftward)
         //    left	->
@@ -35,7 +42,7 @@
         this.nodes.ofType(Operator).where(t=> t.token.isAny([
             TokenTypes.greaterThan, TokenTypes.greaterOrEqualsThan,
             TokenTypes.smallerThan, TokenTypes.smallerOrEqualsThan,
-        ])).forEach(t=> this.resolveBinary(<Operator>t));
+        ]) || t.token.isAnyKeyword(["lt", "gt", "le", "ge"])).forEach(t=> this.resolveBinary(<Operator>t));
         console.log("resolved", this.nodes);
         //        nonassoc	== != <=> eq ne cmp ~~
         this.nodes.ofType(Operator).where(t=>
@@ -72,7 +79,7 @@
 
 
         //hack: assume any consecutive expression is invocation
-        this.nodes.ofType(Expression).where(t=> true).forEach(t=> this.resolveInvocation(t));
+        this.nodes.ofType(Expression).where(t=> true).forEach(t=> this.resolveImplicitInvocation(t));
         console.log("resolved", this.nodes);
         if (this.nodes.length > 1)
             throw new Error("mbe not completely resolved");
@@ -115,7 +122,7 @@
             this.nodes[index - 1] = list;
             return list;
         }
-        else if (left instanceof Expression && right==null) {
+        else if (left instanceof Expression && right == null) {
             let list = new NonParenthesizedList();
             list.items = [left];
             list.itemsSeparators = [[op.token]];
@@ -128,8 +135,10 @@
     }
 
     // a b c =>a(b,c)
-    resolveInvocation(target: Expression) {
+    resolveImplicitInvocation(target: Expression) {
         let index = this.nodes.indexOf(target);
+        if(index==-1)
+            return null;
         let args = [];
         let i = index;
         while (true) {
@@ -146,6 +155,7 @@
         node2.target = target;
         let list = new NonParenthesizedList();
         list.items = args;//TODO:
+        list.itemsSeparators = [];
         node2.arguments = list;// new ParenthesizedList();
         //node2.arguments.items = args;
         this.nodes.splice(index, i - index, node2);

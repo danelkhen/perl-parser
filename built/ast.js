@@ -40,31 +40,17 @@ var Block = (function (_super) {
     }
     return Block;
 }(AstNode));
-var ParenthesizedExpression = (function (_super) {
-    __extends(ParenthesizedExpression, _super);
-    function ParenthesizedExpression() {
-        _super.apply(this, arguments);
-    }
-    return ParenthesizedExpression;
-}(Expression));
+//class ParenthesizedExpression extends Expression {
+//    parenOpenToken: Token;
+//    parenOpenTokenPost: Token[];
+//    expression: Expression;
+//    parenCloseToken: Token;
+//}
 var ParenthesizedList = (function (_super) {
     __extends(ParenthesizedList, _super);
     function ParenthesizedList() {
         _super.apply(this, arguments);
     }
-    ParenthesizedList.prototype.ParenthesizedList = function () {
-        this.list = new NonParenthesizedList();
-    };
-    Object.defineProperty(ParenthesizedList.prototype, "itemsSeparators", {
-        get: function () { return this.list.itemsSeparators; },
-        enumerable: true,
-        configurable: true
-    });
-    Object.defineProperty(ParenthesizedList.prototype, "items", {
-        get: function () { return this.list.items; },
-        enumerable: true,
-        configurable: true
-    });
     return ParenthesizedList;
 }(Expression));
 var NonParenthesizedList = (function (_super) {

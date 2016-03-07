@@ -326,26 +326,27 @@
         node.statements = this.parseStatementsUntil();
         return node;
     }
-    parseUseOrNoStatement(): UseOrNoStatement {
-        let node: UseOrNoStatement;
-        if (this.token.isKeyword("use"))
-            node = this.create(UseStatement);
-        else if (this.token.isKeyword("no"))
-            node = this.create(NoStatement);
-        else
-            throw new Error();
-        node.useToken = this.token;
-        this.nextToken();
-        node.useTokenPost = this.expectAndSkipWhitespace();
+    parseUseOrNoStatement(): ExpressionStatement {
+        return this.parseExpressionStatement();//hack
+        //let node: UseOrNoStatement;
+        //if (this.token.isKeyword("use"))
+        //    node = this.create(UseStatement);
+        //else if (this.token.isKeyword("no"))
+        //    node = this.create(NoStatement);
+        //else
+        //    throw new Error();
+        //node.useToken = this.token;
         //this.nextToken();
-        node.module = <Expression>this.createExpressionParser().parseExpressionOrOperator();
-        node.modulePostTokens = this.skipWhitespaceAndComments();
-        if (!this.token.is(TokenTypes.semicolon)) {
-            node.list = this.createExpressionParser().parseOptionallyParenthesizedList();//.parseExpression();
-        }
-        node.semicolonToken = this.expect(TokenTypes.semicolon);
-        node.semicolonTokenPost = this.nextNonWhitespaceToken();
-        return node;
+        //node.useTokenPost = this.expectAndSkipWhitespace();
+        ////this.nextToken();
+        //node.module = <Expression>this.createExpressionParser().parseExpressionOrOperator();
+        //node.modulePostTokens = this.skipWhitespaceAndComments();
+        //if (!this.token.is(TokenTypes.semicolon)) {
+        //    node.list = this.createExpressionParser().parseOptionallyParenthesizedList();//.parseExpression();
+        //}
+        //node.semicolonToken = this.expect(TokenTypes.semicolon);
+        //node.semicolonTokenPost = this.nextNonWhitespaceToken();
+        //return node;
     }
 
     parseBlock(): Block {

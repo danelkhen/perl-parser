@@ -17,7 +17,7 @@
         }
         return mbe;
     }
-    resolveFlatExpressionsAndOperators(mbe:FlatExpressionsAndOperators): Expression {
+    resolveFlatExpressionsAndOperators(mbe: FlatExpressionsAndOperators): Expression {
         let mbe2 = new PrecedenceResolver(mbe).resolve();
         return mbe2;
     }
@@ -31,7 +31,9 @@
         if (exp instanceof ParenthesizedList)
             return exp;
         let node = this.create(ParenthesizedList);
-        node.items = [exp];
+        node.list = new NonParenthesizedList();
+        node.list.items = [exp];
+        node.list.itemsSeparators = [];
         return node;
     }
 
@@ -157,7 +159,7 @@
         //else if (this.token.is(TokenTypes.question)) {
         //    return this.parseTrinaryExpression(lastExpression);
         //}
-        else if (this.token.isAny([TokenTypes.integer, TokenTypes.interpolatedString, TokenTypes.qq, TokenTypes.string, TokenTypes.qw, TokenTypes.qx])) {
+        else if (this.token.isAny([TokenTypes.integer, TokenTypes.interpolatedString, TokenTypes.qq, TokenTypes.string, TokenTypes.qw, TokenTypes.qx, TokenTypes.q])) {
             if (lastExpression != null)
                 return lastExpression; //shouldn't continue parsing
 
@@ -399,16 +401,20 @@
 
     }
     parseHashRefCreation(): HashRefCreationExpression {
-        this.expect(TokenTypes.braceOpen);
-        let node2 = this.parseParenthesizedList(TokenTypes.braceOpen, TokenTypes.braceClose);
         let node = this.create(HashRefCreationExpression);
-        node.token = node2.token;
-        node.tokens = node2.tokens;
-        node.items = node2.items;
-        node.itemsSeparators = node2.itemsSeparators;
-        node.braceOpenToken = node2.parenOpenToken;
-        node.braceOpenTokenPost = node2.parenOpenTokenPost;
-        node.braceCloseToken = node2.parenCloseToken;
+        node.braceOpenToken = this.expect(TokenTypes.braceOpen);
+        node.braceOpenTokenPost = this.nextNonWhitespaceToken();
+        if (!this.token.is(TokenTypes.braceClose)) {
+            node.list = this.parseNonParenthesizedList();
+            //node.items = node2.items;
+            //node.itemsSeparators = node2.itemsSeparators;
+        }
+        //else {
+        //    node.items = [];
+        //    node.itemsSeparators = [];
+        //}
+        node.braceCloseToken = this.expect(TokenTypes.braceClose);
+        this.nextToken();
         return node;
     }
 
@@ -472,7 +478,7 @@
     }
 
 
-    parseOptionallyParenthesizedList(opener?: TokenType, closer?: TokenType): ParenthesizedList {
+    parseOptionallyParenthesizedList(opener?: TokenType, closer?: TokenType): ParenthesizedList | NonParenthesizedList {
         if (opener == null)
             opener = TokenTypes.parenOpen;
         if (closer == null)
@@ -489,40 +495,53 @@
         let node = this.create(ParenthesizedList);
         node.parenOpenToken = this.expect(opener);
         node.parenOpenTokenPost = this.nextNonWhitespaceToken();
-        let node2 = this.parseExpression();
-        
-        node.items = [];
-        node.itemsSeparators = [];
-        while (this.token != null) {
-            if (this.token.is(closer))
-                break;
-            let exp = this.parseExpression();
-            node.items.push(exp);
-            let sep = this.skipWhitespaceAndComments(exp);
-            if (this.token.is(closer))
-                break;
-            sep.add(this.expectAny([TokenTypes.comma, TokenTypes.fatComma]));
-            sep.addRange(this.nextNonWhitespaceToken(node));
-            node.itemsSeparators.push(sep);
+        if (!this.token.is(closer)) {
+            node.list = this.parseNonParenthesizedList();
         }
+        //else {
+        //    node.items = [];
+        //    node.itemsSeparators = [];
+        //}
         node.parenCloseToken = this.expect(closer);
         this.nextToken();
+        
+        //node.items = [];
+        //node.itemsSeparators = [];
+        //while (this.token != null) {
+        //    if (this.token.is(closer))
+        //        break;
+        //    let exp = this.parseExpression();
+        //    node.items.push(exp);
+        //    let sep = this.skipWhitespaceAndComments(exp);
+        //    if (this.token.is(closer))
+        //        break;
+        //    sep.add(this.expectAny([TokenTypes.comma, TokenTypes.fatComma]));
+        //    sep.addRange(this.nextNonWhitespaceToken(node));
+        //    node.itemsSeparators.push(sep);
+        //}
+        //node.parenCloseToken = this.expect(closer);
+        //this.nextToken();
         return node;
     }
-    parseNonParenthesizedList(): ParenthesizedList {
-        let node = this.create(ParenthesizedList);
-        node.items = [];
+    parseNonParenthesizedList(): NonParenthesizedList {
+        let node = this.create(NonParenthesizedList);
+        let node2 = this.parseExpression();
+        if(node2 instanceof NonParenthesizedList)
+            return node2;
+        node.items = [node2];
         node.itemsSeparators = [];
-        while (this.token != null) {
-            let exp = this.parseExpression();
-            node.items.push(exp);
-            let sep = this.skipWhitespaceAndComments(exp);
-            if (!this.token.isAny([TokenTypes.comma, TokenTypes.fatComma]))
-                break;
-            sep.add(this.token);
-            sep.addRange(this.nextNonWhitespaceToken(node));
-            node.itemsSeparators.push(sep);
-        }
+        //node.items = [];
+        //node.itemsSeparators = [];
+        //while (this.token != null) {
+        //    let exp = this.parseExpression();
+        //    node.items.push(exp);
+        //    let sep = this.skipWhitespaceAndComments(exp);
+        //    if (!this.token.isAny([TokenTypes.comma, TokenTypes.fatComma]))
+        //        break;
+        //    sep.add(this.token);
+        //    sep.addRange(this.nextNonWhitespaceToken(node));
+        //    node.itemsSeparators.push(sep);
+        //}
         return node;
     }
     parseCommaSeparatedExpressions(): Expression[] {
@@ -604,14 +623,15 @@
         //return node;
     }
     tryHashRefCreationToBlock(node: HashRefCreationExpression): Block {
-        let node2 = new Block();
-        node2.braceOpenToken = node.braceOpenToken;
-        node2.braceOpenTokenPost = node.braceOpenTokenPost;
-        node2.braceCloseToken = node.braceCloseToken;
-        let st = new ExpressionStatement(); //TODO: validate length, transfer tokens
-        st.expression = node.items[0];
-        node2.statements = [st];
-        return node2;
+        throw new Error();
+        //let node2 = new Block();
+        //node2.braceOpenToken = node.braceOpenToken;
+        //node2.braceOpenTokenPost = node.braceOpenTokenPost;
+        //node2.braceCloseToken = node.braceCloseToken;
+        //let st = new ExpressionStatement(); //TODO: validate length, transfer tokens
+        //st.expression = node.items[0];
+        //node2.statements = [st];
+        //return node2;
     }
 
     parseBlockOrExpr(): Block | Expression {

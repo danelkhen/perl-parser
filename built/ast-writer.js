@@ -19,7 +19,7 @@ var AstWriter = (function () {
         this.register(ValueExpression, function (t) { return [t.value]; });
         this.register(BinaryExpression, function (t) { return [t.left, t.operator, t.right]; });
         this.register(BeginStatement, function (t) { return [t.beginToken, [t.beginTokenPost], t.block, [t.semicolonToken]]; });
-        this.register(ParenthesizedList, function (t) { return [[t.parenOpenToken, t.parenOpenTokenPost], t.list, [t.parenCloseToken]]; });
+        this.register(ParenthesizedList, function (t) { return [[t.parenOpenToken, t.parenOpenTokenPost], [t.list], [t.parenCloseToken]]; });
         this.register(NonParenthesizedList, function (t) { return [_this.zip(t.items, t.itemsSeparators).exceptNulls()]; });
         this.register(PrefixUnaryExpression, function (t) { return [t.operator, [t.operatorPost], t.expression]; });
         this.register(PostfixUnaryExpression, function (t) { return [t.expression, t.operator, [t.operatorPost]]; });
@@ -34,7 +34,7 @@ var AstWriter = (function () {
         this.register(IfStatement, function (t) { return [t.keywordToken, [t.keywordTokenPost], t.parenOpenToken, [t.parenOpenTokenPost], t.expression, t.parenCloseToken, [t.parenCloseTokenPost], t.block, [t.else], [t.semicolonToken]]; });
         this.register(ElsifStatement, function (t) { return [t.keywordToken, [t.keywordTokenPost], t.parenOpenToken, [t.parenOpenTokenPost], t.expression, t.parenCloseToken, [t.parenCloseTokenPost], t.block, [t.else], [t.semicolonToken]]; });
         this.register(ElseStatement, function (t) { return [t.keywordToken, [t.keywordTokenPost], t.block, [t.semicolonToken]]; });
-        this.register(HashRefCreationExpression, function (t) { return [t.braceOpenToken, [t.braceOpenTokenPost], _this.zip(t.items, t.itemsSeparators).exceptNulls(), t.braceCloseToken]; });
+        this.register(HashRefCreationExpression, function (t) { return [t.braceOpenToken, [t.braceOpenTokenPost], [t.list], t.braceCloseToken]; });
         this.register(ForEachStatement, function (t) { return [[t.label, ":"], t.forEachToken, [t.forEachTokenPost], [t.variable, [t.variablePost]], t.list, [t.listPost], t.block]; });
         this.register(ForStatement, function (t) { return [t.forToken, [t.forTokenPost], t.parenOpenToken, [t.parenOpenTokenPost], t.initializer, t.semicolon1Token, [t.semicolon1TokenPost], t.condition, t.semicolon2Token, [t.semicolon2TokenPost], t.iterator, t.parenCloseToken, [t.parenCloseTokenPost], t.block, [t.semicolonToken]]; });
         this.register(Block, function (t) { return [t.braceOpenToken, [t.braceOpenTokenPost], t.statements, t.braceCloseToken]; });

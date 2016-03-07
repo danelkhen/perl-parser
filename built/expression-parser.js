@@ -36,7 +36,9 @@ var ExpressionParser = (function (_super) {
         if (exp instanceof ParenthesizedList)
             return exp;
         var node = this.create(ParenthesizedList);
-        node.items = [exp];
+        node.list = new NonParenthesizedList();
+        node.list.items = [exp];
+        node.list.itemsSeparators = [];
         return node;
     };
     ExpressionParser.prototype._parseExpressionOrOperator = function (lastExpression) {
@@ -131,7 +133,7 @@ var ExpressionParser = (function (_super) {
             lastExpression = node;
             return this.parseExpressionOrOperator(lastExpression);
         }
-        else if (this.token.isAny([TokenTypes.integer, TokenTypes.interpolatedString, TokenTypes.qq, TokenTypes.string, TokenTypes.qw, TokenTypes.qx])) {
+        else if (this.token.isAny([TokenTypes.integer, TokenTypes.interpolatedString, TokenTypes.qq, TokenTypes.string, TokenTypes.qw, TokenTypes.qx, TokenTypes.q])) {
             if (lastExpression != null)
                 return lastExpression; //shouldn't continue parsing
             return this.parseValueExpression();
@@ -355,16 +357,18 @@ var ExpressionParser = (function (_super) {
         //return this.parseHashRefCreation();
     };
     ExpressionParser.prototype.parseHashRefCreation = function () {
-        this.expect(TokenTypes.braceOpen);
-        var node2 = this.parseParenthesizedList(TokenTypes.braceOpen, TokenTypes.braceClose);
         var node = this.create(HashRefCreationExpression);
-        node.token = node2.token;
-        node.tokens = node2.tokens;
-        node.items = node2.items;
-        node.itemsSeparators = node2.itemsSeparators;
-        node.braceOpenToken = node2.parenOpenToken;
-        node.braceOpenTokenPost = node2.parenOpenTokenPost;
-        node.braceCloseToken = node2.parenCloseToken;
+        node.braceOpenToken = this.expect(TokenTypes.braceOpen);
+        node.braceOpenTokenPost = this.nextNonWhitespaceToken();
+        if (!this.token.is(TokenTypes.braceClose)) {
+            node.list = this.parseNonParenthesizedList();
+        }
+        //else {
+        //    node.items = [];
+        //    node.itemsSeparators = [];
+        //}
+        node.braceCloseToken = this.expect(TokenTypes.braceClose);
+        this.nextToken();
         return node;
     };
     ExpressionParser.prototype.parseInvocationExpression = function (target, arrow) {
@@ -438,39 +442,52 @@ var ExpressionParser = (function (_super) {
         var node = this.create(ParenthesizedList);
         node.parenOpenToken = this.expect(opener);
         node.parenOpenTokenPost = this.nextNonWhitespaceToken();
-        var node2 = this.parseExpression();
-        node.items = [];
-        node.itemsSeparators = [];
-        while (this.token != null) {
-            if (this.token.is(closer))
-                break;
-            var exp = this.parseExpression();
-            node.items.push(exp);
-            var sep = this.skipWhitespaceAndComments(exp);
-            if (this.token.is(closer))
-                break;
-            sep.add(this.expectAny([TokenTypes.comma, TokenTypes.fatComma]));
-            sep.addRange(this.nextNonWhitespaceToken(node));
-            node.itemsSeparators.push(sep);
+        if (!this.token.is(closer)) {
+            node.list = this.parseNonParenthesizedList();
         }
+        //else {
+        //    node.items = [];
+        //    node.itemsSeparators = [];
+        //}
         node.parenCloseToken = this.expect(closer);
         this.nextToken();
+        //node.items = [];
+        //node.itemsSeparators = [];
+        //while (this.token != null) {
+        //    if (this.token.is(closer))
+        //        break;
+        //    let exp = this.parseExpression();
+        //    node.items.push(exp);
+        //    let sep = this.skipWhitespaceAndComments(exp);
+        //    if (this.token.is(closer))
+        //        break;
+        //    sep.add(this.expectAny([TokenTypes.comma, TokenTypes.fatComma]));
+        //    sep.addRange(this.nextNonWhitespaceToken(node));
+        //    node.itemsSeparators.push(sep);
+        //}
+        //node.parenCloseToken = this.expect(closer);
+        //this.nextToken();
         return node;
     };
     ExpressionParser.prototype.parseNonParenthesizedList = function () {
-        var node = this.create(ParenthesizedList);
-        node.items = [];
+        var node = this.create(NonParenthesizedList);
+        var node2 = this.parseExpression();
+        if (node2 instanceof NonParenthesizedList)
+            return node2;
+        node.items = [node2];
         node.itemsSeparators = [];
-        while (this.token != null) {
-            var exp = this.parseExpression();
-            node.items.push(exp);
-            var sep = this.skipWhitespaceAndComments(exp);
-            if (!this.token.isAny([TokenTypes.comma, TokenTypes.fatComma]))
-                break;
-            sep.add(this.token);
-            sep.addRange(this.nextNonWhitespaceToken(node));
-            node.itemsSeparators.push(sep);
-        }
+        //node.items = [];
+        //node.itemsSeparators = [];
+        //while (this.token != null) {
+        //    let exp = this.parseExpression();
+        //    node.items.push(exp);
+        //    let sep = this.skipWhitespaceAndComments(exp);
+        //    if (!this.token.isAny([TokenTypes.comma, TokenTypes.fatComma]))
+        //        break;
+        //    sep.add(this.token);
+        //    sep.addRange(this.nextNonWhitespaceToken(node));
+        //    node.itemsSeparators.push(sep);
+        //}
         return node;
     };
     ExpressionParser.prototype.parseCommaSeparatedExpressions = function () {
@@ -548,14 +565,15 @@ var ExpressionParser = (function (_super) {
         //return node;
     };
     ExpressionParser.prototype.tryHashRefCreationToBlock = function (node) {
-        var node2 = new Block();
-        node2.braceOpenToken = node.braceOpenToken;
-        node2.braceOpenTokenPost = node.braceOpenTokenPost;
-        node2.braceCloseToken = node.braceCloseToken;
-        var st = new ExpressionStatement(); //TODO: validate length, transfer tokens
-        st.expression = node.items[0];
-        node2.statements = [st];
-        return node2;
+        throw new Error();
+        //let node2 = new Block();
+        //node2.braceOpenToken = node.braceOpenToken;
+        //node2.braceOpenTokenPost = node.braceOpenTokenPost;
+        //node2.braceCloseToken = node.braceCloseToken;
+        //let st = new ExpressionStatement(); //TODO: validate length, transfer tokens
+        //st.expression = node.items[0];
+        //node2.statements = [st];
+        //return node2;
     };
     ExpressionParser.prototype.parseBlockOrExpr = function () {
         if (this.token.is(TokenTypes.braceOpen))

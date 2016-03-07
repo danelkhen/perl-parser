@@ -42,10 +42,14 @@ var PrecedenceResolver = (function () {
         ];
         this.nodes = mbe.nodes.toArray();
     }
+    //isOperatorOrKeyword(node:Expression | Operator, operators: TokenType[], keywords: string[]) {
+    //}
     PrecedenceResolver.prototype.resolve = function () {
         var _this = this;
-        //TEMP HACK
+        //TEMP HACKS
         this.nodes.ofType(Operator).where(function (t) { return t.token.is(TokenTypes.packageSeparator); }).forEach(function (t) { return _this.resolveBinary(t); });
+        //Statement modifiers (hack)
+        this.nodes.ofType(Operator).where(function (t) { return t.token.isAnyKeyword(["for", "if", "while", "foreach"]); }).forEach(function (t) { return _this.resolveBinary(t); });
         console.log("unresolved", Q.copy(this.mbe.nodes));
         //    left terms and list operators (leftward)
         //    left	->
@@ -75,7 +79,7 @@ var PrecedenceResolver = (function () {
         this.nodes.ofType(Operator).where(function (t) { return t.token.isAny([
             TokenTypes.greaterThan, TokenTypes.greaterOrEqualsThan,
             TokenTypes.smallerThan, TokenTypes.smallerOrEqualsThan,
-        ]); }).forEach(function (t) { return _this.resolveBinary(t); });
+        ]) || t.token.isAnyKeyword(["lt", "gt", "le", "ge"]); }).forEach(function (t) { return _this.resolveBinary(t); });
         console.log("resolved", this.nodes);
         //        nonassoc	== != <=> eq ne cmp ~~
         this.nodes.ofType(Operator).where(function (t) {
@@ -111,7 +115,7 @@ var PrecedenceResolver = (function () {
         //    left	or xor
         this.nodes.ofType(Operator).where(function (t) { return t.value == "or"; }).forEach(function (t) { return _this.resolveBinary(t); });
         //hack: assume any consecutive expression is invocation
-        this.nodes.ofType(Expression).where(function (t) { return true; }).forEach(function (t) { return _this.resolveInvocation(t); });
+        this.nodes.ofType(Expression).where(function (t) { return true; }).forEach(function (t) { return _this.resolveImplicitInvocation(t); });
         console.log("resolved", this.nodes);
         if (this.nodes.length > 1)
             throw new Error("mbe not completely resolved");
@@ -165,8 +169,10 @@ var PrecedenceResolver = (function () {
             throw new Error();
     };
     // a b c =>a(b,c)
-    PrecedenceResolver.prototype.resolveInvocation = function (target) {
+    PrecedenceResolver.prototype.resolveImplicitInvocation = function (target) {
         var index = this.nodes.indexOf(target);
+        if (index == -1)
+            return null;
         var args = [];
         var i = index;
         while (true) {
@@ -183,6 +189,7 @@ var PrecedenceResolver = (function () {
         node2.target = target;
         var list = new NonParenthesizedList();
         list.items = args; //TODO:
+        list.itemsSeparators = [];
         node2.arguments = list; // new ParenthesizedList();
         //node2.arguments.items = args;
         this.nodes.splice(index, i - index, node2);
