@@ -14,7 +14,7 @@ var AstWriter = (function () {
         this.register(NoStatement, function (t) { return [t.useToken, t.useTokenPost, t.module, [t.modulePostTokens], [t.list], t.semicolonToken, [t.semicolonTokenPost]]; });
         this.register(VariableDeclarationStatement, function (t) { return [t.declaration, t.semicolonToken]; });
         this.register(VariableDeclarationExpression, function (t) { return [t.myOurToken, [t.myOurTokenPost], t.variables, [t.variablesPost], [t.assignToken, [t.assignTokenPost], t.initializer]]; });
-        this.register(InvocationExpression, function (t) { return [t.target, [t.targetPost], [t.memberSeparatorToken], [t.arguments]]; });
+        this.register(InvocationExpression, function (t) { return [t.target, [t.targetPost], [t.memberSeparatorToken], [t.firstParamBlock], [t.arguments]]; });
         this.register(ExpressionStatement, function (t) { return [t.expression, [t.expressionPost], [t.semicolonToken]]; });
         this.register(ValueExpression, function (t) { return [t.value]; });
         this.register(BinaryExpression, function (t) { return [t.left, t.operator, t.right]; });
@@ -26,8 +26,8 @@ var AstWriter = (function () {
         this.register(SubroutineExpression, function (t) { return [t.subToken, t.subTokenPost, t.name, [t.namePost], [t.colonToken, [t.colonTokenPost], t.attribute], t.block]; });
         this.register(SubroutineDeclaration, function (t) { return [t.declaration, [t.semicolonToken]]; });
         this.register(SimpleName, function (t) { return [t.name]; });
-        this.register(HashMemberAccessExpression, function (t) { return [t.target, [t.memberSeparatorToken], t.braceOpenToken, [t.braceOpenTokenPost], t.member, t.braceCloseToken]; });
-        this.register(ArrayMemberAccessExpression, function (t) { return [t.target, [t.memberSeparatorToken], t.bracketOpenToken, [t.bracketOpenTokenPost], t.expression, t.bracketCloseToken]; });
+        this.register(HashMemberAccessExpression, function (t) { return [t.target, [t.memberSeparatorToken], t.member]; });
+        this.register(ArrayMemberAccessExpression, function (t) { return [t.target, [t.memberSeparatorToken], t.member]; });
         this.register(MemberExpression, function (t) { return [[t.target, t.memberSeparatorToken], t.name]; });
         this.register(ReturnExpression, function (t) { return [t.returnToken, [t.returnTokenPost], t.expression]; });
         this.register(ArrayRefDeclaration, function (t) { return [t.bracketOpenToken, [t.bracketOpenTokenPost], _this.zip(t.items, t.itemsSeparators).exceptNulls(), t.bracketCloseToken]; });
@@ -39,19 +39,10 @@ var AstWriter = (function () {
         this.register(ForStatement, function (t) { return [t.forToken, [t.forTokenPost], t.parenOpenToken, [t.parenOpenTokenPost], t.initializer, t.semicolon1Token, [t.semicolon1TokenPost], t.condition, t.semicolon2Token, [t.semicolon2TokenPost], t.iterator, t.parenCloseToken, [t.parenCloseTokenPost], t.block, [t.semicolonToken]]; });
         this.register(Block, function (t) { return [t.braceOpenToken, [t.braceOpenTokenPost], t.statements, t.braceCloseToken]; });
         this.register(RegexExpression, function (t) { return [t.value]; });
-        this.register(TrinaryExpression, function (t) { return [t.condition, t.questionToken, [t.questionTokenPost], t.trueExpression, [t.trueExpressionPost], t.colonToken, [t.colonTokenPost], t.falseExpression]; });
+        this.register(TrinaryExpression, function (t) { return [t.condition, t.questionOperator, t.trueExpression, [t.trueExpressionPost], t.colonOperator, t.falseExpression]; });
         this.register(EndStatement, function (t) { return [t.endToken]; });
         this.register(EmptyStatement, function (t) { return [t.semicolonToken]; });
-        this.register(MultiBinaryExpression, function (t) {
-            if (t.expressions.length != t.operators.length + 1)
-                throw new Error("invalid multiexpression");
-            var list = _this.zip(t.expressions, t.operators).exceptNulls();
-            //let list: Array<any> = [t.expressions[0]];
-            //t.operators.forEach((op, i) => list.push(op, t.expressions[i + 1]));
-            //let res = list.withItemBetweenEach(" ");
-            //console.log("Multi", res);
-            return list;
-        });
+        this.register(Operator, function (t) { return [t.token]; });
         this.register(NativeInvocation_BlockAndListOrExprCommaList, function (t) { return [t.keywordToken, t.keywordTokenPost, [t.block, t.blockPost, t.list], [t.expr, t.exprPost, t.commaToken, [t.commaTokenPost], t.list]]; });
         this.register(NativeInvocation_BlockOrExpr, function (t) { return [t.keywordToken, [t.keywordTokenPost], [t.block], [t.expr]]; });
         this.sb = [];
@@ -87,7 +78,7 @@ var AstWriter = (function () {
             }
             var list = func(node);
             if (list.some(function (t) { return t == null; }))
-                console.warn("node generated array with nulls", node, list);
+                console.warn("node generated array with nulls", node, list, func.toString());
             var all = [[node.whitespaceBefore], list, [node.whitespaceAfter]];
             this.write(all);
         }
@@ -100,10 +91,6 @@ var AstWriter = (function () {
         else if (obj instanceof Token) {
             var token = obj;
             this.sb.push(token.value);
-        }
-        else if (obj instanceof Operator) {
-            var op = obj;
-            this.sb.push(op.value);
         }
         else {
             this.sb.push(obj.toString());

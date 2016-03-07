@@ -74,15 +74,29 @@ var HereDocTokenType = (function (_super) {
     }
     HereDocTokenType.prototype.tryTokenize = function (tokenizer) {
         var range = tokenizer.cursor.next(/^<<"[a-zA-Z0-9]+"/);
-        if (range == null)
-            return 0;
-        var ender = range.text.substring(3, range.text.length - 1);
+        var ender;
+        if (range == null) {
+            range = tokenizer.cursor.next(/^<<[a-zA-Z0-9]+/);
+            if (range == null)
+                return 0;
+            else
+                ender = range.text.substring(2);
+        }
+        else {
+            ender = range.text.substring(3, range.text.length - 1);
+        }
         var newTokenType = TokenTypes._r(new RegExp("\\n[\\S\\s]*" + ender + "\\n", "m"));
         newTokenType.name = "heredocValue";
         tokenizer.tempTokenTypes.push(newTokenType);
         var token = this.create(range);
         tokenizer.tokens.push(token);
         tokenizer.cursor.pos = range.end;
+        //let line = tokenizer.cursor.pos.line;
+        //while (line == tokenizer.cursor.pos.line)
+        //    tokenizer.next();
+        //let valueToken = newTokenType.tryTokenize(tokenizer);
+        //if (valueToken == null)
+        //    throw new Error();
         return 1;
     };
     return HereDocTokenType;
@@ -182,6 +196,7 @@ var TokenTypes = (function () {
     };
     TokenTypes.identifierRegex = /[a-zA-Z_][a-zA-Z_0-9]*/;
     TokenTypes.heredoc = new HereDocTokenType(); // TokenTypes._custom(TokenTypes.match(/<<"([a-zA-Z0-9]+)"[\s\S]*$/m);
+    TokenTypes.heredocValue = TokenTypes._custom(function (t) { return null; }); // TokenTypes._custom(TokenTypes.match(/<<"([a-zA-Z0-9]+)"[\s\S]*$/m);
     TokenTypes.qq = TokenTypes._rs([/qq\|[^|]*\|/, /qq\{[^\}]*\}/]);
     TokenTypes.qw = TokenTypes._rs([/qw\s*\/[^\/]*\//m, /qw\s*<[^>]*>/m, /qw\s*\([^\)]*\)/m, /qw\s*\[[^\]]*\]/m]);
     TokenTypes.qr = TokenTypes._rs([/qr\/.*\//, /qr\(.*\)/]); //Regexp-like quote
@@ -271,14 +286,10 @@ var TextRange2 = (function () {
         this.file = file;
         this.start = start;
         this.end = end;
-        //this.src = src;
-        //this.index = index;
-        //this.length = length || 0;
         if (this.end == null)
             this.end = this.start;
     }
     Object.defineProperty(TextRange2.prototype, "index", {
-        //src: string;
         get: function () { return this.start.index; },
         enumerable: true,
         configurable: true
@@ -289,8 +300,6 @@ var TextRange2 = (function () {
         configurable: true
     });
     Object.defineProperty(TextRange2.prototype, "text", {
-        //length: number;
-        //get end() { return this.index + this.length; }
         get: function () { return this.file.text.substr(this.index, this.length); },
         enumerable: true,
         configurable: true
@@ -339,13 +348,6 @@ var File2 = (function () {
     File2.prototype.getPos = function (index) {
         var line = this.findLine(index);
         var lineIndex = this.getLineStartIndex(line);
-        //let lineIndex = 0;
-        //for (let i = 0; i < this.newLineIndexes.length; i++) {
-        //    let li = this.newLineIndexes[i];
-        //    if (li > index)
-        //        break;
-        //    lineIndex = li;
-        //}
         var pos = new File2Pos();
         pos.line = line; //lineIndex + 1;
         pos.column = index - lineIndex + 1;

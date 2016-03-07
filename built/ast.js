@@ -276,29 +276,21 @@ var TrinaryExpression = (function (_super) {
     }
     return TrinaryExpression;
 }(Expression));
-var MultiBinaryExpression = (function (_super) {
-    __extends(MultiBinaryExpression, _super);
-    function MultiBinaryExpression() {
+var UnresolvedExpression = (function (_super) {
+    __extends(UnresolvedExpression, _super);
+    function UnresolvedExpression() {
         _super.apply(this, arguments);
     }
-    MultiBinaryExpression.prototype.endsWithAnExpression = function () {
-        return this.expressions.length > this.operators.length;
-    };
-    return MultiBinaryExpression;
+    return UnresolvedExpression;
 }(Expression));
-var FlatExpressionsAndOperators = (function (_super) {
-    __extends(FlatExpressionsAndOperators, _super);
-    function FlatExpressionsAndOperators() {
-        _super.apply(this, arguments);
-    }
-    return FlatExpressionsAndOperators;
-}(Expression));
-var Operator = (function () {
+var Operator = (function (_super) {
+    __extends(Operator, _super);
     function Operator() {
+        _super.apply(this, arguments);
     }
     Operator.prototype.toString = function () { return this.value + " {Operator}"; };
     return Operator;
-}());
+}(AstNode));
 /*  LABEL foreach (EXPR; EXPR; EXPR) BLOCK
     LABEL foreach VAR (LIST) BLOCK
     LABEL foreach VAR (LIST) BLOCK continue BLOCK

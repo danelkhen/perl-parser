@@ -83,15 +83,31 @@ class HereDocTokenType extends TokenType {
 
     tryTokenize(tokenizer: Tokenizer): number {
         let range = tokenizer.cursor.next(/^<<"[a-zA-Z0-9]+"/);
-        if (range == null)
-            return 0;
-        let ender = range.text.substring(3, range.text.length - 1);
+        let ender;
+        if (range == null) {
+            range = tokenizer.cursor.next(/^<<[a-zA-Z0-9]+/);
+            if (range == null)
+                return 0;
+            else
+                ender = range.text.substring(2);
+        }
+        else {
+            ender = range.text.substring(3, range.text.length - 1)
+        }
         let newTokenType = TokenTypes._r(new RegExp("\\n[\\S\\s]*" + ender + "\\n", "m"));
         newTokenType.name = "heredocValue";
         tokenizer.tempTokenTypes.push(newTokenType);
         let token = this.create(range);
         tokenizer.tokens.push(token);
         tokenizer.cursor.pos = range.end;
+
+        //let line = tokenizer.cursor.pos.line;
+        //while (line == tokenizer.cursor.pos.line)
+        //    tokenizer.next();
+        //let valueToken = newTokenType.tryTokenize(tokenizer);
+        //if (valueToken == null)
+        //    throw new Error();
+
         return 1;
     }
 
@@ -146,6 +162,7 @@ class TokenTypes {
         return tt;
     }
     static heredoc = new HereDocTokenType();// TokenTypes._custom(TokenTypes.match(/<<"([a-zA-Z0-9]+)"[\s\S]*$/m);
+    static heredocValue = TokenTypes._custom(t=>null);// TokenTypes._custom(TokenTypes.match(/<<"([a-zA-Z0-9]+)"[\s\S]*$/m);
     static qq = TokenTypes._rs([/qq\|[^|]*\|/, /qq\{[^\}]*\}/]);
     static qw = TokenTypes._rs([/qw\s*\/[^\/]*\//m, /qw\s*<[^>]*>/m, /qw\s*\([^\)]*\)/m, /qw\s*\[[^\]]*\]/m]);
     static qr = TokenTypes._rs([/qr\/.*\//, /qr\(.*\)/]);//Regexp-like quote
@@ -160,8 +177,8 @@ class TokenTypes {
         "my", "our", "local",
         "sub", "return", "elsif", "else", "unless", "__END__",
         "and", "not", "or",
-        "eq", "ne", "cmp", 
-        "lt", "gt", "le", "ge", 
+        "eq", "ne", "cmp",
+        "lt", "gt", "le", "ge",
         "foreach", "while", "for",
         "if", "unless", "while", "until", "for", "foreach", "when"    //statement modifiers
     ].map(t=> new RegExp(t + "\\b"))); //\b|use\b|my\b|sub\b|return\b|if\b|defined\b/
@@ -292,20 +309,12 @@ class TokenTypes {
 
 class TextRange2 {
     constructor(public file: File2, public start: File2Pos, public end?: File2Pos) {
-        //this.src = src;
-        //this.index = index;
-        //this.length = length || 0;
         if (this.end == null)
             this.end = this.start;
     }
-    //src: string;
     get index(): number { return this.start.index; }
     get length(): number { return this.end.index - this.start.index; }
-    //length: number;
-    //get end() { return this.index + this.length; }
     get text(): string { return this.file.text.substr(this.index, this.length); }
-    //start: File2Pos;
-    //end2: File2Pos;
 }
 
 class File2 {
@@ -348,13 +357,6 @@ class File2 {
     getPos(index: number): File2Pos {
         let line = this.findLine(index);
         let lineIndex = this.getLineStartIndex(line);
-        //let lineIndex = 0;
-        //for (let i = 0; i < this.newLineIndexes.length; i++) {
-        //    let li = this.newLineIndexes[i];
-        //    if (li > index)
-        //        break;
-        //    lineIndex = li;
-        //}
         let pos = new File2Pos();
         pos.line = line; //lineIndex + 1;
         pos.column = index - lineIndex + 1;

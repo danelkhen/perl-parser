@@ -48,9 +48,11 @@ var PrecedenceResolver = (function () {
         var _this = this;
         //TEMP HACKS
         this.nodes.ofType(Operator).where(function (t) { return t.token.is(TokenTypes.packageSeparator); }).forEach(function (t) { return _this.resolveBinary(t); });
+        this.nodes.ofType(HashRefCreationExpression).forEach(function (t) { return _this.resolveHashMemberAccess(t); });
+        this.nodes.ofType(ArrayRefDeclaration).forEach(function (t) { return _this.resolveArrayMemberAccess(t); });
         //Statement modifiers (hack)
         this.nodes.ofType(Operator).where(function (t) { return t.token.isAnyKeyword(["for", "if", "while", "foreach"]); }).forEach(function (t) { return _this.resolveBinary(t); });
-        console.log("unresolved", Q.copy(this.mbe.nodes));
+        console.log("unresolved", this.mbe.nodes);
         //    left terms and list operators (leftward)
         //    left	->
         this.nodes.ofType(Operator).where(function (t) { return t.token.is(TokenTypes.arrow); }).forEach(function (t) { return _this.resolveBinary(t); });
@@ -60,7 +62,7 @@ var PrecedenceResolver = (function () {
         console.log("resolved", this.nodes);
         //    right	**
         //    right	! ~ \ and unary + and - //TODO: \
-        this.nodes.ofType(Operator).where(function (t) { return t.token.isAny([TokenTypes.not, TokenTypes.tilda /*TODO:, TokenTypes.plus, TokenTypes.minus*/]); }).forEach(function (t) { return _this.resolvePrefixUnary(t); });
+        this.nodes.ofType(Operator).where(function (t) { return t.token.isAny([TokenTypes.not, TokenTypes.tilda, TokenTypes.makeRef /*TODO:, TokenTypes.plus, TokenTypes.minus*/]); }).forEach(function (t) { return _this.resolvePrefixUnary(t); });
         console.log("resolved", this.nodes);
         //    left	=~ !~
         this.nodes.ofType(Operator).where(function (t) { return t.token.isAny([TokenTypes.regexEquals, TokenTypes.regexNotEquals]); }).forEach(function (t) { return _this.resolveBinary(t); });
@@ -98,6 +100,7 @@ var PrecedenceResolver = (function () {
         //    nonassoc	..  ... //TODO: ...
         this.nodes.ofType(Operator).where(function (t) { return t.token.isAny([TokenTypes.range]); }).forEach(function (t) { return _this.resolveBinary(t); });
         //    right	?:
+        this.nodes.ofType(Operator).where(function (t) { return t.token.is(TokenTypes.question); }).forEach(function (t) { return _this.resolveTrinaryExpression(t); });
         //    right	= += -= *= etc. goto last next redo dump
         this.nodes.ofType(Operator).where(function (t) { return t.token.isAny([
             TokenTypes.assignment,
@@ -127,31 +130,28 @@ var PrecedenceResolver = (function () {
         var index = this.nodes.indexOf(op);
         var left = this.nodes[index - 1];
         var right = this.nodes[index + 1];
-        if (left instanceof NonParenthesizedList && right instanceof NonParenthesizedList) {
-            left.items.addRange(right.items);
-            left.itemsSeparators.addRange(right.itemsSeparators);
+        //if (left instanceof NonParenthesizedList && right instanceof Expression) {
+        //    left.items.addRange(right.items);
+        //    left.itemsSeparators.addRange(right.itemsSeparators);
+        //    this.nodes.removeAt(index);
+        //    this.nodes.removeAt(index);
+        //    return left;
+        //}
+        if (left instanceof NonParenthesizedList) {
+            left.itemsSeparators.add(op);
             this.nodes.removeAt(index);
-            this.nodes.removeAt(index);
+            if (right instanceof Expression) {
+                left.items.add(right);
+                this.nodes.removeAt(index);
+            }
+            else if (right != null)
+                throw new Error();
             return left;
-        }
-        else if (left instanceof NonParenthesizedList && right instanceof Expression) {
-            left.items.add(right);
-            left.itemsSeparators.add([op.token]);
-            this.nodes.removeAt(index);
-            this.nodes.removeAt(index);
-            return left;
-        }
-        else if (left instanceof Expression && right instanceof NonParenthesizedList) {
-            right.items.insert(0, left);
-            right.itemsSeparators.insert(0, [op.token]);
-            this.nodes.removeAt(index - 1);
-            this.nodes.removeAt(index - 1);
-            return right;
         }
         else if (left instanceof Expression && right instanceof Expression) {
             var list = new NonParenthesizedList();
             list.items = [left, right];
-            list.itemsSeparators = [[op.token]];
+            list.itemsSeparators = [op];
             this.nodes.removeAt(index - 1);
             this.nodes.removeAt(index - 1);
             this.nodes[index - 1] = list;
@@ -160,13 +160,52 @@ var PrecedenceResolver = (function () {
         else if (left instanceof Expression && right == null) {
             var list = new NonParenthesizedList();
             list.items = [left];
-            list.itemsSeparators = [[op.token]];
+            list.itemsSeparators = [op];
             this.nodes.removeAt(index - 1);
             this.nodes[index - 1] = list;
             return list;
         }
         else
             throw new Error();
+    };
+    PrecedenceResolver.prototype.resolveHashMemberAccess = function (node) {
+        var index = this.nodes.indexOf(node);
+        var left = this.nodes[index - 1];
+        if (left == null || !(left instanceof Expression))
+            return;
+        var node2 = new HashMemberAccessExpression();
+        node2.member = node;
+        node2.target = left;
+        this.nodes.removeAt(index - 1);
+        this.nodes[index - 1] = node2;
+        return node2;
+    };
+    PrecedenceResolver.prototype.resolveArrayMemberAccess = function (node) {
+        var index = this.nodes.indexOf(node);
+        var left = this.nodes[index - 1];
+        if (left == null || !(left instanceof Expression))
+            return;
+        var node2 = new ArrayMemberAccessExpression();
+        node2.member = node;
+        node2.target = left;
+        this.nodes.removeAt(index - 1);
+        this.nodes[index - 1] = node2;
+        return node2;
+    };
+    PrecedenceResolver.prototype.resolveTrinaryExpression = function (op) {
+        if (this.nodes.length < 5)
+            throw new Error();
+        var index = this.nodes.indexOf(op);
+        var node = new TrinaryExpression();
+        node.condition = this.nodes[index - 1];
+        node.questionOperator = op;
+        node.trueExpression = this.nodes[index + 1];
+        node.colonOperator = this.nodes[index + 2];
+        node.falseExpression = this.nodes[index + 3];
+        console.log("before", this.nodes.length);
+        this.nodes.splice(index - 1, 5, node);
+        console.log("after", this.nodes.length);
+        return node;
     };
     // a b c =>a(b,c)
     PrecedenceResolver.prototype.resolveImplicitInvocation = function (target) {
@@ -200,12 +239,22 @@ var PrecedenceResolver = (function () {
     };
     PrecedenceResolver.prototype.resolveNamedUnaryOperator = function (node) {
         var index = this.nodes.indexOf(node);
+        if (index == -1)
+            return null;
         var nextNode = this.nodes[index + 1];
         if (nextNode instanceof Expression) {
             var node2 = new InvocationExpression();
-            //node2.arguments = new ParenthesizedList();
+            node2.target = node;
             node2.arguments = nextNode;
-            //.items.add(nextNode);
+            this.nodes.removeAt(index);
+            this.nodes.removeAt(index);
+            this.nodes[index] = node2;
+            return node2;
+        }
+        else if (nextNode instanceof Block) {
+            var node2 = new InvocationExpression();
+            node2.target = node;
+            node2.firstParamBlock = nextNode;
             this.nodes.removeAt(index);
             this.nodes.removeAt(index);
             this.nodes[index] = node2;

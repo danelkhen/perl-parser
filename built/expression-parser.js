@@ -10,7 +10,7 @@ var ExpressionParser = (function (_super) {
     }
     ExpressionParser.prototype.parseFlatExpressionsAndOperators = function () {
         console.log("parseExpression", this.token);
-        var mbe = this.create(FlatExpressionsAndOperators);
+        var mbe = this.create(UnresolvedExpression);
         mbe.nodes = [];
         while (true) {
             if (this.token == null)
@@ -23,7 +23,7 @@ var ExpressionParser = (function (_super) {
         }
         return mbe;
     };
-    ExpressionParser.prototype.resolveFlatExpressionsAndOperators = function (mbe) {
+    ExpressionParser.prototype.resolveExpression = function (mbe) {
         var mbe2 = new PrecedenceResolver(mbe).resolve();
         return mbe2;
     };
@@ -42,10 +42,13 @@ var ExpressionParser = (function (_super) {
         return node;
     };
     ExpressionParser.prototype._parseExpressionOrOperator = function (lastExpression) {
+        if (lastExpression != null)
+            return lastExpression;
         this.log("parseExpression", this.token, lastExpression);
         if (this.token.isAny([
             TokenTypes.assignment, TokenTypes.concat, TokenTypes.divDiv, TokenTypes.regexEquals, TokenTypes.regexNotEquals,
             TokenTypes.equals, TokenTypes.notEquals, TokenTypes.and, TokenTypes.or, TokenTypes.greaterOrEqualsThan,
+            TokenTypes.not,
             TokenTypes.greaterThan, TokenTypes.smallerOrEqualsThan, TokenTypes.smallerThan,
             TokenTypes.numericCompare,
             TokenTypes.concatAssign, TokenTypes.divideAssign, TokenTypes.subtractAssign,
@@ -54,7 +57,8 @@ var ExpressionParser = (function (_super) {
             TokenTypes.inc, TokenTypes.dec,
             TokenTypes.question, TokenTypes.colon,
             TokenTypes.comma, TokenTypes.fatComma,
-        ]) || this.token.isAnyKeyword(["if", "unless", "while", "until", "for", "foreach", "when", "and", "eq", "or"])) {
+            TokenTypes.makeRef,
+        ]) || this.token.isAnyKeyword(["if", "unless", "while", "until", "for", "foreach", "when", "and", "eq", "or", "ne"])) {
             if (this.token.isAnyKeyword(["for", "foreach"])) {
                 //  tempParser = this.parseSingleOrCommaSeparatedExpressions;
                 throw new Error("not implemented");
@@ -68,11 +72,7 @@ var ExpressionParser = (function (_super) {
             return operator;
         }
         else if (this.token.is(TokenTypes.bracketOpen)) {
-            if (lastExpression == null)
-                lastExpression = this.parseArrayRefDeclaration();
-            else
-                lastExpression = this.parseArrayMemberAccess(lastExpression, false);
-            return this.parseExpressionOrOperator(lastExpression);
+            return this.parseArrayRefDeclaration();
         }
         else if (this.token.is(TokenTypes.braceOpen)) {
             //TODO:
@@ -80,7 +80,7 @@ var ExpressionParser = (function (_super) {
             //if (prev!=null && prev.is(TokenTypes.arrow))
             //    return this.parseHashMemberAccess(lastExpression, false);
             //return this.parseHashRefCreation();// this.parseHashRefOrBlockExpression();
-            return this.parseHashRefCreation();
+            return this.parseHashRefOrBlockExpression(); //.parseHashRefCreation();
         }
         else if (this.token.is(TokenTypes.parenOpen)) {
             return this.parseParenthesizedList();
@@ -133,7 +133,7 @@ var ExpressionParser = (function (_super) {
             lastExpression = node;
             return this.parseExpressionOrOperator(lastExpression);
         }
-        else if (this.token.isAny([TokenTypes.integer, TokenTypes.interpolatedString, TokenTypes.qq, TokenTypes.string, TokenTypes.qw, TokenTypes.qx, TokenTypes.q])) {
+        else if (this.token.isAny([TokenTypes.integer, TokenTypes.interpolatedString, TokenTypes.qq, TokenTypes.string, TokenTypes.qw, TokenTypes.qx, TokenTypes.q, TokenTypes.heredoc])) {
             if (lastExpression != null)
                 return lastExpression; //shouldn't continue parsing
             return this.parseValueExpression();
@@ -263,46 +263,46 @@ var ExpressionParser = (function (_super) {
         //list.token = returnItems[0].token;
         //return list;
     };
-    ExpressionParser.prototype.parseAnyMemberAccess = function (target) {
-        var arrow = this.token.is(TokenTypes.arrow);
-        this.expectAny([TokenTypes.arrow, TokenTypes.packageSeparator]);
-        var memberSeparatorToken = this.token;
-        this.nextToken();
-        var node;
-        if (this.token.is(TokenTypes.braceOpen))
-            node = this.parseHashMemberAccess(target, arrow);
-        else if (this.token.is(TokenTypes.bracketOpen))
-            node = this.parseArrayMemberAccess(target, arrow);
-        else if (this.token.is(TokenTypes.parenOpen))
-            node = this.parseInvocationExpression(target, arrow);
-        else
-            node = this.parseMemberExpression(target, arrow);
-        node.memberSeparatorToken = memberSeparatorToken;
-        node.arrow = arrow;
-        return node;
-    };
-    ExpressionParser.prototype.parseArrayMemberAccess = function (target, arrow) {
-        var node = this.create(ArrayMemberAccessExpression);
-        node.bracketOpenToken = this.expect(TokenTypes.bracketOpen);
-        node.bracketOpenTokenPost = this.nextNonWhitespaceToken(node);
-        node.expression = this.parseExpression();
-        node.target = target;
-        node.arrow = arrow;
-        node.bracketCloseToken = this.expect(TokenTypes.bracketClose, node);
-        this.nextToken();
-        return node;
-    };
-    ExpressionParser.prototype.parseHashMemberAccess = function (target, arrow) {
-        var node = this.create(HashMemberAccessExpression);
-        node.braceOpenToken = this.expect(TokenTypes.braceOpen);
-        node.braceOpenTokenPost = this.nextNonWhitespaceToken(node);
-        node.member = this.parseExpression();
-        node.arrow = arrow;
-        node.braceCloseToken = this.expect(TokenTypes.braceClose, node);
-        this.nextToken();
-        node.target = target;
-        return node;
-    };
+    //parseAnyMemberAccess(target: Expression): Expression {
+    //    let arrow = this.token.is(TokenTypes.arrow);
+    //    this.expectAny([TokenTypes.arrow, TokenTypes.packageSeparator]);
+    //    let memberSeparatorToken = this.token;
+    //    this.nextToken();
+    //    let node: HashMemberAccessExpression | ArrayMemberAccessExpression | MemberExpression | InvocationExpression;
+    //    if (this.token.is(TokenTypes.braceOpen))
+    //        node = this.parseHashMemberAccess(target, arrow);
+    //    else if (this.token.is(TokenTypes.bracketOpen))
+    //        node = this.parseArrayMemberAccess(target, arrow);
+    //    else if (this.token.is(TokenTypes.parenOpen))
+    //        node = this.parseInvocationExpression(target, arrow);
+    //    else
+    //        node = this.parseMemberExpression(target, arrow);
+    //    node.memberSeparatorToken = memberSeparatorToken;
+    //    node.arrow = arrow;
+    //    return node;
+    //}
+    //parseArrayMemberAccess(target: Expression, arrow: boolean): ArrayMemberAccessExpression {
+    //    let node = this.create(ArrayMemberAccessExpression);
+    //    node.bracketOpenToken = this.expect(TokenTypes.bracketOpen);
+    //    node.bracketOpenTokenPost = this.nextNonWhitespaceToken(node);
+    //    node.expression = this.parseExpression();
+    //    node.target = target;
+    //    node.arrow = arrow;
+    //    node.bracketCloseToken = this.expect(TokenTypes.bracketClose, node);
+    //    this.nextToken();
+    //    return node;
+    //}
+    //parseHashMemberAccess(target: Expression, arrow: boolean): HashMemberAccessExpression {
+    //    let node = this.create(HashMemberAccessExpression);
+    //    node.braceOpenToken = this.expect(TokenTypes.braceOpen);
+    //    node.braceOpenTokenPost = this.nextNonWhitespaceToken(node);
+    //    node.member = this.parseExpression();
+    //    node.arrow = arrow;
+    //    node.braceCloseToken = this.expect(TokenTypes.braceClose, node);
+    //    this.nextToken();
+    //    node.target = target;
+    //    return node;
+    //}
     ExpressionParser.prototype.parseMemberExpression = function (target, arrow) {
         this.log("parseMemberExpression", this.token);
         var node = this.create(MemberExpression);

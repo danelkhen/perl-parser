@@ -83,7 +83,7 @@ class TokenReader {
     }
     skipWhitespaceAndComments(): Token[] {
         let skipped: Token[] = [];
-        while (this.token != null && (this.token.isAny([TokenTypes.whitespace, TokenTypes.comment, TokenTypes.pod]))) {
+        while (this.token != null && (this.token.isAny([TokenTypes.whitespace, TokenTypes.comment, TokenTypes.pod, TokenTypes.heredocValue]))) {
             skipped.push(this.token);
             this.nextToken();
         }

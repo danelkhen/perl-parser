@@ -11,7 +11,7 @@ class AstWriter {
         this.register(NoStatement, t=> [t.useToken, t.useTokenPost, t.module, [t.modulePostTokens], [t.list], t.semicolonToken, [t.semicolonTokenPost]]);
         this.register(VariableDeclarationStatement, t=> [t.declaration, t.semicolonToken]);
         this.register(VariableDeclarationExpression, t=> [t.myOurToken, [t.myOurTokenPost], t.variables, [t.variablesPost], [t.assignToken, [t.assignTokenPost], t.initializer]]);
-        this.register(InvocationExpression, t=> [t.target, [t.targetPost], [t.memberSeparatorToken], [t.arguments]]);
+        this.register(InvocationExpression, t=> [t.target, [t.targetPost], [t.memberSeparatorToken], [t.firstParamBlock], [t.arguments]]);
         this.register(ExpressionStatement, t=> [t.expression, [t.expressionPost], [t.semicolonToken]]);
         this.register(ValueExpression, t=> [t.value]);
         this.register(BinaryExpression, t=> [t.left, t.operator, t.right]);
@@ -24,8 +24,8 @@ class AstWriter {
         this.register(SubroutineDeclaration, t=> [t.declaration, [t.semicolonToken]]);
         this.register(SimpleName, t=> [t.name]);
 
-        this.register(HashMemberAccessExpression, t=> [t.target, [t.memberSeparatorToken], t.braceOpenToken, [t.braceOpenTokenPost], t.member, t.braceCloseToken]);
-        this.register(ArrayMemberAccessExpression, t=> [t.target, [t.memberSeparatorToken], t.bracketOpenToken, [t.bracketOpenTokenPost], t.expression, t.bracketCloseToken]);
+        this.register(HashMemberAccessExpression, t=> [t.target, [t.memberSeparatorToken], t.member]);
+        this.register(ArrayMemberAccessExpression, t=> [t.target, [t.memberSeparatorToken], t.member]);
         this.register(MemberExpression, t=> [[t.target, t.memberSeparatorToken], t.name]);
 
         this.register(ReturnExpression, t=> [t.returnToken, [t.returnTokenPost], t.expression]);
@@ -38,20 +38,11 @@ class AstWriter {
         this.register(ForStatement, t=> [t.forToken, [t.forTokenPost], t.parenOpenToken, [t.parenOpenTokenPost], t.initializer, t.semicolon1Token, [t.semicolon1TokenPost], t.condition, t.semicolon2Token, [t.semicolon2TokenPost], t.iterator, t.parenCloseToken, [t.parenCloseTokenPost], t.block, [t.semicolonToken]]);
         this.register(Block, t=> [t.braceOpenToken, [t.braceOpenTokenPost], t.statements, t.braceCloseToken]);
         this.register(RegexExpression, t=> [t.value]);
-        this.register(TrinaryExpression, t=> [t.condition, t.questionToken, [t.questionTokenPost], t.trueExpression, [t.trueExpressionPost], t.colonToken, [t.colonTokenPost], t.falseExpression]);
+        this.register(TrinaryExpression, t=> [t.condition, t.questionOperator, t.trueExpression, [t.trueExpressionPost], t.colonOperator, t.falseExpression]);
         this.register(EndStatement, t=> [t.endToken]);
         this.register(EmptyStatement, t=> [t.semicolonToken]);
-
-        this.register(MultiBinaryExpression, t=> {
-            if (t.expressions.length != t.operators.length + 1)
-                throw new Error("invalid multiexpression");
-            let list = this.zip(t.expressions, t.operators).exceptNulls();
-            //let list: Array<any> = [t.expressions[0]];
-            //t.operators.forEach((op, i) => list.push(op, t.expressions[i + 1]));
-            //let res = list.withItemBetweenEach(" ");
-            //console.log("Multi", res);
-            return list;
-        });
+        
+        this.register(Operator, t=> [t.token]);
 
         this.register(NativeInvocation_BlockAndListOrExprCommaList, t=> [t.keywordToken, t.keywordTokenPost, [t.block, t.blockPost, t.list], [t.expr, t.exprPost, t.commaToken, [t.commaTokenPost], t.list]]);
         this.register(NativeInvocation_BlockOrExpr, t=> [t.keywordToken, [t.keywordTokenPost],  [t.block], [t.expr]]);
@@ -92,7 +83,7 @@ class AstWriter {
             }
             let list = func(node);
             if (list.some(t=> t == null))
-                console.warn("node generated array with nulls", node, list);
+                console.warn("node generated array with nulls", node, list, func.toString());
             let all = [[node.whitespaceBefore], list, [node.whitespaceAfter]];
             this.write(all);
         }
@@ -106,10 +97,10 @@ class AstWriter {
             let token = <Token>obj;
             this.sb.push(token.value);
         }
-        else if (obj instanceof Operator) {
-            let op = <Operator>obj;
-            this.sb.push(op.value);
-        }
+        //else if (obj instanceof Operator) {
+        //    let op = <Operator>obj;
+        //    this.sb.push(op.value);
+        //}
         else {
             this.sb.push(obj.toString());
         }

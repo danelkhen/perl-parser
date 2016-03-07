@@ -95,7 +95,7 @@ var TokenReader = (function () {
     };
     TokenReader.prototype.skipWhitespaceAndComments = function () {
         var skipped = [];
-        while (this.token != null && (this.token.isAny([TokenTypes.whitespace, TokenTypes.comment, TokenTypes.pod]))) {
+        while (this.token != null && (this.token.isAny([TokenTypes.whitespace, TokenTypes.comment, TokenTypes.pod, TokenTypes.heredocValue]))) {
             skipped.push(this.token);
             this.nextToken();
         }

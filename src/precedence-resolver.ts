@@ -1,8 +1,8 @@
 ﻿class PrecedenceResolver {
-    constructor(public mbe: FlatExpressionsAndOperators) {
+    constructor(public mbe: UnresolvedExpression) {
         this.nodes = mbe.nodes.toArray();
     }
-    nodes: Array<Expression | Operator>;
+    nodes: Array<Expression | Operator | Block>;
 
     //isOperatorOrKeyword(node:Expression | Operator, operators: TokenType[], keywords: string[]) {
 
@@ -10,10 +10,12 @@
     resolve() {
         //TEMP HACKS
         this.nodes.ofType(Operator).where(t=> t.token.is(TokenTypes.packageSeparator)).forEach(t=> this.resolveBinary(t));
+        this.nodes.ofType(HashRefCreationExpression).forEach(t=> this.resolveHashMemberAccess(t));
+        this.nodes.ofType(ArrayRefDeclaration).forEach(t=> this.resolveArrayMemberAccess(t));
         //Statement modifiers (hack)
-        this.nodes.ofType(Operator).where(t=> t.token.isAnyKeyword(["for", "if","while","foreach"])).forEach(t=> this.resolveBinary(t));
+        this.nodes.ofType(Operator).where(t=> t.token.isAnyKeyword(["for", "if", "while", "foreach"])).forEach(t=> this.resolveBinary(t));
 
-        console.log("unresolved", Q.copy(this.mbe.nodes));
+        console.log("unresolved", this.mbe.nodes);
         //    left terms and list operators (leftward)
         //    left	->
         this.nodes.ofType(Operator).where(t=> t.token.is(TokenTypes.arrow)).forEach(t=> this.resolveBinary(t));
@@ -23,7 +25,7 @@
         console.log("resolved", this.nodes);
         //    right	**
         //    right	! ~ \ and unary + and - //TODO: \
-        this.nodes.ofType(Operator).where(t=> t.token.isAny([TokenTypes.not, TokenTypes.tilda/*TODO:, TokenTypes.plus, TokenTypes.minus*/])).forEach(t=> this.resolvePrefixUnary(t));
+        this.nodes.ofType(Operator).where(t=> t.token.isAny([TokenTypes.not, TokenTypes.tilda, TokenTypes.makeRef/*TODO:, TokenTypes.plus, TokenTypes.minus*/])).forEach(t=> this.resolvePrefixUnary(t));
         console.log("resolved", this.nodes);
         //    left	=~ !~
         this.nodes.ofType(Operator).where(t=> t.token.isAny([TokenTypes.regexEquals, TokenTypes.regexNotEquals])).forEach(t=> this.resolveBinary(t));
@@ -60,6 +62,7 @@
         //    nonassoc	..  ... //TODO: ...
         this.nodes.ofType(Operator).where(t=> t.token.isAny([TokenTypes.range])).forEach(t=> this.resolveBinary(<Operator>t));
         //    right	?:
+        this.nodes.ofType(Operator).where(t=> t.token.is(TokenTypes.question)).forEach(t=> this.resolveTrinaryExpression(<Operator>t));
         //    right	= += -= *= etc. goto last next redo dump
         this.nodes.ofType(Operator).where(t=> t.token.isAny([
             TokenTypes.assignment,
@@ -92,31 +95,36 @@
         let index = this.nodes.indexOf(op);
         let left = this.nodes[index - 1];
         let right = this.nodes[index + 1];
-        if (left instanceof NonParenthesizedList && right instanceof NonParenthesizedList) {
-            left.items.addRange(right.items);
-            left.itemsSeparators.addRange(right.itemsSeparators);
+        //if (left instanceof NonParenthesizedList && right instanceof Expression) {
+        //    left.items.addRange(right.items);
+        //    left.itemsSeparators.addRange(right.itemsSeparators);
+        //    this.nodes.removeAt(index);
+        //    this.nodes.removeAt(index);
+        //    return left;
+        //}
+        if (left instanceof NonParenthesizedList) {
+            left.itemsSeparators.add(op);
             this.nodes.removeAt(index);
-            this.nodes.removeAt(index);
+            if (right instanceof Expression) {
+                left.items.add(right);
+                this.nodes.removeAt(index);
+            }
+            else if (right != null)
+                throw new Error();
             return left;
         }
-        else if (left instanceof NonParenthesizedList && right instanceof Expression) {
-            left.items.add(right);
-            left.itemsSeparators.add([op.token]);
-            this.nodes.removeAt(index);
-            this.nodes.removeAt(index);
-            return left;
-        }
-        else if (left instanceof Expression && right instanceof NonParenthesizedList) {
-            right.items.insert(0, left);
-            right.itemsSeparators.insert(0, [op.token]);
-            this.nodes.removeAt(index - 1);
-            this.nodes.removeAt(index - 1);
-            return right;
-        }
+        //else if (left instanceof Expression && right instanceof NonParenthesizedList) {
+        //    throw new Error("shouldn't happen");
+        //    right.items.insert(0, left);
+        //    right.itemsSeparators.insert(0, [op.token]);
+        //    this.nodes.removeAt(index - 1);
+        //    this.nodes.removeAt(index - 1);
+        //    return right;
+        //}
         else if (left instanceof Expression && right instanceof Expression) {
             let list = new NonParenthesizedList();
             list.items = [left, right];
-            list.itemsSeparators = [[op.token]];
+            list.itemsSeparators = [op];
             this.nodes.removeAt(index - 1);
             this.nodes.removeAt(index - 1);
             this.nodes[index - 1] = list;
@@ -125,7 +133,7 @@
         else if (left instanceof Expression && right == null) {
             let list = new NonParenthesizedList();
             list.items = [left];
-            list.itemsSeparators = [[op.token]];
+            list.itemsSeparators = [op];
             this.nodes.removeAt(index - 1);
             this.nodes[index - 1] = list;
             return list;
@@ -134,10 +142,50 @@
             throw new Error();
     }
 
+    resolveHashMemberAccess(node: HashRefCreationExpression): Expression {
+        let index = this.nodes.indexOf(node);
+        let left = this.nodes[index - 1];
+        if (left == null || !(left instanceof Expression))
+            return;
+        let node2 = new HashMemberAccessExpression();
+        node2.member = node;
+        node2.target = <Expression>left;
+        this.nodes.removeAt(index - 1);
+        this.nodes[index - 1] = node2;
+        return node2;
+    }
+    resolveArrayMemberAccess(node: ArrayRefDeclaration): Expression {
+        let index = this.nodes.indexOf(node);
+        let left = this.nodes[index - 1];
+        if (left == null || !(left instanceof Expression))
+            return;
+        let node2 = new ArrayMemberAccessExpression();
+        node2.member = node;
+        node2.target = <Expression>left;
+        this.nodes.removeAt(index - 1);
+        this.nodes[index - 1] = node2;
+        return node2;
+    }
+
+    resolveTrinaryExpression(op: Operator): TrinaryExpression {
+        if(this.nodes.length<5)
+            throw new Error();
+        let index = this.nodes.indexOf(op);
+        let node = new TrinaryExpression();
+        node.condition = <Expression>this.nodes[index - 1];
+        node.questionOperator = op;
+        node.trueExpression = <Expression>this.nodes[index + 1];
+        node.colonOperator = <Operator>this.nodes[index + 2];
+        node.falseExpression = <Expression>this.nodes[index + 3];
+        console.log("before", this.nodes.length);
+        this.nodes.splice(index-1, 5, node);
+        console.log("after", this.nodes.length);
+        return node;
+    }
     // a b c =>a(b,c)
     resolveImplicitInvocation(target: Expression) {
         let index = this.nodes.indexOf(target);
-        if(index==-1)
+        if (index == -1)
             return null;
         let args = [];
         let i = index;
@@ -166,13 +214,23 @@
     }
     resolveNamedUnaryOperator(node: Expression) {
         let index = this.nodes.indexOf(node);
+        if(index==-1)
+            return null;
         let nextNode = this.nodes[index + 1];
 
         if (nextNode instanceof Expression) {
             let node2 = new InvocationExpression();
-            //node2.arguments = new ParenthesizedList();
+            node2.target = node;
             node2.arguments = nextNode;
-            //.items.add(nextNode);
+            this.nodes.removeAt(index);
+            this.nodes.removeAt(index);
+            this.nodes[index] = node2;
+            return node2;
+        }
+        else if (nextNode instanceof Block) { //TODO: check next param without comma
+            let node2 = new InvocationExpression();
+            node2.target = node;
+            node2.firstParamBlock = nextNode;
             this.nodes.removeAt(index);
             this.nodes.removeAt(index);
             this.nodes[index] = node2;

@@ -37,33 +37,21 @@ class Block extends AstNode {
 
 
 class ParenthesizedList extends Expression {
-    //constructor() {
-    //    super();
-    //    this.list = new NonParenthesizedList();
-    //}
     parenOpenToken: Token;
     parenOpenTokenPost: Token[];
     list: NonParenthesizedList;
-    //get itemsSeparators(): Array<Token[]> { return this.list.itemsSeparators; }
-    //get items(): Expression[] { return this.list.items; }
     parenCloseToken: Token;
 }
 
 class NonParenthesizedList extends Expression {
-    itemsSeparators: Array<Token[]>;
+    itemsSeparators: Operator[];
     items: Expression[];
 }
 
 class HashRefCreationExpression extends Expression {
-    //constructor() {
-    //    super();
-    //    this.list = new NonParenthesizedList();
-    //}
     braceOpenToken: Token;
     braceOpenTokenPost: Token[];
     list: NonParenthesizedList;
-    //get itemsSeparators(): Array<Token[]> { return this.list.itemsSeparators; }
-    //get items(): Expression[] { return this.list.items; }
     braceCloseToken: Token;
 }
 
@@ -72,7 +60,7 @@ class ArrayRefDeclaration extends Expression {
     bracketOpenToken: Token;
     bracketOpenTokenPost: Token[];
     items: Expression[];
-    itemsSeparators: Array<Token[]>;
+    itemsSeparators: Operator[];
     bracketCloseToken: Token;
 }
 class Unit extends AstNode {
@@ -148,30 +136,25 @@ class MemberExpression extends Expression implements HasArrow {
 }
 
 class HashMemberAccessExpression extends Expression implements HasArrow {
-    member: Expression;
+    member: HashRefCreationExpression;
     target: Expression;
     arrow: boolean;
     /// '->'or '::' */
     memberSeparatorToken: Token;
-    braceOpenToken: Token;
-    braceOpenTokenPost: Token[];
-    braceCloseToken: Token;
 }
 
 class ArrayMemberAccessExpression extends Expression implements HasArrow {
-    expression: Expression;
+    member: ArrayRefDeclaration;
     target: Expression;
     arrow: boolean;
     memberSeparatorToken: Token;
-    bracketOpenToken: Token;
-    bracketOpenTokenPost: Token[];
-    bracketCloseToken: Token;
 }
 
 class InvocationExpression extends Expression implements HasArrow {
     target: Expression;
     targetPost: Token[];
     memberSeparatorToken: Token;
+    firstParamBlock:Block;
     arguments: Expression;
     arrow: boolean;
     //arrowToken: Token;
@@ -250,28 +233,18 @@ class BinaryExpression extends Expression {
 
 class TrinaryExpression extends Expression {
     condition: Expression;
-    questionToken: Token;
-    questionTokenPost: Token[];
-    colonToken: Token;
-    colonTokenPost: Token[];
+    questionOperator: Operator;
     trueExpression: Expression;
     trueExpressionPost: Token[];
+    colonOperator: Operator;
     falseExpression: Expression;
 }
 
-class MultiBinaryExpression extends Expression {
-    expressions: Expression[];
-    operators: Operator[];
-    endsWithAnExpression(): boolean {
-        return this.expressions.length > this.operators.length;
-    }
-
-}
-class FlatExpressionsAndOperators extends Expression {
-    nodes: Array<Expression | Operator>;
+class UnresolvedExpression extends Expression {
+    nodes: Array<Expression | Operator | Block>;
 }
 
-class Operator {
+class Operator extends AstNode {
     token: Token;
     value: string;
     toString() { return this.value + " {Operator}"; }
