@@ -1,8 +1,5 @@
 /// <reference path="../typings/browser.d.ts" />
 "use strict";
-//import * as fs from "fs";
-//import "./libs/corex";
-//var fs = require("fs");
 var Tokenizer = (function () {
     function Tokenizer() {
         this.tempTokenTypes = [];
@@ -29,12 +26,9 @@ var Tokenizer = (function () {
     };
     Tokenizer.prototype.main = function () {
         this.tokens = [];
-        //let tokenTypes = TokenTypes.all;
         this.cursor = new Cursor(this.file.startPos);
         var cursor = this.cursor;
         while (cursor.index < this.file.text.length) {
-            //if(this.cursor.pos.line>6000)
-            //    break;
             this.next();
         }
     };

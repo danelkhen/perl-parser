@@ -52,37 +52,37 @@ var PrecedenceResolver = (function () {
         this.nodes.ofType(ArrayRefDeclaration).forEach(function (t) { return _this.resolveArrayMemberAccess(t); });
         //Statement modifiers (hack)
         this.nodes.ofType(Operator).where(function (t) { return t.token.isAnyKeyword(["for", "if", "while", "foreach"]); }).forEach(function (t) { return _this.resolveBinary(t); });
-        console.log("unresolved", this.mbe.nodes);
+        //console.log("unresolved", this.mbe.nodes);
         //    left terms and list operators (leftward)
         //    left	->
         this.nodes.ofType(Operator).where(function (t) { return t.token.is(TokenTypes.arrow); }).forEach(function (t) { return _this.resolveBinary(t); });
-        console.log("resolved", this.nodes);
+        //console.log("resolved", this.nodes);
         //    nonassoc	++ --
         this.nodes.ofType(Operator).where(function (t) { return t.token.isAny([TokenTypes.inc, TokenTypes.dec]); }).forEach(function (t) { return _this.resolveAutoIncDec(t); });
-        console.log("resolved", this.nodes);
+        //console.log("resolved", this.nodes);
         //    right	**
         //    right	! ~ \ and unary + and - //TODO: \
         this.nodes.ofType(Operator).where(function (t) { return t.token.isAny([TokenTypes.not, TokenTypes.tilda, TokenTypes.makeRef /*TODO:, TokenTypes.plus, TokenTypes.minus*/]); }).forEach(function (t) { return _this.resolvePrefixUnary(t); });
-        console.log("resolved", this.nodes);
+        //console.log("resolved", this.nodes);
         //    left	=~ !~
         this.nodes.ofType(Operator).where(function (t) { return t.token.isAny([TokenTypes.regexEquals, TokenTypes.regexNotEquals]); }).forEach(function (t) { return _this.resolveBinary(t); });
-        console.log("resolved", this.nodes);
+        //console.log("resolved", this.nodes);
         //    left	* / % x   //TODO: %
         this.nodes.ofType(Operator).where(function (t) { return t.token.isAny([TokenTypes.multiply, TokenTypes.div, TokenTypes.multiplyString]); }).forEach(function (t) { return _this.resolveBinary(t); });
-        console.log("resolved", this.nodes);
+        //console.log("resolved", this.nodes);
         //        left	+ - .
         this.nodes.ofType(Operator).where(function (t) { return t.token.isAny([TokenTypes.plus, TokenTypes.minus, TokenTypes.concat]); }).forEach(function (t) { return _this.resolveBinary(t); });
-        console.log("resolved", this.nodes);
+        //console.log("resolved", this.nodes);
         //        left	<< >>
         //        nonassoc	named unary operators
         this.nodes.ofType(Expression).where(function (t) { return _this.isNamedUnaryOperator(t); }).forEach(function (t) { return _this.resolveNamedUnaryOperator(t); });
-        console.log("resolved", this.nodes);
+        //console.log("resolved", this.nodes);
         //        nonassoc	< > <= >= lt gt le ge            //TODO: lt gt le ge
         this.nodes.ofType(Operator).where(function (t) { return t.token.isAny([
             TokenTypes.greaterThan, TokenTypes.greaterOrEqualsThan,
             TokenTypes.smallerThan, TokenTypes.smallerOrEqualsThan,
         ]) || t.token.isAnyKeyword(["lt", "gt", "le", "ge"]); }).forEach(function (t) { return _this.resolveBinary(t); });
-        console.log("resolved", this.nodes);
+        //console.log("resolved", this.nodes);
         //        nonassoc	== != <=> eq ne cmp ~~
         this.nodes.ofType(Operator).where(function (t) {
             return t.token.isAny([TokenTypes.equals, TokenTypes.notEquals, TokenTypes.numericCompare,])
@@ -90,7 +90,7 @@ var PrecedenceResolver = (function () {
                     t.token.isAnyKeyword(["eq", "ne", "cmp",]);
         })
             .forEach(function (t) { return _this.resolveBinary(t); });
-        console.log("resolved", this.nodes);
+        //console.log("resolved", this.nodes);
         //        left	&
         //        left	| ^
         //        left	&&
@@ -119,7 +119,7 @@ var PrecedenceResolver = (function () {
         this.nodes.ofType(Operator).where(function (t) { return t.value == "or"; }).forEach(function (t) { return _this.resolveBinary(t); });
         //hack: assume any consecutive expression is invocation
         this.nodes.ofType(Expression).where(function (t) { return true; }).forEach(function (t) { return _this.resolveImplicitInvocation(t); });
-        console.log("resolved", this.nodes);
+        //console.log("resolved", this.nodes);
         if (this.nodes.length > 1)
             throw new Error("mbe not completely resolved");
         var resolved = this.nodes[0];

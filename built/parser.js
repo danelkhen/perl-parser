@@ -62,7 +62,7 @@ var Parser = (function (_super) {
             return this.parseBeginStatement();
         else if (this.token.isAnyKeyword(["use", "no"]))
             return this.parseUseOrNoStatement();
-        else if (this.token.isAnyKeyword(["my", "our", "local"]))
+        else if (this.token.isAnyKeyword(["my", "our"]))
             return this.parseVariableDeclarationStatement();
         else if (this.token.isKeyword("sub"))
             return this.parseSubroutineDeclaration();
@@ -250,7 +250,7 @@ var Parser = (function (_super) {
         return node;
     };
     Parser.prototype.parseExpressionStatement = function () {
-        console.log("parseExpressionStatement", this.token);
+        //console.log("parseExpressionStatement", this.token);
         var node = this.create(ExpressionStatement);
         node.expression = this.parseExpression();
         if (node.expression == null)
@@ -275,7 +275,7 @@ var Parser = (function (_super) {
     //    this.nextToken();
     //}
     Parser.prototype.parseSubroutineDeclaration = function () {
-        console.log("parseSubroutineDeclaration", this.token);
+        //console.log("parseSubroutineDeclaration", this.token);
         var node = this.create(SubroutineDeclaration);
         node.declaration = this.createExpressionParser().parseSubroutineExpression();
         node.semicolonToken = this.parseOptionalSemicolon();

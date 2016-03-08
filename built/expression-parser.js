@@ -9,14 +9,14 @@ var ExpressionParser = (function (_super) {
         _super.apply(this, arguments);
     }
     ExpressionParser.prototype.parseFlatExpressionsAndOperators = function () {
-        console.log("parseExpression", this.token);
+        //console.log("parseExpression", this.token);
         var mbe = this.create(UnresolvedExpression);
         mbe.nodes = [];
         while (true) {
             if (this.token == null)
                 break;
             var exp = this.parseExpressionOrOperator();
-            console.log("exp", exp);
+            //console.log("exp", exp);
             if (exp == null)
                 break;
             mbe.nodes.add(exp);
@@ -58,7 +58,12 @@ var ExpressionParser = (function (_super) {
             TokenTypes.question, TokenTypes.colon,
             TokenTypes.comma, TokenTypes.fatComma,
             TokenTypes.makeRef,
-        ]) || this.token.isAnyKeyword(["if", "unless", "while", "until", "for", "foreach", "when", "and", "eq", "or", "ne"])) {
+            TokenTypes.bitwiseAnd, TokenTypes.bitwiseOr, TokenTypes.bitwiseXor,
+        ]) || this.token.isAnyKeyword([
+            "if", "unless", "while", "until", "for", "foreach", "when",
+            "and", "eq", "or", "ne",
+            "return" //named unary operators
+        ])) {
             if (this.token.isAnyKeyword(["for", "foreach"])) {
                 //  tempParser = this.parseSingleOrCommaSeparatedExpressions;
                 throw new Error("not implemented");
@@ -93,7 +98,7 @@ var ExpressionParser = (function (_super) {
             var node = this.parseNativeInvocation_BlockOrExpr(this.token.value);
             return node;
         }
-        else if (this.token.isAnyKeyword(["my", "our", "local"])) {
+        else if (this.token.isAnyKeyword(["my", "our"])) {
             var node = this.parseVariableDeclarationExpression();
             return node;
         }
@@ -383,7 +388,7 @@ var ExpressionParser = (function (_super) {
         //    let next = this.parseExpression();
         //    node.arguments.items.add(next);
         //}
-        console.log("INVOCATION", node);
+        //console.log("INVOCATION", node);
         return node;
     };
     ExpressionParser.prototype.parseArrayRefDeclaration = function () {

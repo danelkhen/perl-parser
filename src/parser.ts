@@ -55,7 +55,7 @@
             return this.parseBeginStatement();
         else if (this.token.isAnyKeyword(["use", "no"]))
             return this.parseUseOrNoStatement();
-        else if (this.token.isAnyKeyword(["my", "our", "local"]))
+        else if (this.token.isAnyKeyword(["my", "our"]))//, "local"
             return this.parseVariableDeclarationStatement();
         else if (this.token.isKeyword("sub"))
             return this.parseSubroutineDeclaration();
@@ -263,7 +263,7 @@
     }
 
     parseExpressionStatement(): ExpressionStatement {
-        console.log("parseExpressionStatement", this.token);
+        //console.log("parseExpressionStatement", this.token);
         let node = this.create(ExpressionStatement);
         node.expression = this.parseExpression();
         if (node.expression == null)
@@ -292,7 +292,7 @@
     //}
 
     parseSubroutineDeclaration(): SubroutineDeclaration {
-        console.log("parseSubroutineDeclaration", this.token);
+        //console.log("parseSubroutineDeclaration", this.token);
         let node = this.create(SubroutineDeclaration);
         node.declaration = this.createExpressionParser().parseSubroutineExpression();
         node.semicolonToken = this.parseOptionalSemicolon();

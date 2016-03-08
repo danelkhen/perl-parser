@@ -15,44 +15,44 @@
         //Statement modifiers (hack)
         this.nodes.ofType(Operator).where(t=> t.token.isAnyKeyword(["for", "if", "while", "foreach"])).forEach(t=> this.resolveBinary(t));
 
-        console.log("unresolved", this.mbe.nodes);
+        //console.log("unresolved", this.mbe.nodes);
         //    left terms and list operators (leftward)
         //    left	->
         this.nodes.ofType(Operator).where(t=> t.token.is(TokenTypes.arrow)).forEach(t=> this.resolveBinary(t));
-        console.log("resolved", this.nodes);
+        //console.log("resolved", this.nodes);
         //    nonassoc	++ --
         this.nodes.ofType(Operator).where(t=> t.token.isAny([TokenTypes.inc, TokenTypes.dec])).forEach(t=> this.resolveAutoIncDec(<Operator>t));
-        console.log("resolved", this.nodes);
+        //console.log("resolved", this.nodes);
         //    right	**
         //    right	! ~ \ and unary + and - //TODO: \
         this.nodes.ofType(Operator).where(t=> t.token.isAny([TokenTypes.not, TokenTypes.tilda, TokenTypes.makeRef/*TODO:, TokenTypes.plus, TokenTypes.minus*/])).forEach(t=> this.resolvePrefixUnary(t));
-        console.log("resolved", this.nodes);
+        //console.log("resolved", this.nodes);
         //    left	=~ !~
         this.nodes.ofType(Operator).where(t=> t.token.isAny([TokenTypes.regexEquals, TokenTypes.regexNotEquals])).forEach(t=> this.resolveBinary(t));
-        console.log("resolved", this.nodes);
+        //console.log("resolved", this.nodes);
         //    left	* / % x   //TODO: %
         this.nodes.ofType(Operator).where(t=> t.token.isAny([TokenTypes.multiply, TokenTypes.div, TokenTypes.multiplyString])).forEach(t=> this.resolveBinary(t));
-        console.log("resolved", this.nodes);
+        //console.log("resolved", this.nodes);
         //        left	+ - .
         this.nodes.ofType(Operator).where(t=> t.token.isAny([TokenTypes.plus, TokenTypes.minus, TokenTypes.concat])).forEach(t=> this.resolveBinary(t));
-        console.log("resolved", this.nodes);
+        //console.log("resolved", this.nodes);
         //        left	<< >>
         //        nonassoc	named unary operators
         this.nodes.ofType(Expression).where(t=> this.isNamedUnaryOperator(t)).forEach(t=> this.resolveNamedUnaryOperator(t));
-        console.log("resolved", this.nodes);
+        //console.log("resolved", this.nodes);
         //        nonassoc	< > <= >= lt gt le ge            //TODO: lt gt le ge
         this.nodes.ofType(Operator).where(t=> t.token.isAny([
             TokenTypes.greaterThan, TokenTypes.greaterOrEqualsThan,
             TokenTypes.smallerThan, TokenTypes.smallerOrEqualsThan,
         ]) || t.token.isAnyKeyword(["lt", "gt", "le", "ge"])).forEach(t=> this.resolveBinary(<Operator>t));
-        console.log("resolved", this.nodes);
+        //console.log("resolved", this.nodes);
         //        nonassoc	== != <=> eq ne cmp ~~
         this.nodes.ofType(Operator).where(t=>
             t.token.isAny([TokenTypes.equals, TokenTypes.notEquals, TokenTypes.numericCompare, ])
             ||
             t.token.isAnyKeyword(["eq", "ne", "cmp", ]))
             .forEach(t=> this.resolveBinary(t));
-        console.log("resolved", this.nodes);
+        //console.log("resolved", this.nodes);
         //        left	&
         //        left	| ^
         //        left	&&
@@ -83,7 +83,7 @@
 
         //hack: assume any consecutive expression is invocation
         this.nodes.ofType(Expression).where(t=> true).forEach(t=> this.resolveImplicitInvocation(t));
-        console.log("resolved", this.nodes);
+        //console.log("resolved", this.nodes);
         if (this.nodes.length > 1)
             throw new Error("mbe not completely resolved");
         let resolved = <Expression>this.nodes[0];

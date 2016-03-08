@@ -3,14 +3,14 @@
 
 
     parseFlatExpressionsAndOperators(): UnresolvedExpression {
-        console.log("parseExpression", this.token);
+        //console.log("parseExpression", this.token);
         let mbe = this.create(UnresolvedExpression);
         mbe.nodes = [];
         while (true) {
             if (this.token == null)
                 break;
             let exp = this.parseExpressionOrOperator();
-            console.log("exp", exp);
+            //console.log("exp", exp);
             if (exp == null)
                 break;
             mbe.nodes.add(exp);
@@ -55,7 +55,12 @@
             TokenTypes.question, TokenTypes.colon,
             TokenTypes.comma, TokenTypes.fatComma,
             TokenTypes.makeRef,
-        ]) || this.token.isAnyKeyword(["if", "unless", "while", "until", "for", "foreach", "when", "and", "eq", "or", "ne"])) { //statement modifiers
+            TokenTypes.bitwiseAnd, TokenTypes.bitwiseOr, TokenTypes.bitwiseXor,
+        ]) || this.token.isAnyKeyword([
+            "if", "unless", "while", "until", "for", "foreach", "when", //statement modifiers
+            "and", "eq", "or", "ne", 
+            "return"  //named unary operators
+            ])) { 
             
             if (this.token.isAnyKeyword(["for", "foreach"])) {           //for,foreach postfix have list after them without parantheses
                 //  tempParser = this.parseSingleOrCommaSeparatedExpressions;
@@ -104,7 +109,7 @@
             let node = this.parseNativeInvocation_BlockOrExpr(this.token.value);
             return node;
         }
-        else if (this.token.isAnyKeyword(["my", "our", "local"])) {
+        else if (this.token.isAnyKeyword(["my", "our"])) {//, "local"
             let node = this.parseVariableDeclarationExpression();
             return node;
         }
@@ -438,7 +443,7 @@
         //    let next = this.parseExpression();
         //    node.arguments.items.add(next);
         //}
-        console.log("INVOCATION", node);
+        //console.log("INVOCATION", node);
         return node;
     }
 
