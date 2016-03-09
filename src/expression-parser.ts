@@ -264,10 +264,16 @@
     }
 
     parseSubroutineExpression(): SubroutineExpression {
+
         let node = this.create(SubroutineExpression);
         node.subToken = this.expectKeyword("sub");
         node.subTokenPost = this.nextNonWhitespaceToken(node);
         if (this.token.is(TokenTypes.identifier)) {
+            node.name = this.parser.parseSimpleName();
+            node.namePost = this.skipWhitespaceAndComments();
+        }
+        else if (this.token.is(TokenTypes.keyword)) {
+            console.warn("subroutine named after a keyword", this.token);
             node.name = this.parser.parseSimpleName();
             node.namePost = this.skipWhitespaceAndComments();
         }

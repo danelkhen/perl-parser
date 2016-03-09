@@ -134,7 +134,7 @@ class TokenTypes {
     static interpolatedString = TokenType._r(/\"[^"]*\"/);
     static string = TokenType._r(/\'[^\']*\'/);
     static regex = TokenType._custom(TokenTypes._matchRegex);//_r(/\/.*\/[a-z]*/);
-    static regexSubstitute = TokenType._r(/s\/.*\/.*\/[a-z]*/);  // s/abc/def/mg
+    static regexSubstitute = TokenType._rs([/s\/.*\/.*\/[a-z]*/, /s#.*#.*#[a-z]*/]);  // s/abc/def/mg
     static regexMatch = TokenType._rs([/m\/.*\/[a-z]*/, /m#.*#[a-z]*/]);  // s/abc/def/mg
 
     static colon = TokenType._r(/\:/);

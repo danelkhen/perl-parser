@@ -220,6 +220,11 @@ var ExpressionParser = (function (_super) {
             node.name = this.parser.parseSimpleName();
             node.namePost = this.skipWhitespaceAndComments();
         }
+        else if (this.token.is(TokenTypes.keyword)) {
+            console.warn("subroutine named after a keyword", this.token);
+            node.name = this.parser.parseSimpleName();
+            node.namePost = this.skipWhitespaceAndComments();
+        }
         if (this.token.is(TokenTypes.colon)) {
             node.colonToken = this.token;
             node.colonTokenPost = this.nextNonWhitespaceToken(node);

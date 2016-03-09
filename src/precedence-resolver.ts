@@ -286,7 +286,6 @@
             node2.target = node;
             node2.arguments = nextNode;
             this.nodes.removeAt(index);
-            this.nodes.removeAt(index);
             this.nodes[index] = node2;
             return node2;
         }
