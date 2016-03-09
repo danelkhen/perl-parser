@@ -1,13 +1,11 @@
 ﻿"use strict";
 class TokenType {
-    //constructor(regex: RegExp) {
-    //    this.regex = regex;
-    //}
-
     name: string;
     tag: any;
-
-    //regex: RegExp;
+    
+    words:string[];
+    regex:RegExp;
+    regexes:RegExp[];
 
     create(range: TextRange2) {
         return new Token(range, this);
@@ -31,10 +29,49 @@ class TokenType {
         tokenizer.cursor.pos = range.end;
         return 1;
     }
-    //match(tokenizer: Tokenizer): TextRange2 {
-    //    return this.matcher(tokenizer);
-    //    //return cursor.next(this.regex);
-    //}
+
+    
+    static _fixRegex(regex: RegExp): RegExp {
+        let regex2 = new RegExp("^" + regex.source, (regex.multiline ? "m" : "") + (regex.global ? "g" : ""));
+        return regex2;
+    }
+    static _words(list: string[]): TokenType {
+        let tt = TokenType._rs(list.map(t=> new RegExp(t + "\\b")));
+        tt.words = list;
+        return tt;
+    }
+    static _rs(list: RegExp[]): TokenType {
+        let tt = new TokenType();
+        list = list.select(t=> TokenType._fixRegex(t));
+        tt.regexes = list;
+        tt.match = tokenizer => {
+            let res = null;
+            list.first(regex => {
+                let res2 = tokenizer.cursor.next(regex);
+                if (res2 != null) {
+                    res = res2;
+                    return true;
+                }
+                return false;
+            });
+            return res;
+            //return cursor.next(regex);
+        };
+        return tt;
+    }
+    static _r(regex: RegExp): TokenType {
+        let tt = new TokenType();
+        regex = TokenType._fixRegex(regex);
+        tt.match = tokenizer => {
+            return tokenizer.cursor.next(regex);
+        };
+        return tt;
+    }
+    static _custom(matcher: TokenMatcher): TokenType {
+        let tt = new TokenType();
+        tt.match = matcher;
+        return tt;
+    }
 }
 
 interface TokenMatcher {

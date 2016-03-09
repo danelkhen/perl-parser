@@ -361,9 +361,9 @@
     }
 
     parseExpression(): Expression { return this.createExpressionParser().parseExpression(); }
-    parseMemberExpression(): MemberExpression {
+    parseMemberExpression(): NamedMemberExpression {
         let node = this.parseExpression();
-        if (node instanceof MemberExpression)
+        if (node instanceof NamedMemberExpression)
             return node;
         throw new Error();
     }

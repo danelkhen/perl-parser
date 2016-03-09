@@ -18,7 +18,7 @@ class HereDocTokenType extends TokenType {
             else
                 ender = range.text.substring(2);
         }
-        let newTokenType = TokenTypes._r(new RegExp("\\n[\\S\\s]*" + ender + "\\n", "m"));
+        let newTokenType = TokenType._r(new RegExp("\\n[\\S\\s]*" + ender + "\\n", "m"));
         newTokenType.name = "heredocValue";
         tokenizer.tempTokenTypes.push(newTokenType);
         let token = this.create(range);
@@ -54,43 +54,6 @@ class TokenTypes {
         });
 
     }
-
-    static _fixRegex(regex: RegExp): RegExp {
-        let regex2 = new RegExp("^" + regex.source, (regex.multiline ? "m" : "") + (regex.global ? "g" : ""));
-        return regex2;
-    }
-    static _rs(list: RegExp[]): TokenType {
-        let tt = new TokenType();
-        list = list.select(t=> TokenTypes._fixRegex(t));
-        tt.tag = list;
-        tt.match = tokenizer => {
-            let res = null;
-            list.first(regex => {
-                let res2 = tokenizer.cursor.next(regex);
-                if (res2 != null) {
-                    res = res2;
-                    return true;
-                }
-                return false;
-            });
-            return res;
-            //return cursor.next(regex);
-        };
-        return tt;
-    }
-    static _r(regex: RegExp): TokenType {
-        let tt = new TokenType();
-        regex = TokenTypes._fixRegex(regex);
-        tt.match = tokenizer => {
-            return tokenizer.cursor.next(regex);
-        };
-        return tt;
-    }
-    static _custom(matcher: TokenMatcher): TokenType {
-        let tt = new TokenType();
-        tt.match = matcher;
-        return tt;
-    }
     // Customary  Generic        Meaning	     Interpolates
     // ''	 q{}	      Literal		  no
     // ""	qq{}	      Literal		  yes
@@ -104,16 +67,33 @@ class TokenTypes {
     // <<EOF                 here-doc            yes*
     // * unless the delimiter is ''.
     static heredoc = new HereDocTokenType();// TokenTypes._custom(TokenTypes.match(/<<"([a-zA-Z0-9]+)"[\s\S]*$/m);
-    static heredocValue = TokenTypes._custom(t=> null);// TokenTypes._custom(TokenTypes.match(/<<"([a-zA-Z0-9]+)"[\s\S]*$/m);
-    static qq = TokenTypes._rs([/qq\|[^|]*\|/, /qq\{[^\}]*\}/]);
-    static qw = TokenTypes._rs([/qw\s*\/[^\/]*\//m, /qw\s*<[^>]*>/m, /qw\s*\([^\)]*\)/m, /qw\s*\[[^\]]*\]/m]);
-    static qr = TokenTypes._rs([/qr\/.*\//, /qr\(.*\)/]);//Regexp-like quote
-    static qx = TokenTypes._rs([/qx\/.*\//, /`.*`/]);
-    static tr = TokenTypes._rs([/tr\/.*\/.*\/[cdsr]*/, /tr\{.*\}\{.*\}/]); //token replace
-    static q = TokenTypes._rs([/q\{[^\}]*\}/]);
-    static pod = TokenTypes._custom(TokenTypes._matchPod);
-    //static pod = TokenTypes._r(/=pod.*=cut/m);
-    static keyword = TokenTypes._rs([
+    static heredocValue = TokenType._custom(t=> null);// TokenTypes._custom(TokenTypes.match(/<<"([a-zA-Z0-9]+)"[\s\S]*$/m);
+    static qq = TokenType._rs([/qq\|[^|]*\|/, /qq\{[^\}]*\}/]);
+    static qw = TokenType._rs([/qw\s*\/[^\/]*\//m, /qw\s*<[^>]*>/m, /qw\s*\([^\)]*\)/m, /qw\s*\[[^\]]*\]/m]);
+    static qr = TokenType._rs([/qr\/.*\//, /qr\(.*\)/]);//Regexp-like quote
+    static qx = TokenType._rs([/qx\/.*\//, /`.*`/]);
+    static tr = TokenType._rs([/tr\/.*\/.*\/[cdsr]*/, /tr\{.*\}\{.*\}/]); //token replace
+    static q = TokenType._rs([/q\{[^\}]*\}/]);
+    static pod = TokenType._custom(TokenTypes._matchPod);
+    //static pod = TokenType._r(/=pod.*=cut/m);
+    
+    static statementModifiers = ["if", "unless", "while", "until", "for", "foreach", "when"];
+    static namedUnaryOperators = [
+        "gethostbyname", "localtime", "return",
+        "alarm", "getnetbyname", "lock", "rmdir",
+        "caller", "getpgrp", "log", "scalar",
+        "chdir", "getprotobyname", "lstat", "sin",
+        "chroot", "glob", "my", "sleep",
+        "cos", "gmtime", "oct", "sqrt",
+        "defined", "goto", "ord", "srand",
+        "delete", "hex", "quotemeta", "stat",
+        "do", "int", "rand", "uc",
+        "eval", "lc", "readlink", "ucfirst",
+        "exists", "lcfirst", "ref", "umask",
+        "exit", "length", "require", "undef",
+    ];
+
+    static keyword = TokenType._words([
         "BEGIN", "package",
         //"use", "no", removed temporarily
         "my", "our", //"local",
@@ -122,81 +102,82 @@ class TokenTypes {
         "eq", "ne", "cmp",
         "lt", "gt", "le", "ge",
         "foreach", "while", "for",
-        "if", "unless", "while", "until", "for", "foreach", "when"    //statement modifiers
-    ].map(t=> new RegExp(t + "\\b"))); //\b|use\b|my\b|sub\b|return\b|if\b|defined\b/
-    //, "defined", "ref", "exists"
-    static end = TokenTypes._r(/__END__/);
-    static whitespace = TokenTypes._r(/[ \t\r\n]+/);
-    static packageSeparator = TokenTypes._r(/\:\:/);
-    static semicolon = TokenTypes._r(/;/);
-    static sigiledIdentifier = TokenTypes._r(new RegExp("[\\$@%&*]" + TokenTypes.identifierRegex.source));
-    static evalErrorVar = TokenTypes._r(/\$@/);
-    static listSeparatorVar = TokenTypes._r(/\$"/);
-    static comment = TokenTypes._r(/\#.*/);
-    static equals = TokenTypes._r(/==/);
-    static notEquals = TokenTypes._r(/!=/);
-    static concatAssign = TokenTypes._r(/\.=/);
-    static addAssign = TokenTypes._r(/\+=/);
-    static subtractAssign = TokenTypes._r(/\-=/);
-    static multiplyAssign = TokenTypes._r(/\+=/);
-    static divideAssign = TokenTypes._r(/\/=/);
-    static comma = TokenTypes._r(/\,/);
-    static integer = TokenTypes._r(/[0-9]+/);
-    static parenOpen = TokenTypes._r(/\(/);
-    static parenClose = TokenTypes._r(/\)/);
-    static braceOpen = TokenTypes._r(/\{/);
-    static braceClose = TokenTypes._r(/\}/);
-    static bracketOpen = TokenTypes._r(/\[/);
-    static bracketClose = TokenTypes._r(/\]/);
-    static smallerOrEqualsThan = TokenTypes._r(/\<=/);
-    static greaterOrEqualsThan = TokenTypes._r(/\>=/);
-    static interpolatedString = TokenTypes._r(/\"[^"]*\"/);
-    static string = TokenTypes._r(/\'[^\']*\'/);
-    static regex = TokenTypes._custom(TokenTypes._matchRegex);//_r(/\/.*\/[a-z]*/);
-    static regexSubstitute = TokenTypes._r(/s\/.*\/.*\/[a-z]*/);  // s/abc/def/mg
-    static regexMatch = TokenTypes._rs([/m\/.*\/[a-z]*/, /m#.*#[a-z]*/]);  // s/abc/def/mg
+    ].concat(TokenTypes.statementModifiers).concat(TokenTypes.namedUnaryOperators));
 
-    static colon = TokenTypes._r(/\:/);
-    static question = TokenTypes._r(/\?/);
+
+    //, "defined", "ref", "exists"
+    static end = TokenType._r(/__END__/);
+    static whitespace = TokenType._r(/[ \t\r\n]+/);
+    static packageSeparator = TokenType._r(/\:\:/);
+    static semicolon = TokenType._r(/;/);
+    static sigiledIdentifier = TokenType._r(new RegExp("[\\$@%&*]" + TokenTypes.identifierRegex.source));
+    static evalErrorVar = TokenType._r(/\$@/);
+    static listSeparatorVar = TokenType._r(/\$"/);
+    static comment = TokenType._r(/\#.*/);
+    static equals = TokenType._r(/==/);
+    static notEquals = TokenType._r(/!=/);
+    static concatAssign = TokenType._r(/\.=/);
+    static addAssign = TokenType._r(/\+=/);
+    static subtractAssign = TokenType._r(/\-=/);
+    static multiplyAssign = TokenType._r(/\+=/);
+    static divideAssign = TokenType._r(/\/=/);
+    static comma = TokenType._r(/\,/);
+    static integer = TokenType._r(/[0-9]+/);
+    static parenOpen = TokenType._r(/\(/);
+    static parenClose = TokenType._r(/\)/);
+    static braceOpen = TokenType._r(/\{/);
+    static braceClose = TokenType._r(/\}/);
+    static bracketOpen = TokenType._r(/\[/);
+    static bracketClose = TokenType._r(/\]/);
+    static smallerOrEqualsThan = TokenType._r(/\<=/);
+    static greaterOrEqualsThan = TokenType._r(/\>=/);
+    static interpolatedString = TokenType._r(/\"[^"]*\"/);
+    static string = TokenType._r(/\'[^\']*\'/);
+    static regex = TokenType._custom(TokenTypes._matchRegex);//_r(/\/.*\/[a-z]*/);
+    static regexSubstitute = TokenType._r(/s\/.*\/.*\/[a-z]*/);  // s/abc/def/mg
+    static regexMatch = TokenType._rs([/m\/.*\/[a-z]*/, /m#.*#[a-z]*/]);  // s/abc/def/mg
+
+    static colon = TokenType._r(/\:/);
+    static question = TokenType._r(/\?/);
     
     //unary:
-    static inc = TokenTypes._r(/\+\+/);
-    static dec = TokenTypes._r(/\-\-/);
-    static codeRef = TokenTypes._r(/\\\&/);
-    static lastIndexVar = TokenTypes._r(/\$#/);
+    static inc = TokenType._r(/\+\+/);
+    static dec = TokenType._r(/\-\-/);
+    //static codeRef = TokenType._r(/\\\&/);
+    static lastIndexVar = TokenType._r(/\$#/);
     
     //binary
-    static numericCompare = TokenTypes._r(/\<=\>/);
-    static regexEquals = TokenTypes._r(/=\~/);
-    static regexNotEquals = TokenTypes._r(/\!\~/);
-    static smallerThan = TokenTypes._r(/\</);
-    static greaterThan = TokenTypes._r(/\>/);
-    static arrow = TokenTypes._r(/\-\>/);
-    static fatComma = TokenTypes._r(/\=\>/);
-    static assignment = TokenTypes._r(/=/);
-    static range = TokenTypes._r(/\.\./);
-    static concat = TokenTypes._r(/\./);
-    static divDiv = TokenTypes._r(/\/\//);
-    static tilda = TokenTypes._r(/\~/);
-    static or = TokenTypes._r(/\|\|/);
-    static and = TokenTypes._r(/\&\&/);
-    static minus = TokenTypes._r(/\-/);
-    static multiply = TokenTypes._r(/\*/);  //also typeglob
-    static div = TokenTypes._r(/\//);
-    static plus = TokenTypes._r(/\+/);
-    static multiplyString = TokenTypes._r(/x\b/);
+    static numericCompare = TokenType._r(/\<=\>/);
+    static regexEquals = TokenType._r(/=\~/);
+    static regexNotEquals = TokenType._r(/\!\~/);
+    static smallerThan = TokenType._r(/\</);
+    static greaterThan = TokenType._r(/\>/);
+    static arrow = TokenType._r(/\-\>/);
+    static fatComma = TokenType._r(/\=\>/);
+    static assignment = TokenType._r(/=/);
+    static range = TokenType._r(/\.\./);
+    static concat = TokenType._r(/\./);
+    static divDiv = TokenType._r(/\/\//);
+    static tilda = TokenType._r(/\~/);
+    static or = TokenType._r(/\|\|/);
+    static and = TokenType._r(/\&\&/);
+    static minus = TokenType._r(/\-/);
+    static multiply = TokenType._r(/\*/);  //also typeglob
+    static div = TokenType._r(/\//);
+    static plus = TokenType._r(/\+/);
+    static multiplyString = TokenType._r(/x\b/);
 
-    static bitwiseOr = TokenTypes._r(/\|/);
-    static bitwiseAnd = TokenTypes._r(/\&/);
-    static bitwiseXor = TokenTypes._r(/\^/);
+    static bitwiseOr = TokenType._r(/\|/);
+    static bitwiseAnd = TokenType._r(/\&/);
+    static bitwiseXor = TokenType._r(/\^/);
     
-    //static label = TokenTypes._r(new RegExp(TokenTypes.identifierRegex.source+"[\t\r\n ]*\:"));
-    static identifier = TokenTypes._r(TokenTypes.identifierRegex);
+    //static label = TokenType._r(new RegExp(TokenTypes.identifierRegex.source+"[\t\r\n ]*\:"));
+    static identifier = TokenType._r(TokenTypes.identifierRegex);
 
 
-    static makeRef = TokenTypes._r(/\\/);
-    static not = TokenTypes._r(/\!/);
-    static sigil = TokenTypes._r(/[\$@%&]/);
+    static makeRef = TokenType._r(/\\/);
+    static not = TokenType._r(/\!/);
+    static sigil = TokenType._r(/[\$@%&]/);
 
     static _matchPod(tokenizer: Tokenizer): TextRange2 {
         let cursor = tokenizer.cursor;
@@ -205,19 +186,16 @@ class TokenTypes {
         let start = cursor.next(/^=[a-z]+/);
         if (start == null)
             return null;
-        //if (!cursor.startsWith("=pod") && !cursor.startsWith("=encoding"))
-        //    return null;
-        //let start = cursor.index;
+
         let cursor2 = cursor.clone();
         cursor2.pos = start.end;
 
         let end: number;
         let cut = cursor2.next(/=cut/);
         if (cut != null)
-            end = cut.index + 4;
+            end = cut.end.index;//.index + 4;
         else
             end = cursor.file.text.length;
-        //cursor.pos.index = end;
         let range = new TextRange2(cursor.file, start.start, cursor.file.getPos(end));
         return range;
     }

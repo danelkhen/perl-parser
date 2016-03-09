@@ -8,6 +8,12 @@ var AstNode = (function () {
     function AstNode() {
         this.tokens = [];
     }
+    AstNode.prototype.toCode = function () {
+        var writer = new AstWriter();
+        writer.main();
+        writer.write(this);
+        return writer.sb.join("");
+    };
     return AstNode;
 }());
 var Statement = (function (_super) {
@@ -158,26 +164,40 @@ var MemberExpression = (function (_super) {
     }
     return MemberExpression;
 }(Expression));
+var NamedMemberExpression = (function (_super) {
+    __extends(NamedMemberExpression, _super);
+    function NamedMemberExpression() {
+        _super.apply(this, arguments);
+    }
+    return NamedMemberExpression;
+}(MemberExpression));
 var HashMemberAccessExpression = (function (_super) {
     __extends(HashMemberAccessExpression, _super);
     function HashMemberAccessExpression() {
         _super.apply(this, arguments);
     }
     return HashMemberAccessExpression;
-}(Expression));
+}(MemberExpression));
 var ArrayMemberAccessExpression = (function (_super) {
     __extends(ArrayMemberAccessExpression, _super);
     function ArrayMemberAccessExpression() {
         _super.apply(this, arguments);
     }
     return ArrayMemberAccessExpression;
-}(Expression));
+}(MemberExpression));
 var InvocationExpression = (function (_super) {
     __extends(InvocationExpression, _super);
     function InvocationExpression() {
         _super.apply(this, arguments);
     }
     return InvocationExpression;
+}(Expression));
+var BlockExpression = (function (_super) {
+    __extends(BlockExpression, _super);
+    function BlockExpression() {
+        _super.apply(this, arguments);
+    }
+    return BlockExpression;
 }(Expression));
 var BarewordExpression = (function (_super) {
     __extends(BarewordExpression, _super);

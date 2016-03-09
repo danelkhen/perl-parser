@@ -24,7 +24,7 @@
     }
     parseExpression(): Expression {
         let mbe = this.parseFlatExpressionsAndOperators();
-        let mbe2 = new PrecedenceResolver(mbe).resolve();
+        let mbe2 = this.resolveExpression(mbe);
         return mbe2;
     }
 
@@ -59,13 +59,12 @@
         ]) || this.token.isAnyKeyword([
             "if", "unless", "while", "until", "for", "foreach", "when", //statement modifiers
             "and", "eq", "or", "ne", 
-            "return"  //named unary operators
             ])) { 
             
-            if (this.token.isAnyKeyword(["for", "foreach"])) {           //for,foreach postfix have list after them without parantheses
-                //  tempParser = this.parseSingleOrCommaSeparatedExpressions;
-                throw new Error("not implemented");
-            }
+            //if (this.token.isAnyKeyword(["for", "foreach"])) {           //for,foreach postfix have list after them without parantheses
+            //    //  tempParser = this.parseSingleOrCommaSeparatedExpressions;
+            //    throw new Error("not implemented");
+            //}
             if (lastExpression != null)
                 return lastExpression;
             let operator = new Operator();
@@ -101,14 +100,14 @@
             //    lastExpression = this.parseInvocationExpression(lastExpression, false);
             //return this.parseNonBinaryExpression(lastExpression);
         }
-        else if (this.token.isAnyIdentifier(["map", "grep"])) {
-            let node = this.parseNativeInvocation_BlockAndListOrExprCommaList(this.token.value);
-            return node;
-        }
-        else if (this.token.isAnyIdentifier(["eval", "ref"])) {
-            let node = this.parseNativeInvocation_BlockOrExpr(this.token.value);
-            return node;
-        }
+        //else if (this.token.isAnyIdentifier(["map", "grep"])) {
+        //    let node = this.parseNativeInvocation_BlockAndListOrExprCommaList(this.token.value);
+        //    return node;
+        //}
+        //else if (this.token.isAnyIdentifier(["eval", "ref"])) {
+        //    let node = this.parseNativeInvocation_BlockOrExpr(this.token.value);
+        //    return node;
+        //}
         else if (this.token.isAnyKeyword(["my", "our"])) {//, "local"
             let node = this.parseVariableDeclarationExpression();
             return node;
@@ -118,9 +117,9 @@
                 throw new Error();
             return this.parseSubroutineExpression();
         }
-        else if (this.token.isKeyword("return")) {
-            return this.parseReturnExpression();
-        }
+        //else if (this.token.isKeyword("return")) {
+        //    return this.parseReturnExpression();
+        //}
         else if (this.token.isAny([TokenTypes.comma, TokenTypes.semicolon])) {
             //if (lastExpression == null)
             //    return null;
@@ -129,7 +128,7 @@
         else if (this.token.is(TokenTypes.sigil) || this.token.is(TokenTypes.multiply)) { //multiply: *{"a::b"}{CODE}
             return this.parseSigilPrefixUnary();
         }
-        else if (this.token.isAny([TokenTypes.not, TokenTypes.makeRef, TokenTypes.multiply, TokenTypes.codeRef, TokenTypes.lastIndexVar]) || this.token.isAnyKeyword(["not"])) { //multiply: *{"a::b"}{CODE}
+        else if (this.token.isAny([TokenTypes.not, TokenTypes.makeRef, TokenTypes.multiply, /*TokenTypes.codeRef, */TokenTypes.lastIndexVar]) || this.token.isAnyKeyword(["not"])) { //multiply: *{"a::b"}{CODE}
             this.parsePrefixUnaryExpression();
         }
         else if (this.token.isAny([TokenTypes.inc, TokenTypes.dec])) {
@@ -143,7 +142,7 @@
             //lastExpression = node;
             //return this.parseNonBinaryExpression(lastExpression);
         }
-        else if (this.token.isIdentifier()) { //defined exists ref etc... // || this.token.isKeyword()
+        else if (this.token.isIdentifier() || this.token.isAnyKeyword(TokenTypes.namedUnaryOperators)) { //defined exists ref etc... // || this.token.isKeyword()
             if (lastExpression != null)
                 return lastExpression;
             let node = this.parseMemberExpression(lastExpression, false);
@@ -353,9 +352,9 @@
     //    return node;
     //}
 
-    parseMemberExpression(target: Expression, arrow: boolean): MemberExpression {
+    parseMemberExpression(target: Expression, arrow: boolean): NamedMemberExpression {
         this.log("parseMemberExpression", this.token);
-        let node = this.create(MemberExpression);
+        let node = this.create(NamedMemberExpression);
         node.token = this.token;
         node.name = this.token.value;
         node.target = target;

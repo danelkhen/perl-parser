@@ -2,7 +2,6 @@
 var TokenType = (function () {
     function TokenType() {
     }
-    //regex: RegExp;
     TokenType.prototype.create = function (range) {
         return new Token(range, this);
     };
@@ -22,6 +21,47 @@ var TokenType = (function () {
         tokenizer.tokens.push(token);
         tokenizer.cursor.pos = range.end;
         return 1;
+    };
+    TokenType._fixRegex = function (regex) {
+        var regex2 = new RegExp("^" + regex.source, (regex.multiline ? "m" : "") + (regex.global ? "g" : ""));
+        return regex2;
+    };
+    TokenType._words = function (list) {
+        var tt = TokenType._rs(list.map(function (t) { return new RegExp(t + "\\b"); }));
+        tt.words = list;
+        return tt;
+    };
+    TokenType._rs = function (list) {
+        var tt = new TokenType();
+        list = list.select(function (t) { return TokenType._fixRegex(t); });
+        tt.regexes = list;
+        tt.match = function (tokenizer) {
+            var res = null;
+            list.first(function (regex) {
+                var res2 = tokenizer.cursor.next(regex);
+                if (res2 != null) {
+                    res = res2;
+                    return true;
+                }
+                return false;
+            });
+            return res;
+            //return cursor.next(regex);
+        };
+        return tt;
+    };
+    TokenType._r = function (regex) {
+        var tt = new TokenType();
+        regex = TokenType._fixRegex(regex);
+        tt.match = function (tokenizer) {
+            return tokenizer.cursor.next(regex);
+        };
+        return tt;
+    };
+    TokenType._custom = function (matcher) {
+        var tt = new TokenType();
+        tt.match = matcher;
+        return tt;
     };
     return TokenType;
 }());

@@ -13,12 +13,13 @@
         this.nodes.ofType(HashRefCreationExpression).forEach(t=> this.resolveHashMemberAccess(t));
         this.nodes.ofType(ArrayRefDeclaration).forEach(t=> this.resolveArrayMemberAccess(t));
         //Statement modifiers (hack)
-        this.nodes.ofType(Operator).where(t=> t.token.isAnyKeyword(["for", "if", "while", "foreach"])).forEach(t=> this.resolveBinary(t));
+        this.nodes.ofType(Operator).where(t=> t.token.isAnyKeyword(TokenTypes.statementModifiers)).forEach(t=> this.resolveBinary(t));
 
         //console.log("unresolved", this.mbe.nodes);
         //    left terms and list operators (leftward)
         //    left	->
-        this.nodes.ofType(Operator).where(t=> t.token.is(TokenTypes.arrow)).forEach(t=> this.resolveBinary(t));
+        this.nodes.ofType(Operator).where(t=> t.token.is(TokenTypes.arrow)).forEach(t=> this.resolveArrow(t));
+        this.nodes.ofType(ParenthesizedList).forEach(t=> this.resolveInvocation(t));
         //console.log("resolved", this.nodes);
         //    nonassoc	++ --
         this.nodes.ofType(Operator).where(t=> t.token.isAny([TokenTypes.inc, TokenTypes.dec])).forEach(t=> this.resolveAutoIncDec(<Operator>t));
@@ -39,6 +40,9 @@
         //        left	<< >>
         //        nonassoc	named unary operators
         this.nodes.ofType(Expression).where(t=> this.isNamedUnaryOperator(t)).forEach(t=> this.resolveNamedUnaryOperator(t));
+        //hack: assume any consecutive expression is invocation
+        this.nodes.ofType(NamedMemberExpression).where(t=> t.token.is(TokenTypes.identifier)).forEach(t=> this.resolveImplicitInvocation(t));
+        
         //console.log("resolved", this.nodes);
         //        nonassoc	< > <= >= lt gt le ge            //TODO: lt gt le ge
         this.nodes.ofType(Operator).where(t=> t.token.isAny([
@@ -81,8 +85,6 @@
         this.nodes.ofType(Operator).where(t=> t.value == "or").forEach(t=> this.resolveBinary(t));
 
 
-        //hack: assume any consecutive expression is invocation
-        this.nodes.ofType(Expression).where(t=> true).forEach(t=> this.resolveImplicitInvocation(t));
         //console.log("resolved", this.nodes);
         if (this.nodes.length > 1)
             throw new Error("mbe not completely resolved");
@@ -90,7 +92,6 @@
         return resolved;
         //return this.mbe;
     }
-
     resolveComma(op: Operator) {
         let index = this.nodes.indexOf(op);
         let left = this.nodes[index - 1];
@@ -142,11 +143,68 @@
             throw new Error();
     }
 
+    resolveInvocation(node: ParenthesizedList): Expression {
+        let index = this.nodes.indexOf(node);
+        if (index <= 0)
+            return node;
+        let left = this.nodes[index - 1];
+        if (left instanceof NamedMemberExpression) {
+            let node2 = new InvocationExpression();
+            node2.target = left;
+            node2.arguments = node;
+            this.nodes.removeAt(index - 1);
+            this.nodes[index - 1] = node2;
+            return node2;
+        }
+        return node;
+    }
+
+    toMemberExpression(node: Expression | Operator | Block): MemberExpression {
+        if (node instanceof Expression) {
+            if (node instanceof MemberExpression) {
+                return node;
+            }
+            else if (node instanceof ArrayRefDeclaration) {
+                let node2 = new ArrayMemberAccessExpression();
+                node2.member = node;
+                return node2;
+            }
+            else if (node instanceof HashRefCreationExpression) {
+                let node2 = new HashMemberAccessExpression();
+                node2.member = node;
+                return node2;
+            }
+        }
+        return null;
+    }
+    resolveArrow(op: Operator) {
+        let index = this.nodes.indexOf(op);
+        let left = this.nodes[index - 1];
+        let right = this.toMemberExpression(this.nodes[index + 1]);
+        if (right == null)
+            throw new Error();
+        if (left instanceof Expression) {
+            if (right.target != null)
+                throw new Error();
+            right.target = left;
+            right.arrow = true;
+            right.memberSeparatorToken = op.token; //TODO:.arrowOperator = op;
+            this.nodes.removeAt(index - 1);
+            this.nodes.removeAt(index - 1);
+            this.nodes[index-1] = right;
+            return right;
+        }
+        else {
+            throw new Error();
+        }
+    }
+
     resolveHashMemberAccess(node: HashRefCreationExpression): Expression {
         let index = this.nodes.indexOf(node);
         let left = this.nodes[index - 1];
         if (left == null || !(left instanceof Expression))
             return;
+        //if(left instanceof MemberExpression
         let node2 = new HashMemberAccessExpression();
         node2.member = node;
         node2.target = <Expression>left;
@@ -168,7 +226,7 @@
     }
 
     resolveTrinaryExpression(op: Operator): TrinaryExpression {
-        if(this.nodes.length<5)
+        if (this.nodes.length < 5)
             throw new Error();
         let index = this.nodes.indexOf(op);
         let node = new TrinaryExpression();
@@ -178,12 +236,18 @@
         node.colonOperator = <Operator>this.nodes[index + 2];
         node.falseExpression = <Expression>this.nodes[index + 3];
         console.log("before", this.nodes.length);
-        this.nodes.splice(index-1, 5, node);
+        this.nodes.splice(index - 1, 5, node);
         console.log("after", this.nodes.length);
         return node;
     }
+
+    toBlockExpression(block: Block): BlockExpression {
+        let node = new BlockExpression();
+        node.block = block;
+        return node;
+    }
     // a b c =>a(b,c)
-    resolveImplicitInvocation(target: Expression) {
+    resolveImplicitInvocation(target: NamedMemberExpression): Expression {
         let index = this.nodes.indexOf(target);
         if (index == -1)
             return null;
@@ -192,29 +256,28 @@
         while (true) {
             i++;
             let arg = this.nodes[i];
-            if (arg == null || !(arg instanceof Expression)) {
+            if (arg == null || !(arg instanceof Expression || arg instanceof Block)) {
                 break;
             }
             args.push(arg);
+            //if(i==index+1 && arg instanceof ParenthesizedList)
+            //    break;
         }
         if (args.length == 0)
             return target;
         let node2 = new InvocationExpression();
         node2.target = target;
         let list = new NonParenthesizedList();
-        list.items = args;//TODO:
+        list.items = args.select(t=> t instanceof Block ? this.toBlockExpression(t) : t);//TODO:
         list.itemsSeparators = [];
         node2.arguments = list;// new ParenthesizedList();
         //node2.arguments.items = args;
         this.nodes.splice(index, i - index, node2);
         return node2;
     }
-    isWhitespaceOperator(op: Operator) {
-        return op.token.is(TokenTypes.whitespace);
-    }
     resolveNamedUnaryOperator(node: Expression) {
         let index = this.nodes.indexOf(node);
-        if(index==-1)
+        if (index == -1)
             return null;
         let nextNode = this.nodes[index + 1];
 
@@ -230,17 +293,18 @@
         else if (nextNode instanceof Block) { //TODO: check next param without comma
             let node2 = new InvocationExpression();
             node2.target = node;
-            node2.firstParamBlock = nextNode;
-            this.nodes.removeAt(index);
+            node2.arguments = this.toBlockExpression(nextNode);
             this.nodes.removeAt(index);
             this.nodes[index] = node2;
             return node2;
         }
         return node;
-
+    }
+    isWhitespaceOperator(op: Operator) {
+        return op.token.is(TokenTypes.whitespace);
     }
     isNamedUnaryOperator(node: Expression): boolean {
-        return node instanceof MemberExpression && this.namedUnaryOperators.contains(node.name);
+        return node instanceof NamedMemberExpression && TokenTypes.namedUnaryOperators.contains(node.name);
     }
 
     getAs<T extends Expression | Operator>(type: Type<T>, index: number): T {
@@ -249,6 +313,8 @@
             return <T>node;
         return null;
     }
+
+
     resolveBinary(op: Operator) {
         let node = new BinaryExpression();
         let index = this.nodes.indexOf(op);
@@ -314,21 +380,6 @@
     //    this.mbe.operators.removeAt(index);
     //    return right;
     //}
-    //Named Unary Operators
-    namedUnaryOperators = [
-        "gethostbyname", "localtime", "return",
-        "alarm", "getnetbyname", "lock", "rmdir",
-        "caller", "getpgrp", "log", "scalar",
-        "chdir", "getprotobyname", "lstat", "sin",
-        "chroot", "glob", "my", "sleep",
-        "cos", "gmtime", "oct", "sqrt",
-        "defined", "goto", "ord", "srand",
-        "delete", "hex", "quotemeta", "stat",
-        "do", "int", "rand", "uc",
-        "eval", "lc", "readlink", "ucfirst",
-        "exists", "lcfirst", "ref", "umask",
-        "exit", "length", "require", "undef",
-    ];
 
 }
 

@@ -343,7 +343,7 @@ var Parser = (function (_super) {
     Parser.prototype.parseExpression = function () { return this.createExpressionParser().parseExpression(); };
     Parser.prototype.parseMemberExpression = function () {
         var node = this.parseExpression();
-        if (node instanceof MemberExpression)
+        if (node instanceof NamedMemberExpression)
             return node;
         throw new Error();
     };

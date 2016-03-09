@@ -14,7 +14,8 @@ var AstWriter = (function () {
         this.register(NoStatement, function (t) { return [t.useToken, t.useTokenPost, t.module, [t.modulePostTokens], [t.list], t.semicolonToken, [t.semicolonTokenPost]]; });
         this.register(VariableDeclarationStatement, function (t) { return [t.declaration, t.semicolonToken]; });
         this.register(VariableDeclarationExpression, function (t) { return [t.myOurToken, [t.myOurTokenPost], t.variables, [t.variablesPost], [t.assignToken, [t.assignTokenPost], t.initializer]]; });
-        this.register(InvocationExpression, function (t) { return [t.target, [t.targetPost], [t.memberSeparatorToken], [t.firstParamBlock], [t.arguments]]; });
+        this.register(InvocationExpression, function (t) { return [t.target, [t.targetPost], [t.memberSeparatorToken], [t.arguments]]; });
+        this.register(BlockExpression, function (t) { return [t.block]; });
         this.register(ExpressionStatement, function (t) { return [t.expression, [t.expressionPost], [t.semicolonToken]]; });
         this.register(ValueExpression, function (t) { return [t.value]; });
         this.register(BinaryExpression, function (t) { return [t.left, t.operator, t.right]; });
@@ -28,7 +29,7 @@ var AstWriter = (function () {
         this.register(SimpleName, function (t) { return [t.name]; });
         this.register(HashMemberAccessExpression, function (t) { return [t.target, [t.memberSeparatorToken], t.member]; });
         this.register(ArrayMemberAccessExpression, function (t) { return [t.target, [t.memberSeparatorToken], t.member]; });
-        this.register(MemberExpression, function (t) { return [[t.target, t.memberSeparatorToken], t.name]; });
+        this.register(NamedMemberExpression, function (t) { return [[t.target, t.memberSeparatorToken], t.name]; });
         this.register(ReturnExpression, function (t) { return [t.returnToken, [t.returnTokenPost], t.expression]; });
         this.register(ArrayRefDeclaration, function (t) { return [t.bracketOpenToken, [t.bracketOpenTokenPost], _this.zip(t.items, t.itemsSeparators).exceptNulls(), t.bracketCloseToken]; });
         this.register(IfStatement, function (t) { return [t.keywordToken, [t.keywordTokenPost], t.parenOpenToken, [t.parenOpenTokenPost], t.expression, t.parenCloseToken, [t.parenCloseTokenPost], t.block, [t.else], [t.semicolonToken]]; });
@@ -45,6 +46,7 @@ var AstWriter = (function () {
         this.register(Operator, function (t) { return [t.token]; });
         this.register(NativeInvocation_BlockAndListOrExprCommaList, function (t) { return [t.keywordToken, t.keywordTokenPost, [t.block, t.blockPost, t.list], [t.expr, t.exprPost, t.commaToken, [t.commaTokenPost], t.list]]; });
         this.register(NativeInvocation_BlockOrExpr, function (t) { return [t.keywordToken, [t.keywordTokenPost], [t.block], [t.expr]]; });
+        this.register(UnresolvedExpression, function (t) { return [t.nodes]; });
         this.sb = [];
     };
     AstWriter.prototype.zip = function (list1, list2) {

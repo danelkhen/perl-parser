@@ -11,7 +11,8 @@ class AstWriter {
         this.register(NoStatement, t=> [t.useToken, t.useTokenPost, t.module, [t.modulePostTokens], [t.list], t.semicolonToken, [t.semicolonTokenPost]]);
         this.register(VariableDeclarationStatement, t=> [t.declaration, t.semicolonToken]);
         this.register(VariableDeclarationExpression, t=> [t.myOurToken, [t.myOurTokenPost], t.variables, [t.variablesPost], [t.assignToken, [t.assignTokenPost], t.initializer]]);
-        this.register(InvocationExpression, t=> [t.target, [t.targetPost], [t.memberSeparatorToken], [t.firstParamBlock], [t.arguments]]);
+        this.register(InvocationExpression, t=> [t.target, [t.targetPost], [t.memberSeparatorToken], [t.arguments]]);
+        this.register(BlockExpression, t=> [t.block]);
         this.register(ExpressionStatement, t=> [t.expression, [t.expressionPost], [t.semicolonToken]]);
         this.register(ValueExpression, t=> [t.value]);
         this.register(BinaryExpression, t=> [t.left, t.operator, t.right]);
@@ -26,7 +27,7 @@ class AstWriter {
 
         this.register(HashMemberAccessExpression, t=> [t.target, [t.memberSeparatorToken], t.member]);
         this.register(ArrayMemberAccessExpression, t=> [t.target, [t.memberSeparatorToken], t.member]);
-        this.register(MemberExpression, t=> [[t.target, t.memberSeparatorToken], t.name]);
+        this.register(NamedMemberExpression, t=> [[t.target, t.memberSeparatorToken], t.name]);
 
         this.register(ReturnExpression, t=> [t.returnToken, [t.returnTokenPost], t.expression]);
         this.register(ArrayRefDeclaration, t=> [t.bracketOpenToken, [t.bracketOpenTokenPost], this.zip(t.items, t.itemsSeparators).exceptNulls(), t.bracketCloseToken]);
@@ -47,6 +48,7 @@ class AstWriter {
         this.register(NativeInvocation_BlockAndListOrExprCommaList, t=> [t.keywordToken, t.keywordTokenPost, [t.block, t.blockPost, t.list], [t.expr, t.exprPost, t.commaToken, [t.commaTokenPost], t.list]]);
         this.register(NativeInvocation_BlockOrExpr, t=> [t.keywordToken, [t.keywordTokenPost],  [t.block], [t.expr]]);
          
+        this.register(UnresolvedExpression, t=> [t.nodes]);
 
 
         this.sb = [];

@@ -29,7 +29,7 @@ var ExpressionParser = (function (_super) {
     };
     ExpressionParser.prototype.parseExpression = function () {
         var mbe = this.parseFlatExpressionsAndOperators();
-        var mbe2 = new PrecedenceResolver(mbe).resolve();
+        var mbe2 = this.resolveExpression(mbe);
         return mbe2;
     };
     ExpressionParser.prototype.toListDeclaration = function (exp) {
@@ -62,12 +62,11 @@ var ExpressionParser = (function (_super) {
         ]) || this.token.isAnyKeyword([
             "if", "unless", "while", "until", "for", "foreach", "when",
             "and", "eq", "or", "ne",
-            "return" //named unary operators
         ])) {
-            if (this.token.isAnyKeyword(["for", "foreach"])) {
-                //  tempParser = this.parseSingleOrCommaSeparatedExpressions;
-                throw new Error("not implemented");
-            }
+            //if (this.token.isAnyKeyword(["for", "foreach"])) {           //for,foreach postfix have list after them without parantheses
+            //    //  tempParser = this.parseSingleOrCommaSeparatedExpressions;
+            //    throw new Error("not implemented");
+            //}
             if (lastExpression != null)
                 return lastExpression;
             var operator = new Operator();
@@ -90,14 +89,6 @@ var ExpressionParser = (function (_super) {
         else if (this.token.is(TokenTypes.parenOpen)) {
             return this.parseParenthesizedList();
         }
-        else if (this.token.isAnyIdentifier(["map", "grep"])) {
-            var node = this.parseNativeInvocation_BlockAndListOrExprCommaList(this.token.value);
-            return node;
-        }
-        else if (this.token.isAnyIdentifier(["eval", "ref"])) {
-            var node = this.parseNativeInvocation_BlockOrExpr(this.token.value);
-            return node;
-        }
         else if (this.token.isAnyKeyword(["my", "our"])) {
             var node = this.parseVariableDeclarationExpression();
             return node;
@@ -107,9 +98,6 @@ var ExpressionParser = (function (_super) {
                 throw new Error();
             return this.parseSubroutineExpression();
         }
-        else if (this.token.isKeyword("return")) {
-            return this.parseReturnExpression();
-        }
         else if (this.token.isAny([TokenTypes.comma, TokenTypes.semicolon])) {
             //if (lastExpression == null)
             //    return null;
@@ -118,13 +106,13 @@ var ExpressionParser = (function (_super) {
         else if (this.token.is(TokenTypes.sigil) || this.token.is(TokenTypes.multiply)) {
             return this.parseSigilPrefixUnary();
         }
-        else if (this.token.isAny([TokenTypes.not, TokenTypes.makeRef, TokenTypes.multiply, TokenTypes.codeRef, TokenTypes.lastIndexVar]) || this.token.isAnyKeyword(["not"])) {
+        else if (this.token.isAny([TokenTypes.not, TokenTypes.makeRef, TokenTypes.multiply, TokenTypes.lastIndexVar]) || this.token.isAnyKeyword(["not"])) {
             this.parsePrefixUnaryExpression();
         }
         else if (this.token.isAny([TokenTypes.inc, TokenTypes.dec])) {
             return lastExpression;
         }
-        else if (this.token.isIdentifier()) {
+        else if (this.token.isIdentifier() || this.token.isAnyKeyword(TokenTypes.namedUnaryOperators)) {
             if (lastExpression != null)
                 return lastExpression;
             var node = this.parseMemberExpression(lastExpression, false);
@@ -310,7 +298,7 @@ var ExpressionParser = (function (_super) {
     //}
     ExpressionParser.prototype.parseMemberExpression = function (target, arrow) {
         this.log("parseMemberExpression", this.token);
-        var node = this.create(MemberExpression);
+        var node = this.create(NamedMemberExpression);
         node.token = this.token;
         node.name = this.token.value;
         node.target = target;

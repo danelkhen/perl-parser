@@ -8,6 +8,13 @@ class AstNode {
     tokens: Token[] = [];
     whitespaceBefore: Token[];
     whitespaceAfter: Token[];
+
+    toCode() {
+        let writer = new AstWriter();
+        writer.main();
+        writer.write(this);
+        return writer.sb.join("");
+    }
 }
 class Statement extends AstNode {
     isStatement = true;
@@ -128,38 +135,37 @@ class UseStatement extends UseOrNoStatement {
 class NoStatement extends UseOrNoStatement {
 }
 
-class MemberExpression extends Expression implements HasArrow {
+class MemberExpression extends Expression {
+    target: Expression;
+    arrow: boolean;
+    //TODO: arrowOperator:Operator;
+    memberSeparatorToken: Token;
+}
+class NamedMemberExpression extends MemberExpression implements HasArrow {
     name: string;
-    target: Expression;
-    arrow: boolean;
-    memberSeparatorToken: Token;
 }
 
-class HashMemberAccessExpression extends Expression implements HasArrow {
+class HashMemberAccessExpression extends MemberExpression implements HasArrow {
     member: HashRefCreationExpression;
-    target: Expression;
-    arrow: boolean;
-    /// '->'or '::' */
-    memberSeparatorToken: Token;
 }
 
-class ArrayMemberAccessExpression extends Expression implements HasArrow {
+class ArrayMemberAccessExpression extends MemberExpression implements HasArrow {
     member: ArrayRefDeclaration;
-    target: Expression;
-    arrow: boolean;
-    memberSeparatorToken: Token;
 }
 
 class InvocationExpression extends Expression implements HasArrow {
     target: Expression;
     targetPost: Token[];
     memberSeparatorToken: Token;
-    firstParamBlock:Block;
+    //firstParamBlock: Block;
     arguments: Expression;
     arrow: boolean;
     //arrowToken: Token;
 }
 
+class BlockExpression extends Expression {
+    block: Block;
+}
 class BarewordExpression extends Expression {
     value: string;
 }
