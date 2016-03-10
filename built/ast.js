@@ -129,6 +129,13 @@ var RegexExpression = (function (_super) {
     }
     return RegexExpression;
 }(Expression));
+var BlockStatement = (function (_super) {
+    __extends(BlockStatement, _super);
+    function BlockStatement() {
+        _super.apply(this, arguments);
+    }
+    return BlockStatement;
+}(Statement));
 var ExpressionStatement = (function (_super) {
     __extends(ExpressionStatement, _super);
     function ExpressionStatement() {

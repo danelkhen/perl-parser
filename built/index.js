@@ -74,6 +74,7 @@ var IndexPage = (function () {
             parser.reader = new TokenReader();
             parser.reader.logger = parser.logger;
             parser.reader.tokens = tok.tokens;
+            parser.init();
             _this.tokens = tok.tokens;
             _this.renderTokens();
             var statements = parser.doParse();

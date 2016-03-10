@@ -26,7 +26,7 @@ var HereDocTokenType = (function (_super) {
             else
                 ender = range.text.substring(2);
         }
-        var newTokenType = TokenType._r(new RegExp("\\n[\\S\\s]*" + ender + "\\n"));
+        var newTokenType = TokenType._r(new RegExp("\\r?\\n[\\S\\s]*" + ender + "\\r?\\n"));
         newTokenType.name = "heredocValue";
         tokenizer.tempTokenTypes.push(newTokenType);
         var token = this.create(range);
@@ -156,6 +156,7 @@ var TokenTypes = (function () {
     TokenTypes.sigiledIdentifier = TokenType._r(new RegExp("[\\$@%&*]" + TokenTypes.identifierRegex.source));
     TokenTypes.evalErrorVar = TokenType._r(/\$@/);
     TokenTypes.listSeparatorVar = TokenType._r(/\$"/);
+    TokenTypes.ctrlCVar = TokenType._r(/\$\^C/);
     TokenTypes.comment = TokenType._r(/\#.*/);
     TokenTypes.equals = TokenType._r(/==/);
     TokenTypes.notEquals = TokenType._r(/!=/);

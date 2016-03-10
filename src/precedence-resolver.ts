@@ -11,7 +11,7 @@
         //TEMP HACKS
         this.nodes.ofType(Operator).where(t=> t.token.is(TokenTypes.packageSeparator)).forEach(t=> this.resolveBinary(t));
         this.nodes.ofType(HashRefCreationExpression).forEach(t=> this.resolveHashMemberAccess(t));
-        this.nodes.ofType(HashRefCreationExpression).forEach(t=> this.resolveCodeRef(t));
+        this.nodes.ofType(HashRefCreationExpression).forEach(t=> this.resolveCodeRefOrDeref(t));
         this.nodes.ofType(ArrayRefDeclaration).forEach(t=> this.resolveArrayMemberAccess(t));
         //Statement modifiers (hack)
         this.nodes.ofType(Operator).where(t=> t.token.isAnyKeyword(TokenTypes.statementModifiers)).forEach(t=> this.resolveBinary(t));
@@ -214,10 +214,10 @@
         return node2;
     }
 
-    resolveCodeRef(node: HashRefCreationExpression): Expression {
+    resolveCodeRefOrDeref(node: HashRefCreationExpression): Expression {
         let index = this.nodes.indexOf(node);
         let left = this.nodes[index - 1];
-        if (left instanceof Operator && left.token.is(TokenTypes.multiply)) {
+        if (left instanceof Operator && left.token.isAny([TokenTypes.multiply, TokenTypes.sigil])) {
             return this.resolvePrefixUnary(left);
         }
         return node;
@@ -324,16 +324,21 @@
     }
 
 
-    resolveBinary(op: Operator) {
+    resolveBinary(op: Operator):Expression|Operator {
         let node = new BinaryExpression();
         let index = this.nodes.indexOf(op);
-        node.left = <Expression>this.nodes[index - 1];
-        node.operator = op;
-        node.right = <Expression>this.nodes[index + 1];
-        this.nodes.removeAt(index - 1);
-        this.nodes.removeAt(index - 1);
-        this.nodes[index - 1] = node;
-        return node;
+        let left = this.nodes[index - 1];
+        let right = this.nodes[index + 1];
+        if (left instanceof Expression && right instanceof Expression) {
+            node.left = left;
+            node.operator = op;
+            node.right = right;
+            this.nodes.removeAt(index - 1);
+            this.nodes.removeAt(index - 1);
+            this.nodes[index - 1] = node;
+            return node;
+        }
+        return op;
     }
     resolveAutoIncDec(op: Operator) {
         let index = this.nodes.indexOf(op);

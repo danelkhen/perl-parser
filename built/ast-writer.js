@@ -17,6 +17,7 @@ var AstWriter = (function () {
         this.register(InvocationExpression, function (t) { return [t.target, [t.targetPost], [t.memberSeparatorToken], [t.arguments]]; });
         this.register(BlockExpression, function (t) { return [t.block]; });
         this.register(ExpressionStatement, function (t) { return [t.expression, [t.expressionPost], [t.semicolonToken]]; });
+        this.register(BlockStatement, function (t) { return [t.block, [t.blockPost], [t.semicolonToken]]; });
         this.register(ValueExpression, function (t) { return [t.value]; });
         this.register(BinaryExpression, function (t) { return [t.left, t.operator, t.right]; });
         this.register(BeginStatement, function (t) { return [t.beginToken, [t.beginTokenPost], t.block, [t.semicolonToken]]; });

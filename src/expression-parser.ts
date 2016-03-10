@@ -158,7 +158,7 @@
             //    }
             //}
         }
-        else if (this.token.isAny([TokenTypes.sigiledIdentifier, TokenTypes.evalErrorVar, TokenTypes.listSeparatorVar])) {
+        else if (this.token.isAny([TokenTypes.sigiledIdentifier, TokenTypes.evalErrorVar, TokenTypes.listSeparatorVar, TokenTypes.ctrlCVar])) {
             if (lastExpression != null)
                 return lastExpression;
             let node = this.parseMemberExpression(null, false);

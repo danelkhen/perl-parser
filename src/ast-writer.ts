@@ -14,6 +14,7 @@ class AstWriter {
         this.register(InvocationExpression, t=> [t.target, [t.targetPost], [t.memberSeparatorToken], [t.arguments]]);
         this.register(BlockExpression, t=> [t.block]);
         this.register(ExpressionStatement, t=> [t.expression, [t.expressionPost], [t.semicolonToken]]);
+        this.register(BlockStatement, t=> [t.block, [t.blockPost], [t.semicolonToken]]);
         this.register(ValueExpression, t=> [t.value]);
         this.register(BinaryExpression, t=> [t.left, t.operator, t.right]);
         this.register(BeginStatement, t=> [t.beginToken, [t.beginTokenPost], t.block, [t.semicolonToken]]);

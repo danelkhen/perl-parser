@@ -18,7 +18,7 @@ class HereDocTokenType extends TokenType {
             else
                 ender = range.text.substring(2);
         }
-        let newTokenType = TokenType._r(new RegExp("\\n[\\S\\s]*" + ender + "\\n"));
+        let newTokenType = TokenType._r(new RegExp("\\r?\\n[\\S\\s]*" + ender + "\\r?\\n"));
         newTokenType.name = "heredocValue";
         tokenizer.tempTokenTypes.push(newTokenType);
         let token = this.create(range);
@@ -113,6 +113,7 @@ class TokenTypes {
     static sigiledIdentifier = TokenType._r(new RegExp("[\\$@%&*]" + TokenTypes.identifierRegex.source));
     static evalErrorVar = TokenType._r(/\$@/);
     static listSeparatorVar = TokenType._r(/\$"/);
+    static ctrlCVar = TokenType._r(/\$\^C/);
     static comment = TokenType._r(/\#.*/);
     static equals = TokenType._r(/==/);
     static notEquals = TokenType._r(/!=/);

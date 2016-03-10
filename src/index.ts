@@ -83,6 +83,8 @@ class IndexPage {
             parser.reader = new TokenReader();
             parser.reader.logger = parser.logger;
             parser.reader.tokens = tok.tokens;
+            parser.init();
+
             this.tokens = tok.tokens;
             this.renderTokens();
 

@@ -110,6 +110,11 @@ class RegexExpression extends Expression {
     value: string;
 }
 
+class BlockStatement extends Statement {
+    block: Block;
+    blockPost: Token[];
+    semicolonToken: Token;
+}
 
 
 class ExpressionStatement extends Statement {

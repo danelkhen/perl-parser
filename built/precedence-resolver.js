@@ -10,7 +10,7 @@ var PrecedenceResolver = (function () {
         //TEMP HACKS
         this.nodes.ofType(Operator).where(function (t) { return t.token.is(TokenTypes.packageSeparator); }).forEach(function (t) { return _this.resolveBinary(t); });
         this.nodes.ofType(HashRefCreationExpression).forEach(function (t) { return _this.resolveHashMemberAccess(t); });
-        this.nodes.ofType(HashRefCreationExpression).forEach(function (t) { return _this.resolveCodeRef(t); });
+        this.nodes.ofType(HashRefCreationExpression).forEach(function (t) { return _this.resolveCodeRefOrDeref(t); });
         this.nodes.ofType(ArrayRefDeclaration).forEach(function (t) { return _this.resolveArrayMemberAccess(t); });
         //Statement modifiers (hack)
         this.nodes.ofType(Operator).where(function (t) { return t.token.isAnyKeyword(TokenTypes.statementModifiers); }).forEach(function (t) { return _this.resolveBinary(t); });
@@ -198,10 +198,10 @@ var PrecedenceResolver = (function () {
         this.nodes[index - 1] = node2;
         return node2;
     };
-    PrecedenceResolver.prototype.resolveCodeRef = function (node) {
+    PrecedenceResolver.prototype.resolveCodeRefOrDeref = function (node) {
         var index = this.nodes.indexOf(node);
         var left = this.nodes[index - 1];
-        if (left instanceof Operator && left.token.is(TokenTypes.multiply)) {
+        if (left instanceof Operator && left.token.isAny([TokenTypes.multiply, TokenTypes.sigil])) {
             return this.resolvePrefixUnary(left);
         }
         return node;
@@ -304,13 +304,18 @@ var PrecedenceResolver = (function () {
     PrecedenceResolver.prototype.resolveBinary = function (op) {
         var node = new BinaryExpression();
         var index = this.nodes.indexOf(op);
-        node.left = this.nodes[index - 1];
-        node.operator = op;
-        node.right = this.nodes[index + 1];
-        this.nodes.removeAt(index - 1);
-        this.nodes.removeAt(index - 1);
-        this.nodes[index - 1] = node;
-        return node;
+        var left = this.nodes[index - 1];
+        var right = this.nodes[index + 1];
+        if (left instanceof Expression && right instanceof Expression) {
+            node.left = left;
+            node.operator = op;
+            node.right = right;
+            this.nodes.removeAt(index - 1);
+            this.nodes.removeAt(index - 1);
+            this.nodes[index - 1] = node;
+            return node;
+        }
+        return op;
     };
     PrecedenceResolver.prototype.resolveAutoIncDec = function (op) {
         var index = this.nodes.indexOf(op);

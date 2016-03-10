@@ -115,7 +115,7 @@ var ExpressionParser = (function (_super) {
             var node = this.parseMemberExpression(lastExpression, false);
             return node;
         }
-        else if (this.token.isAny([TokenTypes.sigiledIdentifier, TokenTypes.evalErrorVar, TokenTypes.listSeparatorVar])) {
+        else if (this.token.isAny([TokenTypes.sigiledIdentifier, TokenTypes.evalErrorVar, TokenTypes.listSeparatorVar, TokenTypes.ctrlCVar])) {
             if (lastExpression != null)
                 return lastExpression;
             var node = this.parseMemberExpression(null, false);
