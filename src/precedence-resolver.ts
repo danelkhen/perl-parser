@@ -11,6 +11,7 @@
         //TEMP HACKS
         this.nodes.ofType(Operator).where(t=> t.token.is(TokenTypes.packageSeparator)).forEach(t=> this.resolveBinary(t));
         this.nodes.ofType(HashRefCreationExpression).forEach(t=> this.resolveHashMemberAccess(t));
+        this.nodes.ofType(HashRefCreationExpression).forEach(t=> this.resolveCodeRef(t));
         this.nodes.ofType(ArrayRefDeclaration).forEach(t=> this.resolveArrayMemberAccess(t));
         //Statement modifiers (hack)
         this.nodes.ofType(Operator).where(t=> t.token.isAnyKeyword(TokenTypes.statementModifiers)).forEach(t=> this.resolveBinary(t));
@@ -26,7 +27,7 @@
         //console.log("resolved", this.nodes);
         //    right	**
         //    right	! ~ \ and unary + and - //TODO: \
-        this.nodes.ofType(Operator).where(t=> t.token.isAny([TokenTypes.not, TokenTypes.tilda, TokenTypes.makeRef/*TODO:, TokenTypes.plus, TokenTypes.minus*/])).forEach(t=> this.resolvePrefixUnary(t));
+        this.nodes.ofType(Operator).where(t=> t.token.isAny([TokenTypes.not, TokenTypes.tilda, TokenTypes.makeRef, TokenTypes.sigil,/*TODO: coderef TokenTypes.multiply, TokenTypes.plus, TokenTypes.minus*/])).forEach(t=> this.resolvePrefixUnary(t));
         //console.log("resolved", this.nodes);
         //    left	=~ !~
         this.nodes.ofType(Operator).where(t=> t.token.isAny([TokenTypes.regexEquals, TokenTypes.regexNotEquals])).forEach(t=> this.resolveBinary(t));
@@ -191,7 +192,7 @@
             right.memberSeparatorToken = op.token; //TODO:.arrowOperator = op;
             this.nodes.removeAt(index - 1);
             this.nodes.removeAt(index - 1);
-            this.nodes[index-1] = right;
+            this.nodes[index - 1] = right;
             return right;
         }
         else {
@@ -203,7 +204,7 @@
         let index = this.nodes.indexOf(node);
         let left = this.nodes[index - 1];
         if (left == null || !(left instanceof Expression))
-            return;
+            return node;
         //if(left instanceof MemberExpression
         let node2 = new HashMemberAccessExpression();
         node2.member = node;
@@ -211,6 +212,15 @@
         this.nodes.removeAt(index - 1);
         this.nodes[index - 1] = node2;
         return node2;
+    }
+
+    resolveCodeRef(node: HashRefCreationExpression): Expression {
+        let index = this.nodes.indexOf(node);
+        let left = this.nodes[index - 1];
+        if (left instanceof Operator && left.token.is(TokenTypes.multiply)) {
+            return this.resolvePrefixUnary(left);
+        }
+        return node;
     }
     resolveArrayMemberAccess(node: ArrayRefDeclaration): Expression {
         let index = this.nodes.indexOf(node);
@@ -347,11 +357,15 @@
     resolvePrefixUnary(op: Operator) {
         let node = new PrefixUnaryExpression();
         let index = this.nodes.indexOf(op);
-        node.operator = op;
-        node.expression = <Expression>this.nodes[index + 1];
-        this.nodes.removeAt(index);
-        this.nodes[index] = node;
-        return node;
+        let right = this.nodes[index + 1];
+        if (right instanceof Expression) {
+            node.operator = op;
+            node.expression = <Expression>this.nodes[index + 1];
+            this.nodes.removeAt(index);
+            this.nodes[index] = node;
+            return node;
+        }
+        throw new Error();
     }
 
     //resolveMemberExpression(op: Operator) {

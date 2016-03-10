@@ -58,7 +58,7 @@ var ExpressionParser = (function (_super) {
             TokenTypes.question, TokenTypes.colon,
             TokenTypes.comma, TokenTypes.fatComma,
             TokenTypes.makeRef,
-            TokenTypes.bitwiseAnd, TokenTypes.bitwiseOr, TokenTypes.bitwiseXor,
+            TokenTypes.bitwiseAnd, TokenTypes.bitwiseOr, TokenTypes.bitwiseXor, TokenTypes.sigil,
         ]) || this.token.isAnyKeyword([
             "if", "unless", "while", "until", "for", "foreach", "when",
             "and", "eq", "or", "ne",
@@ -102,9 +102,6 @@ var ExpressionParser = (function (_super) {
             //if (lastExpression == null)
             //    return null;
             return lastExpression;
-        }
-        else if (this.token.is(TokenTypes.sigil) || this.token.is(TokenTypes.multiply)) {
-            return this.parseSigilPrefixUnary();
         }
         else if (this.token.isAny([TokenTypes.not, TokenTypes.makeRef, TokenTypes.multiply, TokenTypes.lastIndexVar]) || this.token.isAnyKeyword(["not"])) {
             this.parsePrefixUnaryExpression();

@@ -10,6 +10,7 @@ var PrecedenceResolver = (function () {
         //TEMP HACKS
         this.nodes.ofType(Operator).where(function (t) { return t.token.is(TokenTypes.packageSeparator); }).forEach(function (t) { return _this.resolveBinary(t); });
         this.nodes.ofType(HashRefCreationExpression).forEach(function (t) { return _this.resolveHashMemberAccess(t); });
+        this.nodes.ofType(HashRefCreationExpression).forEach(function (t) { return _this.resolveCodeRef(t); });
         this.nodes.ofType(ArrayRefDeclaration).forEach(function (t) { return _this.resolveArrayMemberAccess(t); });
         //Statement modifiers (hack)
         this.nodes.ofType(Operator).where(function (t) { return t.token.isAnyKeyword(TokenTypes.statementModifiers); }).forEach(function (t) { return _this.resolveBinary(t); });
@@ -24,7 +25,7 @@ var PrecedenceResolver = (function () {
         //console.log("resolved", this.nodes);
         //    right	**
         //    right	! ~ \ and unary + and - //TODO: \
-        this.nodes.ofType(Operator).where(function (t) { return t.token.isAny([TokenTypes.not, TokenTypes.tilda, TokenTypes.makeRef /*TODO:, TokenTypes.plus, TokenTypes.minus*/]); }).forEach(function (t) { return _this.resolvePrefixUnary(t); });
+        this.nodes.ofType(Operator).where(function (t) { return t.token.isAny([TokenTypes.not, TokenTypes.tilda, TokenTypes.makeRef, TokenTypes.sigil,]); }).forEach(function (t) { return _this.resolvePrefixUnary(t); });
         //console.log("resolved", this.nodes);
         //    left	=~ !~
         this.nodes.ofType(Operator).where(function (t) { return t.token.isAny([TokenTypes.regexEquals, TokenTypes.regexNotEquals]); }).forEach(function (t) { return _this.resolveBinary(t); });
@@ -188,7 +189,7 @@ var PrecedenceResolver = (function () {
         var index = this.nodes.indexOf(node);
         var left = this.nodes[index - 1];
         if (left == null || !(left instanceof Expression))
-            return;
+            return node;
         //if(left instanceof MemberExpression
         var node2 = new HashMemberAccessExpression();
         node2.member = node;
@@ -196,6 +197,14 @@ var PrecedenceResolver = (function () {
         this.nodes.removeAt(index - 1);
         this.nodes[index - 1] = node2;
         return node2;
+    };
+    PrecedenceResolver.prototype.resolveCodeRef = function (node) {
+        var index = this.nodes.indexOf(node);
+        var left = this.nodes[index - 1];
+        if (left instanceof Operator && left.token.is(TokenTypes.multiply)) {
+            return this.resolvePrefixUnary(left);
+        }
+        return node;
     };
     PrecedenceResolver.prototype.resolveArrayMemberAccess = function (node) {
         var index = this.nodes.indexOf(node);
@@ -325,11 +334,15 @@ var PrecedenceResolver = (function () {
     PrecedenceResolver.prototype.resolvePrefixUnary = function (op) {
         var node = new PrefixUnaryExpression();
         var index = this.nodes.indexOf(op);
-        node.operator = op;
-        node.expression = this.nodes[index + 1];
-        this.nodes.removeAt(index);
-        this.nodes[index] = node;
-        return node;
+        var right = this.nodes[index + 1];
+        if (right instanceof Expression) {
+            node.operator = op;
+            node.expression = this.nodes[index + 1];
+            this.nodes.removeAt(index);
+            this.nodes[index] = node;
+            return node;
+        }
+        throw new Error();
     };
     return PrecedenceResolver;
 }());

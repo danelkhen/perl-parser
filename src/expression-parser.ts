@@ -55,7 +55,7 @@
             TokenTypes.question, TokenTypes.colon,
             TokenTypes.comma, TokenTypes.fatComma,
             TokenTypes.makeRef,
-            TokenTypes.bitwiseAnd, TokenTypes.bitwiseOr, TokenTypes.bitwiseXor,
+            TokenTypes.bitwiseAnd, TokenTypes.bitwiseOr, TokenTypes.bitwiseXor, TokenTypes.sigil,
         ]) || this.token.isAnyKeyword([
             "if", "unless", "while", "until", "for", "foreach", "when", //statement modifiers
             "and", "eq", "or", "ne", 
@@ -125,9 +125,9 @@
             //    return null;
             return lastExpression;
         }
-        else if (this.token.is(TokenTypes.sigil) || this.token.is(TokenTypes.multiply)) { //multiply: *{"a::b"}{CODE}
-            return this.parseSigilPrefixUnary();
-        }
+        //else if (this.token.is(TokenTypes.sigil) || this.token.is(TokenTypes.multiply)) { //multiply: *{"a::b"}{CODE}
+        //    return this.parseSigilPrefixUnary();
+        //}
         else if (this.token.isAny([TokenTypes.not, TokenTypes.makeRef, TokenTypes.multiply, /*TokenTypes.codeRef, */TokenTypes.lastIndexVar]) || this.token.isAnyKeyword(["not"])) { //multiply: *{"a::b"}{CODE}
             this.parsePrefixUnaryExpression();
         }

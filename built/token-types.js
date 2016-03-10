@@ -26,7 +26,7 @@ var HereDocTokenType = (function (_super) {
             else
                 ender = range.text.substring(2);
         }
-        var newTokenType = TokenType._r(new RegExp("\\n[\\S\\s]*" + ender + "\\n", "m"));
+        var newTokenType = TokenType._r(new RegExp("\\n[\\S\\s]*" + ender + "\\n"));
         newTokenType.name = "heredocValue";
         tokenizer.tempTokenTypes.push(newTokenType);
         var token = this.create(range);
