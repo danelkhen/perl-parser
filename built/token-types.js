@@ -196,6 +196,7 @@ var TokenTypes = (function () {
     TokenTypes.arrow = TokenType._r(/\-\>/);
     TokenTypes.fatComma = TokenType._r(/\=\>/);
     TokenTypes.assignment = TokenType._r(/=/);
+    TokenTypes.range3 = TokenType._r(/\.\.\./);
     TokenTypes.range = TokenType._r(/\.\./);
     TokenTypes.concat = TokenType._r(/\./);
     TokenTypes.divDiv = TokenType._r(/\/\//);

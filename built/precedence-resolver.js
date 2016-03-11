@@ -5,19 +5,37 @@ var PrecedenceResolver = (function () {
     }
     //isOperatorOrKeyword(node:Expression | Operator, operators: TokenType[], keywords: string[]) {
     //}
+    PrecedenceResolver.prototype.resolve2 = function (mbe) {
+        var resolver = new PrecedenceResolver(mbe);
+        return resolver.resolve();
+    };
+    PrecedenceResolver.prototype.resolveStatementModifier = function (op) {
+        var index = this.nodes.indexOf(op);
+        if (index <= 0)
+            throw new Error();
+        var left = new UnresolvedExpression();
+        left.nodes = this.nodes.slice(0, index);
+        var right = new UnresolvedExpression();
+        right.nodes = this.nodes.slice(index + 1);
+        var left2 = this.resolve2(left);
+        var right2 = this.resolve2(right);
+        this.nodes = [left2, op, right2];
+        var res = this.resolveBinary(op);
+        return res;
+    };
     PrecedenceResolver.prototype.resolve = function () {
         var _this = this;
         //TEMP HACKS
-        this.nodes.ofType(Operator).where(function (t) { return t.token.is(TokenTypes.packageSeparator); }).forEach(function (t) { return _this.resolveBinary(t); });
-        this.nodes.ofType(HashRefCreationExpression).forEach(function (t) { return _this.resolveHashMemberAccess(t); });
+        this.nodes.ofType(Operator).where(function (t) { return t.token.is(TokenTypes.packageSeparator); }).forEach(function (t) { return _this.resolveArrow(t); });
         this.nodes.ofType(HashRefCreationExpression).forEach(function (t) { return _this.resolveCodeRefOrDeref(t); });
         this.nodes.ofType(ArrayRefDeclaration).forEach(function (t) { return _this.resolveArrayMemberAccess(t); });
         //Statement modifiers (hack)
-        this.nodes.ofType(Operator).where(function (t) { return t.token.isAnyKeyword(TokenTypes.statementModifiers); }).forEach(function (t) { return _this.resolveBinary(t); });
+        this.nodes.ofType(Operator).where(function (t) { return t.token.isAnyKeyword(TokenTypes.statementModifiers); }).forEach(function (t) { return _this.resolveStatementModifier(t); });
         //console.log("unresolved", this.mbe.nodes);
         //    left terms and list operators (leftward)
         //    left	->
         this.nodes.ofType(Operator).where(function (t) { return t.token.is(TokenTypes.arrow); }).forEach(function (t) { return _this.resolveArrow(t); });
+        this.nodes.ofType(HashRefCreationExpression).forEach(function (t) { return _this.resolveHashMemberAccess(t); });
         this.nodes.ofType(ParenthesizedList).forEach(function (t) { return _this.resolveInvocation(t); });
         //console.log("resolved", this.nodes);
         //    nonassoc	++ --
@@ -63,7 +81,7 @@ var PrecedenceResolver = (function () {
         //        left	|| //
         this.nodes.ofType(Operator).where(function (t) { return t.token.isAny([TokenTypes.or, TokenTypes.divDiv]); }).forEach(function (t) { return _this.resolveBinary(t); });
         //    nonassoc	..  ... //TODO: ...
-        this.nodes.ofType(Operator).where(function (t) { return t.token.isAny([TokenTypes.range]); }).forEach(function (t) { return _this.resolveBinary(t); });
+        this.nodes.ofType(Operator).where(function (t) { return t.token.isAny([TokenTypes.range, TokenTypes.range3]); }).forEach(function (t) { return _this.resolveBinary(t); });
         //    right	?:
         this.nodes.ofType(Operator).where(function (t) { return t.token.is(TokenTypes.question); }).forEach(function (t) { return _this.resolveTrinaryExpression(t); });
         //    right	= += -= *= etc. goto last next redo dump
@@ -171,10 +189,11 @@ var PrecedenceResolver = (function () {
         if (right == null)
             throw new Error();
         if (left instanceof Expression) {
-            if (right.target != null)
+            if (right.target != null) {
                 throw new Error();
+            }
             right.target = left;
-            right.arrow = true;
+            right.arrow = op.token.is(TokenTypes.arrow);
             right.memberSeparatorToken = op.token; //TODO:.arrowOperator = op;
             this.nodes.removeAt(index - 1);
             this.nodes.removeAt(index - 1);
@@ -185,10 +204,13 @@ var PrecedenceResolver = (function () {
             throw new Error();
         }
     };
+    PrecedenceResolver.prototype.isBareword = function (node) {
+        return node instanceof NamedMemberExpression && node.token.is(TokenTypes.identifier);
+    };
     PrecedenceResolver.prototype.resolveHashMemberAccess = function (node) {
         var index = this.nodes.indexOf(node);
         var left = this.nodes[index - 1];
-        if (left == null || !(left instanceof Expression))
+        if (left == null || !(left instanceof Expression) || this.isBareword(left))
             return node;
         //if(left instanceof MemberExpression
         var node2 = new HashMemberAccessExpression();

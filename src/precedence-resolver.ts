@@ -7,19 +7,38 @@
     //isOperatorOrKeyword(node:Expression | Operator, operators: TokenType[], keywords: string[]) {
 
     //}
+
+    resolve2(mbe: UnresolvedExpression): Expression {
+        let resolver = new PrecedenceResolver(mbe);
+        return resolver.resolve();
+    }
+    resolveStatementModifier(op: Operator) {
+        let index = this.nodes.indexOf(op);
+        if (index <= 0)
+            throw new Error();
+        let left = new UnresolvedExpression();
+        left.nodes = this.nodes.slice(0, index);
+        let right = new UnresolvedExpression();
+        right.nodes = this.nodes.slice(index + 1);
+        let left2 = this.resolve2(left);
+        let right2 = this.resolve2(right);
+        this.nodes = [left2, op, right2];
+        let res = this.resolveBinary(op);
+        return res;
+    }
     resolve() {
         //TEMP HACKS
-        this.nodes.ofType(Operator).where(t=> t.token.is(TokenTypes.packageSeparator)).forEach(t=> this.resolveBinary(t));
-        this.nodes.ofType(HashRefCreationExpression).forEach(t=> this.resolveHashMemberAccess(t));
+        this.nodes.ofType(Operator).where(t=> t.token.is(TokenTypes.packageSeparator)).forEach(t=> this.resolveArrow(t));
         this.nodes.ofType(HashRefCreationExpression).forEach(t=> this.resolveCodeRefOrDeref(t));
         this.nodes.ofType(ArrayRefDeclaration).forEach(t=> this.resolveArrayMemberAccess(t));
         //Statement modifiers (hack)
-        this.nodes.ofType(Operator).where(t=> t.token.isAnyKeyword(TokenTypes.statementModifiers)).forEach(t=> this.resolveBinary(t));
+        this.nodes.ofType(Operator).where(t=> t.token.isAnyKeyword(TokenTypes.statementModifiers)).forEach(t=> this.resolveStatementModifier(t));
 
         //console.log("unresolved", this.mbe.nodes);
         //    left terms and list operators (leftward)
         //    left	->
         this.nodes.ofType(Operator).where(t=> t.token.is(TokenTypes.arrow)).forEach(t=> this.resolveArrow(t));
+        this.nodes.ofType(HashRefCreationExpression).forEach(t=> this.resolveHashMemberAccess(t));
         this.nodes.ofType(ParenthesizedList).forEach(t=> this.resolveInvocation(t));
         //console.log("resolved", this.nodes);
         //    nonassoc	++ --
@@ -41,6 +60,7 @@
         //        left	<< >>
         //        nonassoc	named unary operators
         this.nodes.ofType(Expression).where(t=> this.isNamedUnaryOperator(t)).forEach(t=> this.resolveNamedUnaryOperator(t));
+        
         //hack: assume any consecutive expression is invocation
         this.nodes.ofType(NamedMemberExpression).where(t=> t.token.is(TokenTypes.identifier)).forEach(t=> this.resolveImplicitInvocation(t));
         
@@ -65,7 +85,7 @@
         //        left	|| //
         this.nodes.ofType(Operator).where(t=> t.token.isAny([TokenTypes.or, TokenTypes.divDiv])).forEach(t=> this.resolveBinary(<Operator>t));
         //    nonassoc	..  ... //TODO: ...
-        this.nodes.ofType(Operator).where(t=> t.token.isAny([TokenTypes.range])).forEach(t=> this.resolveBinary(<Operator>t));
+        this.nodes.ofType(Operator).where(t=> t.token.isAny([TokenTypes.range, TokenTypes.range3])).forEach(t=> this.resolveBinary(<Operator>t));
         //    right	?:
         this.nodes.ofType(Operator).where(t=> t.token.is(TokenTypes.question)).forEach(t=> this.resolveTrinaryExpression(<Operator>t));
         //    right	= += -= *= etc. goto last next redo dump
@@ -185,10 +205,12 @@
         if (right == null)
             throw new Error();
         if (left instanceof Expression) {
-            if (right.target != null)
+            if (right.target != null) {
+
                 throw new Error();
+            }
             right.target = left;
-            right.arrow = true;
+            right.arrow = op.token.is(TokenTypes.arrow);
             right.memberSeparatorToken = op.token; //TODO:.arrowOperator = op;
             this.nodes.removeAt(index - 1);
             this.nodes.removeAt(index - 1);
@@ -200,10 +222,13 @@
         }
     }
 
+    isBareword(node: Expression) {
+        return node instanceof NamedMemberExpression && node.token.is(TokenTypes.identifier);
+    }
     resolveHashMemberAccess(node: HashRefCreationExpression): Expression {
         let index = this.nodes.indexOf(node);
         let left = this.nodes[index - 1];
-        if (left == null || !(left instanceof Expression))
+        if (left == null || !(left instanceof Expression) || this.isBareword(left))
             return node;
         //if(left instanceof MemberExpression
         let node2 = new HashMemberAccessExpression();
@@ -324,7 +349,7 @@
     }
 
 
-    resolveBinary(op: Operator):Expression|Operator {
+    resolveBinary(op: Operator): Expression | Operator {
         let node = new BinaryExpression();
         let index = this.nodes.indexOf(op);
         let left = this.nodes[index - 1];

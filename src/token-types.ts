@@ -156,6 +156,7 @@ class TokenTypes {
     static arrow = TokenType._r(/\-\>/);
     static fatComma = TokenType._r(/\=\>/);
     static assignment = TokenType._r(/=/);
+    static range3 = TokenType._r(/\.\.\./);
     static range = TokenType._r(/\.\./);
     static concat = TokenType._r(/\./);
     static divDiv = TokenType._r(/\/\//);
