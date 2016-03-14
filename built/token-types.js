@@ -12,20 +12,22 @@ var HereDocTokenType = (function (_super) {
     HereDocTokenType.prototype.tryTokenize = function (tokenizer) {
         if (!tokenizer.cursor.startsWith("<<"))
             return 0;
-        var ender;
-        var range = tokenizer.cursor.next(/^<<"[a-zA-Z0-9_]+"/);
+        var matchers = [/^<<\s*"([a-zA-Z0-9_]+)"/, /^<<\s*'([a-zA-Z0-9_]+)'/, /^<<\s*([a-zA-Z0-9_]+)/];
+        var range = tokenizer.cursor.nextAny(matchers);
         if (range == null)
-            range = tokenizer.cursor.next(/^<<'[a-zA-Z0-9_]+'/);
-        if (range != null) {
-            ender = range.text.substring(3, range.text.length - 1);
-        }
-        else {
-            range = tokenizer.cursor.next(/^<<[a-zA-Z0-9_]+/);
-            if (range == null)
-                return 0;
-            else
-                ender = range.text.substring(2);
-        }
+            return 0;
+        var ender = tokenizer.cursor.captureAny(matchers).text;
+        //    range = tokenizer.cursor.next(/^<<\s*'[a-zA-Z0-9_]+'/);
+        //if (range != null) {
+        //    ender = range.text.substring(3, range.text.length - 1).trim();
+        //}
+        //else {
+        //    range = tokenizer.cursor.next(/^<<\s*[a-zA-Z0-9_]+/);
+        //    if (range == null)
+        //        return 0;
+        //    else
+        //        ender = range.text.substring(2).trim();
+        //}
         var newTokenType = TokenType._r(new RegExp("\\r?\\n[\\S\\s]*" + ender + "\\r?\\n"));
         newTokenType.name = "heredocValue";
         tokenizer.tempTokenTypes.push(newTokenType);
@@ -165,6 +167,7 @@ var TokenTypes = (function () {
     TokenTypes.subtractAssign = TokenType._r(/\-=/);
     TokenTypes.multiplyAssign = TokenType._r(/\+=/);
     TokenTypes.divideAssign = TokenType._r(/\/=/);
+    TokenTypes.divDivAssign = TokenType._r(/\/\/=/);
     TokenTypes.orAssign = TokenType._r(/\|\|=/);
     TokenTypes.comma = TokenType._r(/\,/);
     TokenTypes.integer = TokenType._r(/[0-9]+/);
@@ -212,6 +215,29 @@ var TokenTypes = (function () {
     TokenTypes.bitwiseOr = TokenType._r(/\|/);
     TokenTypes.bitwiseAnd = TokenType._r(/\&/);
     TokenTypes.bitwiseXor = TokenType._r(/\^/);
+    TokenTypes.binaryOperators = [
+        TokenTypes.numericCompare,
+        TokenTypes.regexEquals,
+        TokenTypes.regexNotEquals,
+        TokenTypes.smallerThan,
+        TokenTypes.greaterThan,
+        TokenTypes.arrow,
+        TokenTypes.comma,
+        TokenTypes.fatComma,
+        TokenTypes.assignment,
+        TokenTypes.range3,
+        TokenTypes.range,
+        TokenTypes.concat,
+        TokenTypes.divDiv,
+        TokenTypes.tilda,
+        TokenTypes.or,
+        TokenTypes.and,
+        TokenTypes.minus,
+        TokenTypes.multiply,
+        TokenTypes.div,
+        TokenTypes.plus,
+        TokenTypes.multiplyString,
+    ];
     //static label = TokenType._r(new RegExp(TokenTypes.identifierRegex.source+"[\t\r\n ]*\:"));
     TokenTypes.identifier = TokenType._r(TokenTypes.identifierRegex);
     TokenTypes.makeRef = TokenType._r(/\\/);

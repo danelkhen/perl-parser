@@ -50,7 +50,8 @@
             TokenTypes.numericCompare,
             TokenTypes.concatAssign, TokenTypes.divideAssign, TokenTypes.subtractAssign, 
             TokenTypes.orAssign,
-            TokenTypes.addAssign, TokenTypes.multiplyAssign, TokenTypes.plus, TokenTypes.minus, TokenTypes.multiply, TokenTypes.multiplyString, TokenTypes.div, 
+            TokenTypes.addAssign, TokenTypes.multiplyAssign, TokenTypes.divDivAssign,
+            TokenTypes.plus, TokenTypes.minus, TokenTypes.multiply, TokenTypes.multiplyString, TokenTypes.div, 
             TokenTypes.range, TokenTypes.range3,
             TokenTypes.arrow, TokenTypes.packageSeparator,
             TokenTypes.inc, TokenTypes.dec,
@@ -58,6 +59,7 @@
             TokenTypes.comma, TokenTypes.fatComma,
             TokenTypes.makeRef,
             TokenTypes.bitwiseAnd, TokenTypes.bitwiseOr, TokenTypes.bitwiseXor, TokenTypes.sigil,
+            TokenTypes.lastIndexVar
         ]) || this.token.isAnyKeyword([
             "if", "unless", "while", "until", "for", "foreach", "when", //statement modifiers
             "and", "eq", "or", "ne", 

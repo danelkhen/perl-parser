@@ -26,6 +26,14 @@
         let res = this.resolveBinary(op);
         return res;
     }
+
+
+    //split(nodes: Expression[]): Array<Expression[]> {
+    //    let index = 0;
+    //}
+
+    //isFunction(node: Expression | Operator | Block): boolean {
+    //}
     resolve() {
         //TEMP HACKS
         this.nodes.ofType(Operator).where(t=> t.token.is(TokenTypes.packageSeparator)).forEach(t=> this.resolveArrow(t));
@@ -34,6 +42,8 @@
         //Statement modifiers (hack)
         this.nodes.ofType(Operator).where(t=> t.token.isAnyKeyword(TokenTypes.statementModifiers)).forEach(t=> this.resolveStatementModifier(t));
 
+        //hack: assume any consecutive expression is invocation
+        this.nodes.ofType(NamedMemberExpression).where(t=> t.token.isAny([TokenTypes.identifier, TokenTypes.keyword]) && !this.isNamedUnaryOperator(t)).forEach(t=> this.resolveImplicitInvocation(t));
         //console.log("unresolved", this.mbe.nodes);
         //    left terms and list operators (leftward)
         //    left	->
@@ -42,11 +52,11 @@
         this.nodes.ofType(ParenthesizedList).forEach(t=> this.resolveInvocation(t));
         //console.log("resolved", this.nodes);
         //    nonassoc	++ --
-        this.nodes.ofType(Operator).where(t=> t.token.isAny([TokenTypes.inc, TokenTypes.dec])).forEach(t=> this.resolveAutoIncDec(<Operator>t));
+        this.nodes.ofType(Operator).where(t=> t.token.isAny([TokenTypes.inc, TokenTypes.dec])).forEach(t=> this.resolveAutoIncDec(t));
         //console.log("resolved", this.nodes);
         //    right	**
         //    right	! ~ \ and unary + and - //TODO: \
-        this.nodes.ofType(Operator).where(t=> t.token.isAny([TokenTypes.not, TokenTypes.tilda, TokenTypes.makeRef, TokenTypes.sigil,/*TODO: coderef TokenTypes.multiply, TokenTypes.plus, TokenTypes.minus*/])).forEach(t=> this.resolvePrefixUnary(t));
+        this.nodes.ofType(Operator).where(t=> t.token.isAny([TokenTypes.not, TokenTypes.tilda, TokenTypes.makeRef, TokenTypes.sigil, TokenTypes.lastIndexVar, TokenTypes.plus, TokenTypes.minus /*TODO: coderef TokenTypes.multiply, TokenTypes.plus, TokenTypes.minus*/])).forEach(t=> this.resolvePrefixUnary(t));
         //console.log("resolved", this.nodes);
         //    left	=~ !~
         this.nodes.ofType(Operator).where(t=> t.token.isAny([TokenTypes.regexEquals, TokenTypes.regexNotEquals])).forEach(t=> this.resolveBinary(t));
@@ -61,8 +71,6 @@
         //        nonassoc	named unary operators
         this.nodes.ofType(Expression).where(t=> this.isNamedUnaryOperator(t)).forEach(t=> this.resolveNamedUnaryOperator(t));
         
-        //hack: assume any consecutive expression is invocation
-        this.nodes.ofType(NamedMemberExpression).where(t=> t.token.is(TokenTypes.identifier)).forEach(t=> this.resolveImplicitInvocation(t));
         
         //console.log("resolved", this.nodes);
         //        nonassoc	< > <= >= lt gt le ge            //TODO: lt gt le ge
@@ -97,6 +105,8 @@
             TokenTypes.divideAssign,
 
             TokenTypes.orAssign,
+            TokenTypes.divDivAssign,
+            TokenTypes.concatAssign,
         ])).forEach(t=> this.resolveBinary(<Operator>t));
         //    left	, =>
         this.nodes.ofType(Operator).where(t=> t.token.isAny([TokenTypes.comma, TokenTypes.fatComma])).forEach(t=> this.resolveComma(t));
@@ -109,8 +119,15 @@
 
 
         //console.log("resolved", this.nodes);
-        if (this.nodes.length > 1)
+        if (this.nodes.length > 1) {
+            if (this.nodes.where(t=> t instanceof Expression || t instanceof Block).length == this.nodes.length) {
+                let node = new NonParenthesizedList();
+                node.items = <Expression[]>this.nodes.select(t=> t instanceof Block ? this.toBlockExpression(t) : t);
+                node.itemsSeparators = [];
+                return node;
+            }
             throw new Error("mbe not completely resolved");
+        }
         let resolved = <Expression>this.nodes[0];
         return resolved;
         //return this.mbe;
@@ -182,6 +199,12 @@
         return node;
     }
 
+    getRootMember(node: MemberExpression):MemberExpression {
+        let target = node.target;
+        if(target instanceof MemberExpression)
+            return this.getRootMember(target);
+        return node;
+    }
     toMemberExpression(node: Expression | Operator | Block): MemberExpression {
         if (node instanceof Expression) {
             if (node instanceof MemberExpression) {
@@ -197,6 +220,11 @@
                 node2.member = node;
                 return node2;
             }
+            else if (node instanceof ParenthesizedList) {
+                let node2 = new InvocationExpression();
+                node2.arguments = node;
+                return node2;
+            }
         }
         return null;
     }
@@ -207,13 +235,12 @@
         if (right == null)
             throw new Error();
         if (left instanceof Expression) {
-            if (right.target != null) {
-
+            let rootMember = this.getRootMember(right);
+            if(rootMember.target!=null)
                 throw new Error();
-            }
-            right.target = left;
-            right.arrow = op.token.is(TokenTypes.arrow);
-            right.memberSeparatorToken = op.token; //TODO:.arrowOperator = op;
+            rootMember.target = left;
+            rootMember.arrow = op.token.is(TokenTypes.arrow);
+            rootMember.memberSeparatorToken = op.token; //TODO:.arrowOperator = op;
             this.nodes.removeAt(index - 1);
             this.nodes.removeAt(index - 1);
             this.nodes[index - 1] = right;
@@ -252,14 +279,19 @@
     resolveArrayMemberAccess(node: ArrayRefDeclaration): Expression {
         let index = this.nodes.indexOf(node);
         let left = this.nodes[index - 1];
-        if (left == null || !(left instanceof Expression))
-            return;
-        let node2 = new ArrayMemberAccessExpression();
-        node2.member = node;
-        node2.target = <Expression>left;
-        this.nodes.removeAt(index - 1);
-        this.nodes[index - 1] = node2;
-        return node2;
+        if (left != null && (left instanceof Expression || (left instanceof Operator && left.token.is(TokenTypes.arrow)))) {
+            let node2 = new ArrayMemberAccessExpression();
+            node2.member = node;
+            if (left instanceof Expression) {
+                node2.target = left;
+                this.nodes.removeAt(index - 1);
+                this.nodes[index - 1] = node2;
+            }
+            else
+                this.nodes[index] = node2;
+            return node2;
+        }
+        return node;
     }
 
     resolveTrinaryExpression(op: Operator): TrinaryExpression {
@@ -283,31 +315,57 @@
         node.block = block;
         return node;
     }
+    isBinaryOperator(op: Operator): boolean {
+        return op.token.isAny(TokenTypes.binaryOperators) || op.token.isAnyKeyword(["and", "or", "eq", "ne", "cmp", ]);
+    }
+
+    //isUnaryOperator(op: Operator): boolean {
+    //    //if(op.value
+    //}
     // a b c =>a(b,c)
     resolveImplicitInvocation(target: NamedMemberExpression): Expression {
         let index = this.nodes.indexOf(target);
         if (index == -1)
             return null;
-        let args = [];
-        let i = index;
-        while (true) {
-            i++;
-            let arg = this.nodes[i];
-            if (arg == null || !(arg instanceof Expression || arg instanceof Block)) {
-                break;
-            }
-            args.push(arg);
-            //if(i==index+1 && arg instanceof ParenthesizedList)
-            //    break;
-        }
-        if (args.length == 0)
+        let left = this.nodes[index - 1];
+        if (left != null && left instanceof Operator && left.token.isAny([TokenTypes.arrow, TokenTypes.packageSeparator]))
             return target;
+        let right = this.nodes[index + 1];
+        let resolvedArgs: Expression = null;
+        let i = index;
+        if (right == null)
+            return target;
+        if (right instanceof Operator && (this.isBinaryOperator(right) || right.token.isAny([TokenTypes.question])))
+            return target;
+
+        if (right instanceof ParenthesizedList)
+            resolvedArgs = right;
+        else {
+            let args = new UnresolvedExpression();
+            args.nodes = []; //let args = [];
+            //if(right instanceof Operator && right.token.is(TokenTypes.com
+            while (true) {
+                i++;
+                let arg = this.nodes[i];
+                if (arg == null) { // || !(arg instanceof Expression || arg instanceof Block)) {
+                    break;
+                }
+                args.nodes.push(arg);
+                //if(i==index+1 && arg instanceof ParenthesizedList)
+                //    break;
+            }
+            if (args.nodes.length == 0)
+                return target;
+            resolvedArgs = this.resolve2(args);
+        }
+
         let node2 = new InvocationExpression();
         node2.target = target;
-        let list = new NonParenthesizedList();
-        list.items = args.select(t=> t instanceof Block ? this.toBlockExpression(t) : t);//TODO:
-        list.itemsSeparators = [];
-        node2.arguments = list;// new ParenthesizedList();
+        node2.arguments = resolvedArgs;
+        //let list = new NonParenthesizedList();
+        //list.items = args.select(t=> t instanceof Block ? this.toBlockExpression(t) : t);//TODO:
+        //list.itemsSeparators = [];
+        //node2.arguments = list;// new ParenthesizedList();
         //node2.arguments.items = args;
         this.nodes.splice(index, i - index, node2);
         return node2;
@@ -392,7 +450,7 @@
         let right = this.nodes[index + 1];
         if (right instanceof Expression) {
             node.operator = op;
-            node.expression = <Expression>this.nodes[index + 1];
+            node.expression = right;
             this.nodes.removeAt(index);
             this.nodes[index] = node;
             return node;

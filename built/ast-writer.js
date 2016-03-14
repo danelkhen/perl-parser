@@ -34,9 +34,11 @@ var AstWriter = (function () {
         this.register(ReturnExpression, function (t) { return [t.returnToken, [t.returnTokenPost], t.expression]; });
         this.register(ArrayRefDeclaration, function (t) { return [t.bracketOpenToken, [t.bracketOpenTokenPost], _this.zip(t.items, t.itemsSeparators).exceptNulls(), t.bracketCloseToken]; });
         this.register(IfStatement, function (t) { return [t.keywordToken, [t.keywordTokenPost], t.parenOpenToken, [t.parenOpenTokenPost], t.expression, t.parenCloseToken, [t.parenCloseTokenPost], t.block, [t.else], [t.semicolonToken]]; });
+        this.register(UnlessStatement, function (t) { return [t.keywordToken, [t.keywordTokenPost], t.parenOpenToken, [t.parenOpenTokenPost], t.expression, t.parenCloseToken, [t.parenCloseTokenPost], t.block, [t.else], [t.semicolonToken]]; });
         this.register(ElsifStatement, function (t) { return [t.keywordToken, [t.keywordTokenPost], t.parenOpenToken, [t.parenOpenTokenPost], t.expression, t.parenCloseToken, [t.parenCloseTokenPost], t.block, [t.else], [t.semicolonToken]]; });
         this.register(ElseStatement, function (t) { return [t.keywordToken, [t.keywordTokenPost], t.block, [t.semicolonToken]]; });
         this.register(HashRefCreationExpression, function (t) { return [t.braceOpenToken, [t.braceOpenTokenPost], [t.list], t.braceCloseToken]; });
+        this.register(WhileStatement, function (t) { return [t.keywordToken, [t.keywordTokenPost], t.parenOpenToken, [t.parenOpenTokenPost], t.condition, t.parenCloseToken, [t.parenCloseTokenPost], t.block, [t.semicolonToken]]; });
         this.register(ForEachStatement, function (t) { return [[t.label, ":"], t.forEachToken, [t.forEachTokenPost], [t.variable, [t.variablePost]], t.list, [t.listPost], t.block]; });
         this.register(ForStatement, function (t) { return [t.forToken, [t.forTokenPost], t.parenOpenToken, [t.parenOpenTokenPost], t.initializer, t.semicolon1Token, [t.semicolon1TokenPost], t.condition, t.semicolon2Token, [t.semicolon2TokenPost], t.iterator, t.parenCloseToken, [t.parenCloseTokenPost], t.block, [t.semicolonToken]]; });
         this.register(Block, function (t) { return [t.braceOpenToken, [t.braceOpenTokenPost], t.statements, t.braceCloseToken]; });

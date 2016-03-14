@@ -2,10 +2,10 @@
 class TokenType {
     name: string;
     tag: any;
-    
-    words:string[];
-    regex:RegExp;
-    regexes:RegExp[];
+
+    words: string[];
+    regex: RegExp;
+    regexes: RegExp[];
 
     create(range: TextRange2) {
         return new Token(range, this);
@@ -30,7 +30,7 @@ class TokenType {
         return 1;
     }
 
-    
+
     static _fixRegex(regex: RegExp): RegExp {
         let regex2 = new RegExp("^" + regex.source, (regex.multiline ? "m" : "") + (regex.global ? "g" : ""));
         return regex2;
@@ -216,14 +216,33 @@ class Cursor {
     next(regex: RegExp): TextRange2 {
         let regex2 = regex;
         let s = this.src.substr(this.index);
-        //regex2.lastIndex = this.index;
         var res = regex2.exec(s);
         if (res == null)
             return null;
-        //if (res.index != this.index)
-        //    return null;
-        let start = this.file.getPos(this.index + res.index);
-        let end = this.file.getPos(this.index + res.index + res[0].length);
+        let range = this.getRange(this.index + res.index, res[0].length);
+        return range;
+    }
+
+    nextAny(list: RegExp[]): TextRange2 {
+        return list.selectFirstNonNull(t => this.next(t));
+    }
+    captureAny(list: RegExp[]): TextRange2 {
+        return list.selectFirstNonNull(t => this.capture(t));
+    }
+
+    capture(regex: RegExp): TextRange2 {
+        let regex2 = regex;
+        let s = this.src.substr(this.index);
+        var res = regex2.exec(s);
+        if (res == null || res.length <= 1)
+            return null;
+        let range = this.getRange(this.index + res.index, res[1].length);
+        return range;
+    }
+
+    getRange(index: number, length: number): TextRange2 {
+        let start = this.file.getPos(index);
+        let end = this.file.getPos(index + length);
         let range = new TextRange2(this.file, start, end);
         return range;
     }

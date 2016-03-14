@@ -4,20 +4,22 @@ class HereDocTokenType extends TokenType {
     tryTokenize(tokenizer: Tokenizer): number {
         if (!tokenizer.cursor.startsWith("<<"))
             return 0;
-        let ender;
-        let range = tokenizer.cursor.next(/^<<"[a-zA-Z0-9_]+"/);
+        let matchers = [/^<<\s*"([a-zA-Z0-9_]+)"/, /^<<\s*'([a-zA-Z0-9_]+)'/, /^<<\s*([a-zA-Z0-9_]+)/];
+        let range = tokenizer.cursor.nextAny(matchers);
         if (range == null)
-            range = tokenizer.cursor.next(/^<<'[a-zA-Z0-9_]+'/);
-        if (range != null) {
-            ender = range.text.substring(3, range.text.length - 1)
-        }
-        else {
-            range = tokenizer.cursor.next(/^<<[a-zA-Z0-9_]+/);
-            if (range == null)
-                return 0;
-            else
-                ender = range.text.substring(2);
-        }
+            return 0;
+        let ender = tokenizer.cursor.captureAny(matchers).text;
+        //    range = tokenizer.cursor.next(/^<<\s*'[a-zA-Z0-9_]+'/);
+        //if (range != null) {
+        //    ender = range.text.substring(3, range.text.length - 1).trim();
+        //}
+        //else {
+        //    range = tokenizer.cursor.next(/^<<\s*[a-zA-Z0-9_]+/);
+        //    if (range == null)
+        //        return 0;
+        //    else
+        //        ender = range.text.substring(2).trim();
+        //}
         let newTokenType = TokenType._r(new RegExp("\\r?\\n[\\S\\s]*" + ender + "\\r?\\n"));
         newTokenType.name = "heredocValue";
         tokenizer.tempTokenTypes.push(newTokenType);
@@ -93,6 +95,7 @@ class TokenTypes {
         "exit", "length", "require", "undef",
     ];
 
+
     static keyword = TokenType._words([
         "BEGIN", "package",
         //"use", "no", removed temporarily
@@ -122,6 +125,8 @@ class TokenTypes {
     static subtractAssign = TokenType._r(/\-=/);
     static multiplyAssign = TokenType._r(/\+=/);
     static divideAssign = TokenType._r(/\/=/);
+    static divDivAssign = TokenType._r(/\/\/=/);
+
     static orAssign = TokenType._r(/\|\|=/);
     static comma = TokenType._r(/\,/);
     static integer = TokenType._r(/[0-9]+/);
@@ -173,6 +178,30 @@ class TokenTypes {
     static bitwiseOr = TokenType._r(/\|/);
     static bitwiseAnd = TokenType._r(/\&/);
     static bitwiseXor = TokenType._r(/\^/);
+
+    static binaryOperators: TokenType[] = [
+        TokenTypes.numericCompare,
+        TokenTypes.regexEquals,
+        TokenTypes.regexNotEquals,
+        TokenTypes.smallerThan,
+        TokenTypes.greaterThan,
+        TokenTypes.arrow,
+        TokenTypes.comma,
+        TokenTypes.fatComma,
+        TokenTypes.assignment,
+        TokenTypes.range3,
+        TokenTypes.range,
+        TokenTypes.concat,
+        TokenTypes.divDiv,
+        TokenTypes.tilda,
+        TokenTypes.or,
+        TokenTypes.and,
+        TokenTypes.minus,
+        TokenTypes.multiply,
+        TokenTypes.div,
+        TokenTypes.plus,
+        TokenTypes.multiplyString,
+    ];
     
     //static label = TokenType._r(new RegExp(TokenTypes.identifierRegex.source+"[\t\r\n ]*\:"));
     static identifier = TokenType._r(TokenTypes.identifierRegex);

@@ -226,14 +226,32 @@ var Cursor = (function () {
     Cursor.prototype.next = function (regex) {
         var regex2 = regex;
         var s = this.src.substr(this.index);
-        //regex2.lastIndex = this.index;
         var res = regex2.exec(s);
         if (res == null)
             return null;
-        //if (res.index != this.index)
-        //    return null;
-        var start = this.file.getPos(this.index + res.index);
-        var end = this.file.getPos(this.index + res.index + res[0].length);
+        var range = this.getRange(this.index + res.index, res[0].length);
+        return range;
+    };
+    Cursor.prototype.nextAny = function (list) {
+        var _this = this;
+        return list.selectFirstNonNull(function (t) { return _this.next(t); });
+    };
+    Cursor.prototype.captureAny = function (list) {
+        var _this = this;
+        return list.selectFirstNonNull(function (t) { return _this.capture(t); });
+    };
+    Cursor.prototype.capture = function (regex) {
+        var regex2 = regex;
+        var s = this.src.substr(this.index);
+        var res = regex2.exec(s);
+        if (res == null || res.length <= 1)
+            return null;
+        var range = this.getRange(this.index + res.index, res[1].length);
+        return range;
+    };
+    Cursor.prototype.getRange = function (index, length) {
+        var start = this.file.getPos(index);
+        var end = this.file.getPos(index + length);
         var range = new TextRange2(this.file, start, end);
         return range;
     };

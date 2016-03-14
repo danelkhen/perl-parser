@@ -201,20 +201,19 @@
         return node;
     }
     parseWhileStatement(): WhileStatement {
-        this.expectKeyword("while");
         let node = this.create(WhileStatement);
-        this.nextNonWhitespaceToken(node);
+        node.keywordToken = this.expectKeyword("while");
+        node.keywordTokenPost = this.nextNonWhitespaceToken(node);
 
-        this.expect(TokenTypes.parenOpen, node);
-        this.nextNonWhitespaceToken(node);
+        node.parenOpenToken = this.expect(TokenTypes.parenOpen, node);
+        node.parenOpenTokenPost = this.nextNonWhitespaceToken(node);
 
         node.condition = this.parseExpression();
-        this.skipWhitespaceAndComments(node);
+        node.parenCloseToken = this.expect(TokenTypes.parenClose, node);
+        node.parenCloseTokenPost = this.nextNonWhitespaceToken(node);
 
-        this.expect(TokenTypes.parenClose);
-        this.nextNonWhitespaceToken(node);
-
-        node.statements = this.parseBracedStatements(node);
+        node.block = this.parseBlock();
+        node.semicolonToken = this.parseOptionalSemicolon();
         return node;
     }
 

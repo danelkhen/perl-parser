@@ -198,7 +198,7 @@ var InvocationExpression = (function (_super) {
         _super.apply(this, arguments);
     }
     return InvocationExpression;
-}(Expression));
+}(MemberExpression));
 var BlockExpression = (function (_super) {
     __extends(BlockExpression, _super);
     function BlockExpression() {

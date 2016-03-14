@@ -158,7 +158,7 @@ class ArrayMemberAccessExpression extends MemberExpression implements HasArrow {
     member: ArrayRefDeclaration;
 }
 
-class InvocationExpression extends Expression implements HasArrow {
+class InvocationExpression extends MemberExpression implements HasArrow {
     target: Expression;
     targetPost: Token[];
     memberSeparatorToken: Token;
@@ -295,8 +295,16 @@ class ForStatement extends Statement {
     semicolonToken: Token;
 }
 class WhileStatement extends Statement {
+    keywordToken: Token;
+    keywordTokenPost: Token[];
+    parenCloseToken: Token;
+    parenCloseTokenPost: Token[];
+    parenOpenToken: Token;
+    parenOpenTokenPost: Token[];
     condition: Expression;
-    statements: Statement[];
+    //statements: Statement[];
+    block: Block
+    semicolonToken:Token;
 }
 class BeginStatement extends Statement {
     beginToken: Token;

@@ -165,6 +165,18 @@ Array.prototype.withItemBetweenEach = function (item) {
     }
     return list;
 };
+Array.prototype.selectFirstNonNull = function (selector) {
+    return this.selectFirst(selector, function (t) { return t != null; });
+};
+Array.prototype.selectFirst = function (selector, predicate) {
+    for (var i = 0; i < this.length; i++) {
+        var item = this[i];
+        var res = selector(item);
+        if (predicate(res))
+            return res;
+    }
+    return null;
+};
 var AstNodeFixator = (function () {
     function AstNodeFixator() {
     }

@@ -36,7 +36,7 @@ class TokenReader {
         while (index > 0) {
             index--;
             let token = this.tokens[index];
-            if(!token.is(TokenTypes.whitespace))
+            if (!token.is(TokenTypes.whitespace))
                 return token;
         }
         return null;
@@ -155,10 +155,12 @@ function safeTry<T>(action: (...args: any[]) => T): Promise<T> {
 
 interface Array<T> {
     withItemBetweenEach<R>(item: R): Array<T | R>;
-    ofType<R extends T>(type:Type<R>): Array<R>;
+    ofType<R extends T>(type: Type<R>): Array<R>;
+    selectFirst<V>(selector: (item: T) => V, predicate: (item: T) => boolean): V;
+    selectFirstNonNull<V>(selector: (item: T) => V): V;
 }
 Array.prototype.ofType = function (ctor) {
-    return this.where(t=>t instanceof ctor);
+    return this.where(t=> t instanceof ctor);
 }
 
 Array.prototype.withItemBetweenEach = function (item) {
@@ -169,6 +171,18 @@ Array.prototype.withItemBetweenEach = function (item) {
         list.push(this[i]);
     }
     return list;
+}
+Array.prototype.selectFirstNonNull = function (selector) {
+    return this.selectFirst(selector, t=> t != null);
+}
+Array.prototype.selectFirst = function (selector, predicate) {
+    for (let i = 0; i < this.length; i++) {
+        let item = this[i];
+        let res = selector(item);
+        if (predicate(res))
+            return res;
+    }
+    return null;
 }
 
 class AstNodeFixator {
