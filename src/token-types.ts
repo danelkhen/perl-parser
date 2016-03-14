@@ -122,6 +122,7 @@ class TokenTypes {
     static subtractAssign = TokenType._r(/\-=/);
     static multiplyAssign = TokenType._r(/\+=/);
     static divideAssign = TokenType._r(/\/=/);
+    static orAssign = TokenType._r(/\|\|=/);
     static comma = TokenType._r(/\,/);
     static integer = TokenType._r(/[0-9]+/);
     static parenOpen = TokenType._r(/\(/);

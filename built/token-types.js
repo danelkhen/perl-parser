@@ -165,6 +165,7 @@ var TokenTypes = (function () {
     TokenTypes.subtractAssign = TokenType._r(/\-=/);
     TokenTypes.multiplyAssign = TokenType._r(/\+=/);
     TokenTypes.divideAssign = TokenType._r(/\/=/);
+    TokenTypes.orAssign = TokenType._r(/\|\|=/);
     TokenTypes.comma = TokenType._r(/\,/);
     TokenTypes.integer = TokenType._r(/[0-9]+/);
     TokenTypes.parenOpen = TokenType._r(/\(/);

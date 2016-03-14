@@ -52,6 +52,7 @@ var ExpressionParser = (function (_super) {
             TokenTypes.greaterThan, TokenTypes.smallerOrEqualsThan, TokenTypes.smallerThan,
             TokenTypes.numericCompare,
             TokenTypes.concatAssign, TokenTypes.divideAssign, TokenTypes.subtractAssign,
+            TokenTypes.orAssign,
             TokenTypes.addAssign, TokenTypes.multiplyAssign, TokenTypes.plus, TokenTypes.minus, TokenTypes.multiply, TokenTypes.multiplyString, TokenTypes.div,
             TokenTypes.range, TokenTypes.range3,
             TokenTypes.arrow, TokenTypes.packageSeparator,

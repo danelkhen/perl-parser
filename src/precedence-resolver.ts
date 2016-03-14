@@ -95,6 +95,8 @@
             TokenTypes.subtractAssign,
             TokenTypes.multiplyAssign,
             TokenTypes.divideAssign,
+
+            TokenTypes.orAssign,
         ])).forEach(t=> this.resolveBinary(<Operator>t));
         //    left	, =>
         this.nodes.ofType(Operator).where(t=> t.token.isAny([TokenTypes.comma, TokenTypes.fatComma])).forEach(t=> this.resolveComma(t));

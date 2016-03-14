@@ -91,6 +91,7 @@ var PrecedenceResolver = (function () {
             TokenTypes.subtractAssign,
             TokenTypes.multiplyAssign,
             TokenTypes.divideAssign,
+            TokenTypes.orAssign,
         ]); }).forEach(function (t) { return _this.resolveBinary(t); });
         //    left	, =>
         this.nodes.ofType(Operator).where(function (t) { return t.token.isAny([TokenTypes.comma, TokenTypes.fatComma]); }).forEach(function (t) { return _this.resolveComma(t); });
