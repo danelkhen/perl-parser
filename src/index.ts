@@ -139,7 +139,7 @@ class IndexPage {
     refactor() {
         new AstNodeFixator().process(this.unit);
         //new FindEvalsWithout1AtTheEnd().process(this.unit);
-        new RefArrayToRefUtil().process(this.unit);
+        new RefArrayToRefUtil(this.unit).process();
         this.generateCode();
         this.render();
     }
@@ -355,6 +355,14 @@ class FindEvalsWithout1AtTheEnd extends Refactor {
 
 
 class RefArrayToRefUtil extends Refactor {
+    constructor(public root: AstNode) {
+        super();
+    }
+
+    addUse(name: string) {
+        let node = <PackageDeclaration>this.first(this.root, t=> t instanceof PackageDeclaration);
+        node.statements.insert(0, CodeBuilder.rawStatement("use "+name+";\n").node);
+    }
 
     identifyRefArray(node: AstNode): { node: BinaryExpression, target: Expression } {
         if (node instanceof BinaryExpression) {
@@ -377,10 +385,11 @@ class RefArrayToRefUtil extends Refactor {
         return null;
     }
 
-    process(root: AstNode) {
+    process() {
         var i = 0;
+        let count = 0;
         while (i < 1000) {
-            let res = this.selectFirstNonNull(root, t=> this.identifyRefArray(t) || this.identifyRefArray2(t));
+            let res = this.selectFirstNonNull(this.root, t=> this.identifyRefArray(t) || this.identifyRefArray2(t));
             console.log(res);
             if (res == null)
                 break;
@@ -389,7 +398,10 @@ class RefArrayToRefUtil extends Refactor {
             let newNode = CodeBuilder.member("is_arrayref").invokeSingleArgOrList(arg).node;
             console.log("REPLACING FROM:\n" + res.node.toCode() + "\nTO:\n", newNode.toCode());
             this.replaceNode(res.node, newNode);
+            count++;
         }
+        if(count>0)
+            this.addUse("Ref::Util");
     }
 
 
@@ -415,6 +427,16 @@ class RefArrayToRefUtil extends Refactor {
 }
 class CodeBuilder<T extends AstNode> {
     constructor(public node?: T) {
+    }
+    static rawStatement(code: string): CodeBuilder<RawStatement> {
+        let node = new RawStatement();
+        node.code = code;
+        return new CodeBuilder(node);
+    }
+    static rawExpression(code: string): CodeBuilder<RawExpression> {
+        let node = new RawExpression();
+        node.code = code;
+        return new CodeBuilder(node);
     }
     static member(name: string): CodeBuilder<NamedMemberExpression> {
         let node = new NamedMemberExpression();
@@ -450,7 +472,7 @@ class CodeBuilder<T extends AstNode> {
         return this.invokeList(CodeBuilder.parenthesizedList(args).node);
     }
     invokeSingleArgOrList(arg: Expression): CodeBuilder<InvocationExpression> {
-        if(arg instanceof ParenthesizedList)
+        if (arg instanceof ParenthesizedList)
             return this.invokeList(arg);
         return this.invoke([arg]);
     }
@@ -468,8 +490,8 @@ class CodeBuilder<T extends AstNode> {
         let node = new ExpressionStatement();
         node.expression = <Expression><any>this.node;
         node.semicolonToken = TokenTypes.semicolon.create2(";");
-        node.whitespaceBefore = [TokenTypes.whitespace.create2("    ")];
-        node.whitespaceAfter = [TokenTypes.whitespace.create2("\n    ")];
+        //node.whitespaceBefore = [TokenTypes.whitespace.create2("    ")];
+        //node.whitespaceAfter = [TokenTypes.whitespace.create2("\n    ")];
         return node;
     }
 

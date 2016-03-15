@@ -263,16 +263,19 @@
     }
     resolveHashMemberAccess(node: HashRefCreationExpression): Expression {
         let index = this.nodes.indexOf(node);
+        if (index < 0)
+            return null;
         let left = this.nodes[index - 1];
-        if (left == null || !(left instanceof Expression) || this.isBareword(left))
-            return node;
-        //if(left instanceof MemberExpression
-        let node2 = new HashMemberAccessExpression();
-        node2.member = node;
-        node2.target = <Expression>left;
-        this.nodes.removeAt(index - 1);
-        this.nodes[index - 1] = node2;
-        return node2;
+        //if (left == null || !(left instanceof Expression) || this.isBareword(left))
+        if (left != null && (left instanceof Expression || (left instanceof Operator && left.token.is(TokenTypes.arrow)))) {
+            let node2 = new HashMemberAccessExpression();
+            node2.member = node;
+            node2.target = <Expression>left;
+            this.nodes.removeAt(index - 1);
+            this.nodes[index - 1] = node2;
+            return node2;
+        }
+        return node;
     }
 
     resolveCodeRefOrDeref(node: HashRefCreationExpression): Expression {

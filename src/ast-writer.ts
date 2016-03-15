@@ -46,13 +46,15 @@ class AstWriter {
         this.register(TrinaryExpression, t=> [t.condition, t.questionOperator, t.trueExpression, [t.trueExpressionPost], t.colonOperator, t.falseExpression]);
         this.register(EndStatement, t=> [t.endToken]);
         this.register(EmptyStatement, t=> [t.semicolonToken]);
-        
+
         this.register(Operator, t=> [t.token]);
 
         this.register(NativeInvocation_BlockAndListOrExprCommaList, t=> [t.keywordToken, t.keywordTokenPost, [t.block, t.blockPost, t.list], [t.expr, t.exprPost, t.commaToken, [t.commaTokenPost], t.list]]);
-        this.register(NativeInvocation_BlockOrExpr, t=> [t.keywordToken, [t.keywordTokenPost],  [t.block], [t.expr]]);
-         
+        this.register(NativeInvocation_BlockOrExpr, t=> [t.keywordToken, [t.keywordTokenPost], [t.block], [t.expr]]);
+
         this.register(UnresolvedExpression, t=> [t.nodes]);
+        this.register(RawExpression, t=> [t.code]);
+        this.register(RawStatement, t=> [t.code]);
 
 
         this.sb = [];

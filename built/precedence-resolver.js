@@ -239,16 +239,19 @@ var PrecedenceResolver = (function () {
     };
     PrecedenceResolver.prototype.resolveHashMemberAccess = function (node) {
         var index = this.nodes.indexOf(node);
+        if (index < 0)
+            return null;
         var left = this.nodes[index - 1];
-        if (left == null || !(left instanceof Expression) || this.isBareword(left))
-            return node;
-        //if(left instanceof MemberExpression
-        var node2 = new HashMemberAccessExpression();
-        node2.member = node;
-        node2.target = left;
-        this.nodes.removeAt(index - 1);
-        this.nodes[index - 1] = node2;
-        return node2;
+        //if (left == null || !(left instanceof Expression) || this.isBareword(left))
+        if (left != null && (left instanceof Expression || (left instanceof Operator && left.token.is(TokenTypes.arrow)))) {
+            var node2 = new HashMemberAccessExpression();
+            node2.member = node;
+            node2.target = left;
+            this.nodes.removeAt(index - 1);
+            this.nodes[index - 1] = node2;
+            return node2;
+        }
+        return node;
     };
     PrecedenceResolver.prototype.resolveCodeRefOrDeref = function (node) {
         var index = this.nodes.indexOf(node);

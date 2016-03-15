@@ -350,6 +350,20 @@ var BeginStatement = (function (_super) {
     }
     return BeginStatement;
 }(Statement));
+var RawStatement = (function (_super) {
+    __extends(RawStatement, _super);
+    function RawStatement() {
+        _super.apply(this, arguments);
+    }
+    return RawStatement;
+}(Statement));
+var RawExpression = (function (_super) {
+    __extends(RawExpression, _super);
+    function RawExpression() {
+        _super.apply(this, arguments);
+    }
+    return RawExpression;
+}(Expression));
 var SubroutineExpression = (function (_super) {
     __extends(SubroutineExpression, _super);
     function SubroutineExpression() {

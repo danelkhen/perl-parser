@@ -127,7 +127,7 @@ var IndexPage = (function () {
     IndexPage.prototype.refactor = function () {
         new AstNodeFixator().process(this.unit);
         //new FindEvalsWithout1AtTheEnd().process(this.unit);
-        new RefArrayToRefUtil().process(this.unit);
+        new RefArrayToRefUtil(this.unit).process();
         this.generateCode();
         this.render();
     };
@@ -327,9 +327,14 @@ var FindEvalsWithout1AtTheEnd = (function (_super) {
 }(Refactor));
 var RefArrayToRefUtil = (function (_super) {
     __extends(RefArrayToRefUtil, _super);
-    function RefArrayToRefUtil() {
-        _super.apply(this, arguments);
+    function RefArrayToRefUtil(root) {
+        _super.call(this);
+        this.root = root;
     }
+    RefArrayToRefUtil.prototype.addUse = function (name) {
+        var node = this.first(this.root, function (t) { return t instanceof PackageDeclaration; });
+        node.statements.insert(0, CodeBuilder.rawStatement("use " + name + ";\n").node);
+    };
     RefArrayToRefUtil.prototype.identifyRefArray = function (node) {
         if (node instanceof BinaryExpression) {
             if (node.operator.token.isKeyword("eq")) {
@@ -350,11 +355,12 @@ var RefArrayToRefUtil = (function (_super) {
         }
         return null;
     };
-    RefArrayToRefUtil.prototype.process = function (root) {
+    RefArrayToRefUtil.prototype.process = function () {
         var _this = this;
         var i = 0;
+        var count = 0;
         while (i < 1000) {
-            var res = this.selectFirstNonNull(root, function (t) { return _this.identifyRefArray(t) || _this.identifyRefArray2(t); });
+            var res = this.selectFirstNonNull(this.root, function (t) { return _this.identifyRefArray(t) || _this.identifyRefArray2(t); });
             console.log(res);
             if (res == null)
                 break;
@@ -363,7 +369,10 @@ var RefArrayToRefUtil = (function (_super) {
             var newNode = CodeBuilder.member("is_arrayref").invokeSingleArgOrList(arg).node;
             console.log("REPLACING FROM:\n" + res.node.toCode() + "\nTO:\n", newNode.toCode());
             this.replaceNode(res.node, newNode);
+            count++;
         }
+        if (count > 0)
+            this.addUse("Ref::Util");
     };
     RefArrayToRefUtil.prototype.identifyRefArray2 = function (node) {
         if (node instanceof InvocationExpression) {
@@ -390,6 +399,16 @@ var CodeBuilder = (function () {
     function CodeBuilder(node) {
         this.node = node;
     }
+    CodeBuilder.rawStatement = function (code) {
+        var node = new RawStatement();
+        node.code = code;
+        return new CodeBuilder(node);
+    };
+    CodeBuilder.rawExpression = function (code) {
+        var node = new RawExpression();
+        node.code = code;
+        return new CodeBuilder(node);
+    };
     CodeBuilder.member = function (name) {
         var node = new NamedMemberExpression();
         node.name = name;
@@ -443,8 +462,8 @@ var CodeBuilder = (function () {
         var node = new ExpressionStatement();
         node.expression = this.node;
         node.semicolonToken = TokenTypes.semicolon.create2(";");
-        node.whitespaceBefore = [TokenTypes.whitespace.create2("    ")];
-        node.whitespaceAfter = [TokenTypes.whitespace.create2("\n    ")];
+        //node.whitespaceBefore = [TokenTypes.whitespace.create2("    ")];
+        //node.whitespaceAfter = [TokenTypes.whitespace.create2("\n    ")];
         return node;
     };
     return CodeBuilder;

@@ -50,6 +50,8 @@ var AstWriter = (function () {
         this.register(NativeInvocation_BlockAndListOrExprCommaList, function (t) { return [t.keywordToken, t.keywordTokenPost, [t.block, t.blockPost, t.list], [t.expr, t.exprPost, t.commaToken, [t.commaTokenPost], t.list]]; });
         this.register(NativeInvocation_BlockOrExpr, function (t) { return [t.keywordToken, [t.keywordTokenPost], [t.block], [t.expr]]; });
         this.register(UnresolvedExpression, function (t) { return [t.nodes]; });
+        this.register(RawExpression, function (t) { return [t.code]; });
+        this.register(RawStatement, function (t) { return [t.code]; });
         this.sb = [];
     };
     AstWriter.prototype.zip = function (list1, list2) {

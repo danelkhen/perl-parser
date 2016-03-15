@@ -304,7 +304,7 @@ class WhileStatement extends Statement {
     condition: Expression;
     //statements: Statement[];
     block: Block
-    semicolonToken:Token;
+    semicolonToken: Token;
 }
 class BeginStatement extends Statement {
     beginToken: Token;
@@ -320,8 +320,13 @@ interface HasArrow {
     arrow: boolean;
 }
 
+class RawStatement extends Statement{
+    code:string;
+}
 
-
+class RawExpression extends Expression{
+    code:string;
+}
 class SubroutineExpression extends Expression {
     subToken: Token;
     subTokenPost: Token[];
