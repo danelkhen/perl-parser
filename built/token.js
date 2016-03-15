@@ -246,7 +246,8 @@ var Cursor = (function () {
         var res = regex2.exec(s);
         if (res == null || res.length <= 1)
             return null;
-        var range = this.getRange(this.index + res.index, res[1].length);
+        var index = s.indexOf(res[1]);
+        var range = this.getRange(this.index + index, res[1].length);
         return range;
     };
     Cursor.prototype.getRange = function (index, length) {

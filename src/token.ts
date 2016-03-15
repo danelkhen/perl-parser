@@ -236,7 +236,8 @@ class Cursor {
         var res = regex2.exec(s);
         if (res == null || res.length <= 1)
             return null;
-        let range = this.getRange(this.index + res.index, res[1].length);
+        let index = s.indexOf(res[1]);
+        let range = this.getRange(this.index + index, res[1].length);
         return range;
     }
 
