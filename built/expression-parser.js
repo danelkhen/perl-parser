@@ -24,7 +24,7 @@ var ExpressionParser = (function (_super) {
         return mbe;
     };
     ExpressionParser.prototype.resolveExpression = function (mbe) {
-        var mbe2 = new PrecedenceResolver(mbe).resolve();
+        var mbe2 = new PrecedenceResolver2(mbe).resolve();
         return mbe2;
     };
     ExpressionParser.prototype.parseExpression = function () {

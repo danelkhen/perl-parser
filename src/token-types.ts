@@ -152,6 +152,7 @@ class TokenTypes {
     static dec = TokenType._r(/\-\-/);
     //static codeRef = TokenType._r(/\\\&/);
     static lastIndexVar = TokenType._r(/\$#/);
+
     
     //binary
     static numericCompare = TokenType._r(/\<=\>/);
@@ -179,6 +180,24 @@ class TokenTypes {
     static bitwiseAnd = TokenType._r(/\&/);
     static bitwiseXor = TokenType._r(/\^/);
 
+    
+    //static label = TokenType._r(new RegExp(TokenTypes.identifierRegex.source+"[\t\r\n ]*\:"));
+    static identifier = TokenType._r(TokenTypes.identifierRegex);
+
+
+    static makeRef = TokenType._r(/\\/);
+    static not = TokenType._r(/\!/);
+    static sigil = TokenType._r(/[\$@%&]/);
+
+
+
+
+
+
+
+
+
+
     static binaryOperators: TokenType[] = [
         TokenTypes.numericCompare,
         TokenTypes.regexEquals,
@@ -202,14 +221,11 @@ class TokenTypes {
         TokenTypes.plus,
         TokenTypes.multiplyString,
     ];
-    
-    //static label = TokenType._r(new RegExp(TokenTypes.identifierRegex.source+"[\t\r\n ]*\:"));
-    static identifier = TokenType._r(TokenTypes.identifierRegex);
-
-
-    static makeRef = TokenType._r(/\\/);
-    static not = TokenType._r(/\!/);
-    static sigil = TokenType._r(/[\$@%&]/);
+    static unaryOperators: TokenType[] = [
+        TokenTypes.inc,
+        TokenTypes.dec,
+        TokenTypes.not,
+    ];
 
     static _matchPod(tokenizer: Tokenizer): TextRange2 {
         let cursor = tokenizer.cursor;

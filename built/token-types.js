@@ -215,6 +215,11 @@ var TokenTypes = (function () {
     TokenTypes.bitwiseOr = TokenType._r(/\|/);
     TokenTypes.bitwiseAnd = TokenType._r(/\&/);
     TokenTypes.bitwiseXor = TokenType._r(/\^/);
+    //static label = TokenType._r(new RegExp(TokenTypes.identifierRegex.source+"[\t\r\n ]*\:"));
+    TokenTypes.identifier = TokenType._r(TokenTypes.identifierRegex);
+    TokenTypes.makeRef = TokenType._r(/\\/);
+    TokenTypes.not = TokenType._r(/\!/);
+    TokenTypes.sigil = TokenType._r(/[\$@%&]/);
     TokenTypes.binaryOperators = [
         TokenTypes.numericCompare,
         TokenTypes.regexEquals,
@@ -238,10 +243,10 @@ var TokenTypes = (function () {
         TokenTypes.plus,
         TokenTypes.multiplyString,
     ];
-    //static label = TokenType._r(new RegExp(TokenTypes.identifierRegex.source+"[\t\r\n ]*\:"));
-    TokenTypes.identifier = TokenType._r(TokenTypes.identifierRegex);
-    TokenTypes.makeRef = TokenType._r(/\\/);
-    TokenTypes.not = TokenType._r(/\!/);
-    TokenTypes.sigil = TokenType._r(/[\$@%&]/);
+    TokenTypes.unaryOperators = [
+        TokenTypes.inc,
+        TokenTypes.dec,
+        TokenTypes.not,
+    ];
     return TokenTypes;
 }());

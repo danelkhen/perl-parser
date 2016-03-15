@@ -19,7 +19,7 @@
     }
 
     resolveExpression(mbe: UnresolvedExpression): Expression {
-        let mbe2 = new PrecedenceResolver(mbe).resolve();
+        let mbe2 = new PrecedenceResolver2(mbe).resolve();
         return mbe2;
     }
     parseExpression(): Expression {
