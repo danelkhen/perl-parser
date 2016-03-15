@@ -106,6 +106,7 @@ var PrecedenceResolver = (function () {
         this.nodes.ofType(Operator).where(function (t) { return t.token.isAny([TokenTypes.comma, TokenTypes.fatComma]); }).forEach(function (t) { return _this.resolveComma(t); });
         //    nonassoc	list operators (rightward)
         //    right	not
+        this.nodes.ofType(Operator).where(function (t) { return t.token.isAnyKeyword(["not"]); }).forEach(function (t) { return _this.resolvePrefixUnary(t); });
         //    left	and
         this.nodes.ofType(Operator).where(function (t) { return t.token.isKeyword("and"); }).forEach(function (t) { return _this.resolveBinary(t); });
         //    left	or xor

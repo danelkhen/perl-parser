@@ -1,4 +1,9 @@
 "use strict";
+var __extends = (this && this.__extends) || function (d, b) {
+    for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p];
+    function __() { this.constructor = d; }
+    d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
+};
 $(main);
 function main() {
     new IndexPage().main();
@@ -121,7 +126,8 @@ var IndexPage = (function () {
     };
     IndexPage.prototype.refactor = function () {
         new AstNodeFixator().process(this.unit);
-        new FindEvalsWithout1AtTheEnd().process(this.unit);
+        //new FindEvalsWithout1AtTheEnd().process(this.unit);
+        new RefArrayToRefUtil().process(this.unit);
         this.generateCode();
         this.render();
     };
@@ -245,10 +251,10 @@ function stringifyNodes(node) {
     stringify(node);
     return sb.join(" ");
 }
-var FindEvalsWithout1AtTheEnd = (function () {
-    function FindEvalsWithout1AtTheEnd() {
+var Refactor = (function () {
+    function Refactor() {
     }
-    FindEvalsWithout1AtTheEnd.prototype.getChildren = function (node) {
+    Refactor.prototype.getChildren = function (node) {
         var list = [];
         Object.keys(node).where(function (key) { return key != "parentNode"; }).select(function (key) { return node[key]; }).forEach(function (obj) {
             if (obj instanceof Array)
@@ -258,9 +264,9 @@ var FindEvalsWithout1AtTheEnd = (function () {
         });
         return list;
     };
-    FindEvalsWithout1AtTheEnd.prototype.getDescendants = function (node) {
+    Refactor.prototype.getDescendants = function (node) {
     };
-    FindEvalsWithout1AtTheEnd.prototype.first = function (node, predicate) {
+    Refactor.prototype.first = function (node, predicate) {
         var children = this.getChildren(node);
         for (var _i = 0, children_1 = children; _i < children_1.length; _i++) {
             var child = children_1[_i];
@@ -272,18 +278,20 @@ var FindEvalsWithout1AtTheEnd = (function () {
         }
         return null;
     };
-    FindEvalsWithout1AtTheEnd.prototype.process = function (root) {
-        var node = this.first(root, function (t) { return t instanceof NativeInvocation_BlockOrExpr && t.keywordToken.value == "eval"; });
-        var lastStatement = node.block.statements.last();
-        var valueExp = lastStatement.expression;
-        var endsWithOne = valueExp.token.value == "1";
-        console.log("this eval ends with 1; ?", endsWithOne);
-        if (endsWithOne)
-            return;
-        node.block.statements.add(CodeBuilder.value("1").statement()); // new ExpressionStatement());
-        //this.replaceNode(node, node.block || node.expr);
+    Refactor.prototype.selectFirstNonNull = function (node, predicate) {
+        var children = this.getChildren(node);
+        for (var _i = 0, children_2 = children; _i < children_2.length; _i++) {
+            var child = children_2[_i];
+            var res = predicate(child);
+            if (res != null)
+                return res;
+            res = this.selectFirstNonNull(child, predicate);
+            if (res != null)
+                return res;
+        }
+        return null;
     };
-    FindEvalsWithout1AtTheEnd.prototype.replaceNode = function (oldNode, newNode) {
+    Refactor.prototype.replaceNode = function (oldNode, newNode) {
         var parentNode = oldNode.parentNode;
         var prop = oldNode.parentNodeProp;
         var value = parentNode[prop];
@@ -297,17 +305,139 @@ var FindEvalsWithout1AtTheEnd = (function () {
         newNode.parentNode = parentNode;
         newNode.parentNodeProp = prop;
     };
-    return FindEvalsWithout1AtTheEnd;
+    return Refactor;
 }());
+var FindEvalsWithout1AtTheEnd = (function (_super) {
+    __extends(FindEvalsWithout1AtTheEnd, _super);
+    function FindEvalsWithout1AtTheEnd() {
+        _super.apply(this, arguments);
+    }
+    FindEvalsWithout1AtTheEnd.prototype.process = function (root) {
+        var node = this.first(root, function (t) { return t instanceof NativeInvocation_BlockOrExpr && t.keywordToken.value == "eval"; });
+        var lastStatement = node.block.statements.last();
+        var valueExp = lastStatement.expression;
+        var endsWithOne = valueExp.token.value == "1";
+        console.log("this eval ends with 1; ?", endsWithOne);
+        if (endsWithOne)
+            return;
+        node.block.statements.add(CodeBuilder.value("1").statement()); // new ExpressionStatement());
+        //this.replaceNode(node, node.block || node.expr);
+    };
+    return FindEvalsWithout1AtTheEnd;
+}(Refactor));
+var RefArrayToRefUtil = (function (_super) {
+    __extends(RefArrayToRefUtil, _super);
+    function RefArrayToRefUtil() {
+        _super.apply(this, arguments);
+    }
+    RefArrayToRefUtil.prototype.identifyRefArray = function (node) {
+        if (node instanceof BinaryExpression) {
+            if (node.operator.token.isKeyword("eq")) {
+                var right = node.right;
+                if (right instanceof ValueExpression && ["'ARRAY'", '"ARRAY"'].contains(right.value)) {
+                    var left = node.left;
+                    if (left instanceof InvocationExpression) {
+                        var target = left.target;
+                        if (target instanceof NamedMemberExpression) {
+                            if (target.name == "ref") {
+                                var args = left.arguments;
+                                return { node: node, target: args };
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        return null;
+    };
+    RefArrayToRefUtil.prototype.process = function (root) {
+        var _this = this;
+        var i = 0;
+        while (i < 1000) {
+            var res = this.selectFirstNonNull(root, function (t) { return _this.identifyRefArray(t) || _this.identifyRefArray2(t); });
+            console.log(res);
+            if (res == null)
+                break;
+            var node = res.node;
+            var arg = res.target;
+            var newNode = CodeBuilder.member("is_arrayref").invokeSingleArgOrList(arg).node;
+            console.log("REPLACING FROM:\n" + res.node.toCode() + "\nTO:\n", newNode.toCode());
+            this.replaceNode(res.node, newNode);
+        }
+    };
+    RefArrayToRefUtil.prototype.identifyRefArray2 = function (node) {
+        if (node instanceof InvocationExpression) {
+            var target = node.target;
+            if (target instanceof NamedMemberExpression) {
+                if (target.name == "ref") {
+                    var args = node.arguments;
+                    if (args instanceof BinaryExpression) {
+                        if (args.operator.token.isKeyword("eq")) {
+                            var right = args.right;
+                            var left = args.left;
+                            if (right instanceof ValueExpression && ["'ARRAY'", '"ARRAY"'].contains(right.value))
+                                return { node: node, target: left };
+                        }
+                    }
+                }
+            }
+        }
+        return null;
+    };
+    return RefArrayToRefUtil;
+}(Refactor));
 var CodeBuilder = (function () {
     function CodeBuilder(node) {
         this.node = node;
     }
+    CodeBuilder.member = function (name) {
+        var node = new NamedMemberExpression();
+        node.name = name;
+        return new CodeBuilder(node);
+    };
     CodeBuilder.value = function (value) {
         var node = new ValueExpression();
         node.token = TokenTypes.string.create2(JSON.stringify(value));
         node.value = value;
         return new CodeBuilder(node);
+    };
+    CodeBuilder.parenthesizedList = function (items) {
+        var node = new ParenthesizedList();
+        node.parenOpenToken = TokenTypes.parenOpen.create2("(");
+        node.list = this.nonParenthesizedList(items).node;
+        node.parenCloseToken = TokenTypes.parenOpen.create2(")");
+        return new CodeBuilder(node);
+    };
+    CodeBuilder.op = function (tt, value) {
+        var op = new Operator();
+        op.token = tt.create2(value);
+        op.value = value;
+        return op;
+    };
+    CodeBuilder.nonParenthesizedList = function (items) {
+        var _this = this;
+        var node = new NonParenthesizedList();
+        node.items = items;
+        node.itemsSeparators = items.skip(1).select(function (t) { return _this.op(TokenTypes.comma, ", "); });
+        return new CodeBuilder(node);
+    };
+    CodeBuilder.prototype.invoke = function (args) {
+        return this.invokeList(CodeBuilder.parenthesizedList(args).node);
+    };
+    CodeBuilder.prototype.invokeSingleArgOrList = function (arg) {
+        if (arg instanceof ParenthesizedList)
+            return this.invokeList(arg);
+        return this.invoke([arg]);
+    };
+    CodeBuilder.prototype.invokeList = function (args) {
+        var node = new InvocationExpression();
+        node.arguments = args;
+        var target = this.node;
+        if (target instanceof Expression) {
+            node.target = target;
+            return new CodeBuilder(node);
+        }
+        throw new Error();
     };
     CodeBuilder.prototype.statement = function () {
         var node = new ExpressionStatement();

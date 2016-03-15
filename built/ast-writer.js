@@ -21,11 +21,11 @@ var AstWriter = (function () {
         this.register(ValueExpression, function (t) { return [t.value]; });
         this.register(BinaryExpression, function (t) { return [t.left, t.operator, t.right]; });
         this.register(BeginStatement, function (t) { return [t.beginToken, [t.beginTokenPost], t.block, [t.semicolonToken]]; });
-        this.register(ParenthesizedList, function (t) { return [[t.parenOpenToken, t.parenOpenTokenPost], [t.list], [t.parenCloseToken]]; });
+        this.register(ParenthesizedList, function (t) { return [[t.parenOpenToken, [t.parenOpenTokenPost]], [t.list], [t.parenCloseToken]]; });
         this.register(NonParenthesizedList, function (t) { return [_this.zip(t.items, t.itemsSeparators).exceptNulls()]; });
         this.register(PrefixUnaryExpression, function (t) { return [t.operator, [t.operatorPost], t.expression]; });
         this.register(PostfixUnaryExpression, function (t) { return [t.expression, t.operator, [t.operatorPost]]; });
-        this.register(SubroutineExpression, function (t) { return [t.subToken, t.subTokenPost, t.name, [t.namePost], [t.colonToken, [t.colonTokenPost], t.attribute], t.block]; });
+        this.register(SubroutineExpression, function (t) { return [t.subToken, t.subTokenPost, [t.name], [t.namePost], [t.colonToken, [t.colonTokenPost], t.attribute], t.block]; });
         this.register(SubroutineDeclaration, function (t) { return [t.declaration, [t.semicolonToken]]; });
         this.register(SimpleName, function (t) { return [t.name]; });
         this.register(HashMemberAccessExpression, function (t) { return [t.target, [t.memberSeparatorToken], t.member]; });

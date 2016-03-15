@@ -48,10 +48,10 @@
             TokenTypes.not,
             TokenTypes.greaterThan, TokenTypes.smallerOrEqualsThan, TokenTypes.smallerThan,
             TokenTypes.numericCompare,
-            TokenTypes.concatAssign, TokenTypes.divideAssign, TokenTypes.subtractAssign, 
+            TokenTypes.concatAssign, TokenTypes.divideAssign, TokenTypes.subtractAssign,
             TokenTypes.orAssign,
             TokenTypes.addAssign, TokenTypes.multiplyAssign, TokenTypes.divDivAssign,
-            TokenTypes.plus, TokenTypes.minus, TokenTypes.multiply, TokenTypes.multiplyString, TokenTypes.div, 
+            TokenTypes.plus, TokenTypes.minus, TokenTypes.multiply, TokenTypes.multiplyString, TokenTypes.div,
             TokenTypes.range, TokenTypes.range3,
             TokenTypes.arrow, TokenTypes.packageSeparator,
             TokenTypes.inc, TokenTypes.dec,
@@ -62,8 +62,8 @@
             TokenTypes.lastIndexVar
         ]) || this.token.isAnyKeyword([
             "if", "unless", "while", "until", "for", "foreach", "when", //statement modifiers
-            "and", "eq", "or", "ne", 
-            ])) { 
+            "and", "eq", "or", "ne", "cmp", "not",
+        ])) { 
             
             //if (this.token.isAnyKeyword(["for", "foreach"])) {           //for,foreach postfix have list after them without parantheses
             //    //  tempParser = this.parseSingleOrCommaSeparatedExpressions;

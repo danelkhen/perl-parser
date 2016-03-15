@@ -116,6 +116,7 @@
         this.nodes.ofType(Operator).where(t=> t.token.isAny([TokenTypes.comma, TokenTypes.fatComma])).forEach(t=> this.resolveComma(t));
         //    nonassoc	list operators (rightward)
         //    right	not
+        this.nodes.ofType(Operator).where(t=> t.token.isAnyKeyword(["not"])).forEach(t=> this.resolvePrefixUnary(t));
         //    left	and
         this.nodes.ofType(Operator).where(t=> t.token.isKeyword("and")).forEach(t=> this.resolveBinary(t));
         //    left	or xor

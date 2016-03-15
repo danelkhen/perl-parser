@@ -65,7 +65,7 @@ var ExpressionParser = (function (_super) {
             TokenTypes.lastIndexVar
         ]) || this.token.isAnyKeyword([
             "if", "unless", "while", "until", "for", "foreach", "when",
-            "and", "eq", "or", "ne",
+            "and", "eq", "or", "ne", "cmp", "not",
         ])) {
             //if (this.token.isAnyKeyword(["for", "foreach"])) {           //for,foreach postfix have list after them without parantheses
             //    //  tempParser = this.parseSingleOrCommaSeparatedExpressions;
