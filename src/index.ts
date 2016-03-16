@@ -45,7 +45,7 @@ class IndexPage {
             return;
 
 
-        if (filename.startsWith("http")) {
+        if (filename.startsWith("http") || filename.startsWith("./")) {
             $.get(filename).then(data => {
                 this.parse(filename, data);
             });
@@ -361,7 +361,11 @@ class RefArrayToRefUtil extends Refactor {
 
     addUse(name: string) {
         let node = <PackageDeclaration>this.first(this.root, t=> t instanceof PackageDeclaration);
-        node.statements.insert(0, CodeBuilder.rawStatement("use "+name+";\n").node);
+        if (node == null) {
+            console.warn("can't find package declaration");
+            return;
+        }
+        node.statements.insert(0, CodeBuilder.rawStatement("use " + name + ";\n").node);
     }
 
     identifyRefArray(node: AstNode): { node: BinaryExpression, target: Expression } {
@@ -400,7 +404,7 @@ class RefArrayToRefUtil extends Refactor {
             this.replaceNode(res.node, newNode);
             count++;
         }
-        if(count>0)
+        if (count > 0)
             this.addUse("Ref::Util");
     }
 

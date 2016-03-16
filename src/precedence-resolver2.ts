@@ -64,8 +64,6 @@
     }
     parse_primary(): Expression {
         let node = this.getNode();
-        if (node instanceof Expression)
-            return node;
         if (node instanceof Operator && this.isUnaryOperator(node)) {
             let op = node;
             let node2 = new PrefixUnaryExpression();
@@ -74,21 +72,24 @@
             node2.expression = this.parse_primary();
             return node2;
         }
-        else if (node instanceof NamedMemberExpression && this.isNamedUnaryOperator(node)) {
+        if (node instanceof NamedMemberExpression && this.isNamedUnaryOperator(node)) {
             let op = node;
             let node2 = new InvocationExpression();
             node2.target = node;
-            this.nextToken();
-            let right = this.getNode();
-            if (right instanceof Operator && right.token.isAny([TokenTypes.comma, TokenTypes.fatComma]))
-                return node2;
-            node2.arguments = this.parse_primary();
+            //this.nextToken();
+            //let right = this.getNode();
+            //if (right instanceof Operator && right.token.isAny([TokenTypes.comma, TokenTypes.fatComma]))
+            //    return node2;
+            //node2.arguments = this.parse_expression_1(node2, -10);
             return node2;
         }
+        if (node instanceof Expression)
+            return node;
         throw new Error();
     }
     parse_expression(): Expression {
-        return this.parse_expression_1(this.parse_primary(), -100);
+        let node = this.parse_expression_1(this.parse_primary(), -100);
+        return node;
     }
     parse_expression_1(lhs: Expression, min_precedence: number): Expression {
         let lookahead = this.peekNextToken();
@@ -98,7 +99,7 @@
             let rhs = this.parse_primary()
             lookahead = this.peekNextToken();
             //lookahead is a binary operator whose precedence is greater than op's, or a right-associative operator whose precedence is equal to op's
-            while (this.shouldLookMoreAhead(lookahead, op)) {
+            while (this.shouldLookMoreAhead(op, lookahead)) {
                 rhs = this.parse_expression_1(rhs, this.getPrecedence(<Operator>lookahead))
                 lookahead = this.peekNextToken();
             }
@@ -107,7 +108,7 @@
         return lhs
     }
 
-    shouldLookMoreAhead(lookahead: Expression | Block | Operator, op: Operator) {
+    shouldLookMoreAhead(op: Operator, lookahead: Expression | Block | Operator) {
         if (lookahead instanceof Operator) {
             if (this.isBinaryOperator(lookahead) && this.getPrecedence(lookahead) > this.getPrecedence(op))
                 return true;

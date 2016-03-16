@@ -57,8 +57,6 @@ var PrecedenceResolver2 = (function () {
     };
     PrecedenceResolver2.prototype.parse_primary = function () {
         var node = this.getNode();
-        if (node instanceof Expression)
-            return node;
         if (node instanceof Operator && this.isUnaryOperator(node)) {
             var op = node;
             var node2 = new PrefixUnaryExpression();
@@ -67,21 +65,24 @@ var PrecedenceResolver2 = (function () {
             node2.expression = this.parse_primary();
             return node2;
         }
-        else if (node instanceof NamedMemberExpression && this.isNamedUnaryOperator(node)) {
+        if (node instanceof NamedMemberExpression && this.isNamedUnaryOperator(node)) {
             var op = node;
             var node2 = new InvocationExpression();
             node2.target = node;
-            this.nextToken();
-            var right = this.getNode();
-            if (right instanceof Operator && right.token.isAny([TokenTypes.comma, TokenTypes.fatComma]))
-                return node2;
-            node2.arguments = this.parse_primary();
+            //this.nextToken();
+            //let right = this.getNode();
+            //if (right instanceof Operator && right.token.isAny([TokenTypes.comma, TokenTypes.fatComma]))
+            //    return node2;
+            //node2.arguments = this.parse_expression_1(node2, -10);
             return node2;
         }
+        if (node instanceof Expression)
+            return node;
         throw new Error();
     };
     PrecedenceResolver2.prototype.parse_expression = function () {
-        return this.parse_expression_1(this.parse_primary(), -100);
+        var node = this.parse_expression_1(this.parse_primary(), -100);
+        return node;
     };
     PrecedenceResolver2.prototype.parse_expression_1 = function (lhs, min_precedence) {
         var lookahead = this.peekNextToken();
@@ -91,7 +92,7 @@ var PrecedenceResolver2 = (function () {
             var rhs = this.parse_primary();
             lookahead = this.peekNextToken();
             //lookahead is a binary operator whose precedence is greater than op's, or a right-associative operator whose precedence is equal to op's
-            while (this.shouldLookMoreAhead(lookahead, op)) {
+            while (this.shouldLookMoreAhead(op, lookahead)) {
                 rhs = this.parse_expression_1(rhs, this.getPrecedence(lookahead));
                 lookahead = this.peekNextToken();
             }
@@ -99,7 +100,7 @@ var PrecedenceResolver2 = (function () {
         }
         return lhs;
     };
-    PrecedenceResolver2.prototype.shouldLookMoreAhead = function (lookahead, op) {
+    PrecedenceResolver2.prototype.shouldLookMoreAhead = function (op, lookahead) {
         if (lookahead instanceof Operator) {
             if (this.isBinaryOperator(lookahead) && this.getPrecedence(lookahead) > this.getPrecedence(op))
                 return true;

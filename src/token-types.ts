@@ -81,26 +81,35 @@ class TokenTypes {
     
     static statementModifiers = ["if", "unless", "while", "until", "for", "foreach", "when"];
     static namedUnaryOperators = [
-        "gethostbyname", "localtime", "return",
+        "gethostbyname", "localtime", 
         "alarm", "getnetbyname", "lock", "rmdir",
         "caller", "getpgrp", "log", "scalar",
         "chdir", "getprotobyname", "lstat", "sin",
         "chroot", "glob", "my", "sleep",
         "cos", "gmtime", "oct", "sqrt",
-        "defined", "goto", "ord", "srand",
+        "defined", "ord", "srand",
         "delete", "hex", "quotemeta", "stat",
-        "do", "int", "rand", "uc",
-        "eval", "lc", "readlink", "ucfirst",
+        "int", "rand", "uc",
+        "lc", "readlink", "ucfirst",
         "exists", "lcfirst", "ref", "umask",
         "exit", "length", "require", "undef",
+        
+        "goto", 
+        ];
+    
+    static specialNamedUnaryOperators = [
+        "do", "eval",   //Also parsed as terms are the do {} and eval {} constructs, as well as subroutine and method calls, and the anonymous constructors [] and {} .
+        "return", //Unlike most named operators, this is also exempt from the looks-like-a-function rule, so return ("foo")."bar" will cause "bar" to be part of the argument to return.
     ];
+
+    //TODO: exempt from looks like a function rule: return, goto, last, next 
 
 
     static keyword = TokenType._words([
         "BEGIN", "package",
         //"use", "no", removed temporarily
         "my", "our", //"local",
-        "sub", "elsif", "else", "unless", "__END__", //"return", 
+        "sub", "elsif", "else", "unless", "__END__", 
         "and", "not", "or",
         "eq", "ne", "cmp",
         "lt", "gt", "le", "ge",

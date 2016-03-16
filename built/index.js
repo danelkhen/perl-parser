@@ -45,7 +45,7 @@ var IndexPage = (function () {
         localStorage[this.urlKey] = filename;
         if (filename.length == 0)
             return;
-        if (filename.startsWith("http")) {
+        if (filename.startsWith("http") || filename.startsWith("./")) {
             $.get(filename).then(function (data) {
                 _this.parse(filename, data);
             });
@@ -333,6 +333,10 @@ var RefArrayToRefUtil = (function (_super) {
     }
     RefArrayToRefUtil.prototype.addUse = function (name) {
         var node = this.first(this.root, function (t) { return t instanceof PackageDeclaration; });
+        if (node == null) {
+            console.warn("can't find package declaration");
+            return;
+        }
         node.statements.insert(0, CodeBuilder.rawStatement("use " + name + ";\n").node);
     };
     RefArrayToRefUtil.prototype.identifyRefArray = function (node) {

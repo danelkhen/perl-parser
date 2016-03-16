@@ -242,8 +242,8 @@ var PrecedenceResolver = (function () {
         if (index < 0)
             return null;
         var left = this.nodes[index - 1];
-        //if (left == null || !(left instanceof Expression) || this.isBareword(left))
-        if (left != null && (left instanceof Expression || (left instanceof Operator && left.token.is(TokenTypes.arrow)))) {
+        //if (left == null || !(left instanceof Expression) || this.isBareword(left)){
+        if (left != null && left instanceof Expression) {
             var node2 = new HashMemberAccessExpression();
             node2.member = node;
             node2.target = left;

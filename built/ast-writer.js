@@ -1,6 +1,12 @@
 "use strict";
 var AstWriter = (function () {
     function AstWriter() {
+        //getHandler(type:Function) {
+        //    let func = this.map.get(node.constructor);
+        //    if (func == null) 
+        //        return this.getHandler(type.prototype);
+        //}
+        this.addParentheses = true;
         this.map = new Map();
     }
     /**
@@ -66,11 +72,6 @@ var AstWriter = (function () {
         //t.operators.forEach((op, i) => list.push(op, t.expressions[i + 1]));
         return list;
     };
-    //getHandler(type:Function) {
-    //    let func = this.map.get(node.constructor);
-    //    if (func == null) 
-    //        return this.getHandler(type.prototype);
-    //}
     AstWriter.prototype.write = function (obj) {
         var _this = this;
         if (obj == null)
@@ -86,6 +87,9 @@ var AstWriter = (function () {
             var list = func(node);
             if (list.some(function (t) { return t == null; }))
                 console.warn("node generated array with nulls", node, list, func.toString());
+            if (this.addParentheses && node instanceof BinaryExpression) {
+                list = ["(", list, ")"];
+            }
             var all = [[node.whitespaceBefore], list, [node.whitespaceAfter]];
             this.write(all);
         }

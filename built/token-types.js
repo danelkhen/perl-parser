@@ -127,19 +127,25 @@ var TokenTypes = (function () {
     //static pod = TokenType._r(/=pod.*=cut/m);
     TokenTypes.statementModifiers = ["if", "unless", "while", "until", "for", "foreach", "when"];
     TokenTypes.namedUnaryOperators = [
-        "gethostbyname", "localtime", "return",
+        "gethostbyname", "localtime",
         "alarm", "getnetbyname", "lock", "rmdir",
         "caller", "getpgrp", "log", "scalar",
         "chdir", "getprotobyname", "lstat", "sin",
         "chroot", "glob", "my", "sleep",
         "cos", "gmtime", "oct", "sqrt",
-        "defined", "goto", "ord", "srand",
+        "defined", "ord", "srand",
         "delete", "hex", "quotemeta", "stat",
-        "do", "int", "rand", "uc",
-        "eval", "lc", "readlink", "ucfirst",
+        "int", "rand", "uc",
+        "lc", "readlink", "ucfirst",
         "exists", "lcfirst", "ref", "umask",
         "exit", "length", "require", "undef",
+        "goto",
     ];
+    TokenTypes.specialNamedUnaryOperators = [
+        "do", "eval",
+        "return",
+    ];
+    //TODO: exempt from looks like a function rule: return, goto, last, next 
     TokenTypes.keyword = TokenType._words([
         "BEGIN", "package",
         //"use", "no", removed temporarily
