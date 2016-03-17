@@ -20,7 +20,7 @@ class HereDocTokenType extends TokenType {
         //    else
         //        ender = range.text.substring(2).trim();
         //}
-        let newTokenType = TokenType._r(new RegExp("\\r?\\n[\\S\\s]*" + ender + "\\r?\\n"));
+        let newTokenType = TokenType._r(new RegExp("\\r?\\n[\\S\\s]*?\\r?\\n" + ender + "\\r?\\n"));
         newTokenType.name = "heredocValue";
         tokenizer.tempTokenTypes.push(newTokenType);
         let token = this.create(range);

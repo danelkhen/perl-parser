@@ -79,7 +79,7 @@ class AstWriter {
     //        return this.getHandler(type.prototype);
     //}
 
-    addParentheses = true;
+    addParentheses = false;//true;
     write(obj: any) {
         if (obj == null)
             return;
@@ -94,6 +94,14 @@ class AstWriter {
             let list = func(node);
             if (list.some(t=> t == null))
                 console.warn("node generated array with nulls", node, list, func.toString());
+            if (this.addParentheses && node instanceof PrefixUnaryExpression) {
+                list.insert(1, "(");
+                list.add(")");
+            }
+            if (this.addParentheses && node instanceof InvocationExpression) {
+                list.insert(3, "(");
+                list.add(")");
+            }
             if (this.addParentheses && node instanceof BinaryExpression) {
                 list = ["(", list, ")"];
             }

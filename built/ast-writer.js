@@ -6,7 +6,7 @@ var AstWriter = (function () {
         //    if (func == null) 
         //        return this.getHandler(type.prototype);
         //}
-        this.addParentheses = true;
+        this.addParentheses = false; //true;
         this.map = new Map();
     }
     /**
@@ -87,6 +87,14 @@ var AstWriter = (function () {
             var list = func(node);
             if (list.some(function (t) { return t == null; }))
                 console.warn("node generated array with nulls", node, list, func.toString());
+            if (this.addParentheses && node instanceof PrefixUnaryExpression) {
+                list.insert(1, "(");
+                list.add(")");
+            }
+            if (this.addParentheses && node instanceof InvocationExpression) {
+                list.insert(3, "(");
+                list.add(")");
+            }
             if (this.addParentheses && node instanceof BinaryExpression) {
                 list = ["(", list, ")"];
             }

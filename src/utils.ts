@@ -158,6 +158,7 @@ interface Array<T> {
     ofType<R extends T>(type: Type<R>): Array<R>;
     selectFirst<V>(selector: (item: T) => V, predicate: (item: T) => boolean): V;
     selectFirstNonNull<V>(selector: (item: T) => V): V;
+    reversed():T[];
 }
 Array.prototype.ofType = function (ctor) {
     return this.where(t=> t instanceof ctor);
@@ -183,6 +184,11 @@ Array.prototype.selectFirst = function (selector, predicate) {
             return res;
     }
     return null;
+}
+Array.prototype.reversed = function () {
+    let x = this.toArray();
+    x.reverse();
+    return x;
 }
 
 class AstNodeFixator {

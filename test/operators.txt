@@ -1,0 +1,36 @@
+﻿Functions and return
+*
+Named Unary Operators
+||
+
+
+
+left        terms and list operators (leftward)
+left        ->
+nonassoc    ++ --
+right       **
+right       ! ~ \ and unary + and -
+left        =~ !~
+left        * / % x
+left        + - .
+left        << >>
+nonassoc    named unary operators
+nonassoc    < > <= >= lt gt le ge
+nonassoc    == != <=> eq ne cmp ~~
+left        &
+left        | ^
+left        &&
+left        || //
+nonassoc    ..  ...
+right       ?:
+right       = += -= *= etc. goto last next redo dump
+left        , =>
+nonassoc    list operators (rightward)
+right       not
+left        and
+left        or xor
+
+
+@ary = (1, 3, sort 4, 2);
+print @ary;		# prints 1324
+the commas on the right of the sort are evaluated before the sort, but the commas on the left are evaluated after. 

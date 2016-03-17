@@ -52,7 +52,7 @@ var PrecedenceResolver = (function () {
         //console.log("resolved", this.nodes);
         //    right	**
         //    right	! ~ \ and unary + and - //TODO: \
-        this.nodes.ofType(Operator).where(function (t) { return t.token.isAny([TokenTypes.not, TokenTypes.tilda, TokenTypes.makeRef, TokenTypes.sigil, TokenTypes.lastIndexVar, TokenTypes.plus, TokenTypes.minus /*TODO: coderef TokenTypes.multiply, TokenTypes.plus, TokenTypes.minus*/]); }).forEach(function (t) { return _this.resolvePrefixUnary(t); });
+        this.nodes.reversed().ofType(Operator).where(function (t) { return t.token.isAny([TokenTypes.not, TokenTypes.tilda, TokenTypes.makeRef, TokenTypes.sigil, TokenTypes.lastIndexVar, TokenTypes.plus, TokenTypes.minus /*TODO: coderef TokenTypes.multiply, TokenTypes.plus, TokenTypes.minus*/]); }).forEach(function (t) { return _this.resolvePrefixUnary(t); });
         //console.log("resolved", this.nodes);
         //    left	=~ !~
         this.nodes.ofType(Operator).where(function (t) { return t.token.isAny([TokenTypes.regexEquals, TokenTypes.regexNotEquals]); }).forEach(function (t) { return _this.resolveBinary(t); });
@@ -90,9 +90,9 @@ var PrecedenceResolver = (function () {
         //    nonassoc	..  ... //TODO: ...
         this.nodes.ofType(Operator).where(function (t) { return t.token.isAny([TokenTypes.range, TokenTypes.range3]); }).forEach(function (t) { return _this.resolveBinary(t); });
         //    right	?:
-        this.nodes.ofType(Operator).where(function (t) { return t.token.is(TokenTypes.question); }).forEach(function (t) { return _this.resolveTrinaryExpression(t); });
+        this.nodes.reversed().ofType(Operator).where(function (t) { return t.token.is(TokenTypes.question); }).forEach(function (t) { return _this.resolveTrinaryExpression(t); });
         //    right	= += -= *= etc. goto last next redo dump
-        this.nodes.ofType(Operator).where(function (t) { return t.token.isAny([
+        this.nodes.reversed().ofType(Operator).where(function (t) { return t.token.isAny([
             TokenTypes.assignment,
             TokenTypes.addAssign,
             TokenTypes.subtractAssign,
@@ -106,7 +106,7 @@ var PrecedenceResolver = (function () {
         this.nodes.ofType(Operator).where(function (t) { return t.token.isAny([TokenTypes.comma, TokenTypes.fatComma]); }).forEach(function (t) { return _this.resolveComma(t); });
         //    nonassoc	list operators (rightward)
         //    right	not
-        this.nodes.ofType(Operator).where(function (t) { return t.token.isAnyKeyword(["not"]); }).forEach(function (t) { return _this.resolvePrefixUnary(t); });
+        this.nodes.reversed().ofType(Operator).where(function (t) { return t.token.isAnyKeyword(["not"]); }).forEach(function (t) { return _this.resolvePrefixUnary(t); });
         //    left	and
         this.nodes.ofType(Operator).where(function (t) { return t.token.isKeyword("and"); }).forEach(function (t) { return _this.resolveBinary(t); });
         //    left	or xor
@@ -242,8 +242,12 @@ var PrecedenceResolver = (function () {
         if (index < 0)
             return null;
         var left = this.nodes[index - 1];
+        if (left == null)
+            return node;
         //if (left == null || !(left instanceof Expression) || this.isBareword(left)){
-        if (left != null && left instanceof Expression) {
+        if (left instanceof Expression) {
+            if (left instanceof NamedMemberExpression && left.token.is(TokenTypes.identifier))
+                return node;
             var node2 = new HashMemberAccessExpression();
             node2.member = node;
             node2.target = left;
@@ -336,6 +340,8 @@ var PrecedenceResolver = (function () {
                 }
                 if (!allowCommas && arg instanceof Operator && arg.token.isAny([TokenTypes.comma, TokenTypes.fatComma]))
                     break;
+                if (arg instanceof Operator && arg.token.isAnyKeyword(["and", "or", "not"]))
+                    break;
                 args.nodes.push(arg);
             }
             if (args.nodes.length == 0)
@@ -349,7 +355,7 @@ var PrecedenceResolver = (function () {
         return node2;
     };
     PrecedenceResolver.prototype.resolveNamedUnaryOperator = function (node) {
-        return this.resolveImplicitInvocation(node, false);
+        //return this.resolveImplicitInvocation(node, false);
         var index = this.nodes.indexOf(node);
         if (index == -1)
             return null;

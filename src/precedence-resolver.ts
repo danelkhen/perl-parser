@@ -60,7 +60,7 @@
         //console.log("resolved", this.nodes);
         //    right	**
         //    right	! ~ \ and unary + and - //TODO: \
-        this.nodes.ofType(Operator).where(t=> t.token.isAny([TokenTypes.not, TokenTypes.tilda, TokenTypes.makeRef, TokenTypes.sigil, TokenTypes.lastIndexVar, TokenTypes.plus, TokenTypes.minus /*TODO: coderef TokenTypes.multiply, TokenTypes.plus, TokenTypes.minus*/])).forEach(t=> this.resolvePrefixUnary(t));
+        this.nodes.reversed().ofType(Operator).where(t=> t.token.isAny([TokenTypes.not, TokenTypes.tilda, TokenTypes.makeRef, TokenTypes.sigil, TokenTypes.lastIndexVar, TokenTypes.plus, TokenTypes.minus /*TODO: coderef TokenTypes.multiply, TokenTypes.plus, TokenTypes.minus*/])).forEach(t=> this.resolvePrefixUnary(t));
         //console.log("resolved", this.nodes);
         //    left	=~ !~
         this.nodes.ofType(Operator).where(t=> t.token.isAny([TokenTypes.regexEquals, TokenTypes.regexNotEquals])).forEach(t=> this.resolveBinary(t));
@@ -99,9 +99,9 @@
         //    nonassoc	..  ... //TODO: ...
         this.nodes.ofType(Operator).where(t=> t.token.isAny([TokenTypes.range, TokenTypes.range3])).forEach(t=> this.resolveBinary(t));
         //    right	?:
-        this.nodes.ofType(Operator).where(t=> t.token.is(TokenTypes.question)).forEach(t=> this.resolveTrinaryExpression(t));
+        this.nodes.reversed().ofType(Operator).where(t=> t.token.is(TokenTypes.question)).forEach(t=> this.resolveTrinaryExpression(t));
         //    right	= += -= *= etc. goto last next redo dump
-        this.nodes.ofType(Operator).where(t=> t.token.isAny([
+        this.nodes.reversed().ofType(Operator).where(t=> t.token.isAny([
             TokenTypes.assignment,
             TokenTypes.addAssign,
             TokenTypes.subtractAssign,
@@ -116,7 +116,7 @@
         this.nodes.ofType(Operator).where(t=> t.token.isAny([TokenTypes.comma, TokenTypes.fatComma])).forEach(t=> this.resolveComma(t));
         //    nonassoc	list operators (rightward)
         //    right	not
-        this.nodes.ofType(Operator).where(t=> t.token.isAnyKeyword(["not"])).forEach(t=> this.resolvePrefixUnary(t));
+        this.nodes.reversed().ofType(Operator).where(t=> t.token.isAnyKeyword(["not"])).forEach(t=> this.resolvePrefixUnary(t));
         //    left	and
         this.nodes.ofType(Operator).where(t=> t.token.isKeyword("and")).forEach(t=> this.resolveBinary(t));
         //    left	or xor
@@ -266,8 +266,12 @@
         if (index < 0)
             return null;
         let left = this.nodes[index - 1];
+        if(left==null)
+            return node;
         //if (left == null || !(left instanceof Expression) || this.isBareword(left)){
-        if (left != null && left instanceof Expression) {// || (left instanceof Operator && left.token.is(TokenTypes.arrow)))) {
+        if (left instanceof Expression) {// || (left instanceof Operator && left.token.is(TokenTypes.arrow)))) {
+            if(left instanceof NamedMemberExpression && left.token.is(TokenTypes.identifier))  //ggg {hello}
+                return node;
             let node2 = new HashMemberAccessExpression();
             node2.member = node;
             node2.target = <Expression>left;
@@ -365,6 +369,8 @@
                 }
                 if (!allowCommas && arg instanceof Operator && arg.token.isAny([TokenTypes.comma, TokenTypes.fatComma]))
                     break;
+                if (arg instanceof Operator && arg.token.isAnyKeyword(["and", "or", "not"]))
+                    break;
                 args.nodes.push(arg);
             }
             if (args.nodes.length == 0)
@@ -378,8 +384,8 @@
         this.nodes.splice(index, i - index, node2);
         return node2;
     }
-    resolveNamedUnaryOperator(node: NamedMemberExpression) {
-        return this.resolveImplicitInvocation(node, false);
+    resolveNamedUnaryOperator(node: NamedMemberExpression):Expression {
+        //return this.resolveImplicitInvocation(node, false);
         let index = this.nodes.indexOf(node);
         if (index == -1)
             return null;

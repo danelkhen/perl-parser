@@ -341,7 +341,7 @@ var RefArrayToRefUtil = (function (_super) {
     };
     RefArrayToRefUtil.prototype.identifyRefArray = function (node) {
         if (node instanceof BinaryExpression) {
-            if (node.operator.token.isKeyword("eq")) {
+            if (node.operator.token.isAnyKeyword(["eq", "ne"])) {
                 var right = node.right;
                 if (right instanceof ValueExpression && ["'ARRAY'", '"ARRAY"'].contains(right.value)) {
                     var left = node.left;
@@ -350,7 +350,7 @@ var RefArrayToRefUtil = (function (_super) {
                         if (target instanceof NamedMemberExpression) {
                             if (target.name == "ref") {
                                 var args = left.arguments;
-                                return { node: node, target: args };
+                                return { node: node, target: args, notEq: node.operator.token.isKeyword("ne") };
                             }
                         }
                     }
@@ -364,38 +364,24 @@ var RefArrayToRefUtil = (function (_super) {
         var i = 0;
         var count = 0;
         while (i < 1000) {
-            var res = this.selectFirstNonNull(this.root, function (t) { return _this.identifyRefArray(t) || _this.identifyRefArray2(t); });
+            var res = this.selectFirstNonNull(this.root, function (t) { return _this.identifyRefArray(t); });
+            //if (res == null) {
+            //    res = this.selectFirstNonNull(this.root, t=> this.identifyRefArray2(t));
+            //    if (res != null)
+            //        console.warn("FOUND A BAD THING");
+            //}
             console.log(res);
             if (res == null)
                 break;
             var node = res.node;
             var arg = res.target;
-            var newNode = CodeBuilder.member("is_arrayref").invokeSingleArgOrList(arg).node;
+            var newNode = CodeBuilder.member((res.notEq ? "!" : "") + "is_arrayref").invokeSingleArgOrList(arg).node;
             console.log("REPLACING FROM:\n" + res.node.toCode() + "\nTO:\n", newNode.toCode());
             this.replaceNode(res.node, newNode);
             count++;
         }
         if (count > 0)
             this.addUse("Ref::Util");
-    };
-    RefArrayToRefUtil.prototype.identifyRefArray2 = function (node) {
-        if (node instanceof InvocationExpression) {
-            var target = node.target;
-            if (target instanceof NamedMemberExpression) {
-                if (target.name == "ref") {
-                    var args = node.arguments;
-                    if (args instanceof BinaryExpression) {
-                        if (args.operator.token.isKeyword("eq")) {
-                            var right = args.right;
-                            var left = args.left;
-                            if (right instanceof ValueExpression && ["'ARRAY'", '"ARRAY"'].contains(right.value))
-                                return { node: node, target: left };
-                        }
-                    }
-                }
-            }
-        }
-        return null;
     };
     return RefArrayToRefUtil;
 }(Refactor));

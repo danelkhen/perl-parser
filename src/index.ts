@@ -368,9 +368,9 @@ class RefArrayToRefUtil extends Refactor {
         node.statements.insert(0, CodeBuilder.rawStatement("use " + name + ";\n").node);
     }
 
-    identifyRefArray(node: AstNode): { node: BinaryExpression, target: Expression } {
+    identifyRefArray(node: AstNode): { node: Expression, target: Expression, notEq:boolean } {
         if (node instanceof BinaryExpression) {
-            if (node.operator.token.isKeyword("eq")) {
+            if (node.operator.token.isAnyKeyword(["eq", "ne"])) {
                 let right = node.right;
                 if (right instanceof ValueExpression && ["'ARRAY'", '"ARRAY"'].contains(right.value)) {
                     let left = node.left;
@@ -379,7 +379,7 @@ class RefArrayToRefUtil extends Refactor {
                         if (target instanceof NamedMemberExpression) {
                             if (target.name == "ref") {
                                 let args = left.arguments;
-                                return { node: node, target: args };
+                                return { node: node, target: args, notEq: node.operator.token.isKeyword("ne") };
                             }
                         }
                     }
@@ -393,13 +393,18 @@ class RefArrayToRefUtil extends Refactor {
         var i = 0;
         let count = 0;
         while (i < 1000) {
-            let res = this.selectFirstNonNull(this.root, t=> this.identifyRefArray(t) || this.identifyRefArray2(t));
+            let res = this.selectFirstNonNull(this.root, t=> this.identifyRefArray(t));
+            //if (res == null) {
+            //    res = this.selectFirstNonNull(this.root, t=> this.identifyRefArray2(t));
+            //    if (res != null)
+            //        console.warn("FOUND A BAD THING");
+            //}
             console.log(res);
             if (res == null)
                 break;
             let node = res.node;
             let arg = res.target;
-            let newNode = CodeBuilder.member("is_arrayref").invokeSingleArgOrList(arg).node;
+            let newNode = CodeBuilder.member((res.notEq ? "!" : "") + "is_arrayref").invokeSingleArgOrList(arg).node;
             console.log("REPLACING FROM:\n" + res.node.toCode() + "\nTO:\n", newNode.toCode());
             this.replaceNode(res.node, newNode);
             count++;
@@ -409,25 +414,25 @@ class RefArrayToRefUtil extends Refactor {
     }
 
 
-    identifyRefArray2(node: AstNode): { node: InvocationExpression, target: Expression } {
-        if (node instanceof InvocationExpression) {
-            let target = node.target;
-            if (target instanceof NamedMemberExpression) {
-                if (target.name == "ref") {
-                    let args = node.arguments;
-                    if (args instanceof BinaryExpression) {
-                        if (args.operator.token.isKeyword("eq")) {
-                            let right = args.right;
-                            let left = args.left;
-                            if (right instanceof ValueExpression && ["'ARRAY'", '"ARRAY"'].contains(right.value))
-                                return { node: node, target: left };
-                        }
-                    }
-                }
-            }
-        }
-        return null;
-    }
+    //identifyRefArray2(node: AstNode): { node: Expression, target: Expression } {
+    //    if (node instanceof InvocationExpression) {
+    //        let target = node.target;
+    //        if (target instanceof NamedMemberExpression) {
+    //            if (target.name == "ref") {
+    //                let args = node.arguments;
+    //                if (args instanceof BinaryExpression) {
+    //                    if (args.operator.token.isKeyword("eq")) {
+    //                        let right = args.right;
+    //                        let left = args.left;
+    //                        if (right instanceof ValueExpression && ["'ARRAY'", '"ARRAY"'].contains(right.value))
+    //                            return { node: node, target: left };
+    //                    }
+    //                }
+    //            }
+    //        }
+    //    }
+    //    return null;
+    //}
 }
 class CodeBuilder<T extends AstNode> {
     constructor(public node?: T) {

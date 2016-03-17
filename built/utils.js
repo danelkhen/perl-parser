@@ -177,6 +177,11 @@ Array.prototype.selectFirst = function (selector, predicate) {
     }
     return null;
 };
+Array.prototype.reversed = function () {
+    var x = this.toArray();
+    x.reverse();
+    return x;
+};
 var AstNodeFixator = (function () {
     function AstNodeFixator() {
     }

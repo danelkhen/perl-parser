@@ -1,6 +1,4 @@
-﻿
-
-$a;
+﻿$a;
 $a + $b;
 $a + $b + $c;
 $a + $b / $c * $d;
@@ -20,3 +18,15 @@ sort { $a->{name} cmp $b->{name} } @b;
 
 chdir $foo || die; # (chdir $foo) || die
 chdir $foo * 20;   # chdir ($foo * 20)
+
+
+chdir !$foo || $bar;
+return !$foo + $bar;;
+
+chdir $foo || die; # (chdir $foo) || die
+chdir $foo * 20;   # chdir($foo * 20)
+return $foo || die; # return ($foo || die)
+return  $foo * 20;   # return ($foo * 20)
+
+
+sort 4, 2 or die;
