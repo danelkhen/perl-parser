@@ -3,7 +3,7 @@
         this.nodes = mbe.nodes.toArray();
         this.index = 0;
     }
-    nodes: Array<Expression | Operator | Block>;
+    nodes: AstNode[];
     index: number;
     resolve(): Expression {
         return this.parse_expression();
@@ -35,7 +35,7 @@
         return TokenTypes.namedUnaryOperators.contains(node.name);
     }
 
-    peekNextToken(): Expression | Operator | Block {
+    peekNextToken(): AstNode {
         this.nextToken();
         return this.getNode();
     }
@@ -59,7 +59,7 @@
         return node;
     }
 
-    getNode(): Expression | Block | Operator {
+    getNode(): AstNode {
         return this.nodes[this.index];
     }
     parse_primary(): Expression {
@@ -108,7 +108,7 @@
         return lhs
     }
 
-    shouldLookMoreAhead(op: Operator, lookahead: Expression | Block | Operator) {
+    shouldLookMoreAhead(op: Operator, lookahead: AstNode) {
         if (lookahead instanceof Operator) {
             if (this.isBinaryOperator(lookahead) && this.getPrecedence(lookahead) > this.getPrecedence(op))
                 return true;

@@ -120,7 +120,7 @@ body{
 .code .whitespace{color:inherit;}
 .code .packageSeparator{color:inherit;}
 .code .semicolon{color:inherit;}
-.code .sigiledIdentifier{color:red;}
+.code .sigiledIdentifier{color:orange;}
 .code .comment{color:green;}
 .code .regExpEquals{color:inherit;}
 .code .equals{color:inherit;}
@@ -146,6 +146,7 @@ body{
 .code .assignment{color:inherit;}
 .code .concat{color:inherit;}
 .code .interpolatedString{color:brown;}
+.code .bareString{color:brown;}
 .code .string{color:brown;}
 .code .divDiv{color:inherit;}
 .code .tilda{color:inherit;}

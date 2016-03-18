@@ -1,4 +1,26 @@
-﻿$a;
+﻿
+defined !$g;
+
+
+$dt->day != $self->{d};
+my $g = AA->foo()->bar() or croak "yo";
+
+!exists $project_attrs->{$row->[0]};
+
+@ary = (1, 3, sort 4, 2);
+print @ary;		# prints 1324
+chdir $foo || die; # (chdir $foo) || die
+chdir $foo * 20;   # chdir ($foo * 20)
+
+
+
+
+
+
+
+
+
+$a;
 $a + $b;
 $a + $b + $c;
 $a + $b / $c * $d;
@@ -16,8 +38,6 @@ sort { $a->{name} cmp $b->{name} } @b;
 @ary = (1, 3, sort 4 + 2);
 
 
-chdir $foo || die; # (chdir $foo) || die
-chdir $foo * 20;   # chdir ($foo * 20)
 
 
 chdir !$foo || $bar;

@@ -108,7 +108,7 @@ class TokenReader {
         return res;
     }
     onUnexpectedToken(): any {
-        this.logger.error("unexecpted token type", this.token, this.token.range.start.line, this.token.range.start.column);
+        this.logger.error("unexecpted token type", this.token, this.token.range.start);
         return null;
     }
 }

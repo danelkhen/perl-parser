@@ -72,6 +72,14 @@ class TokenType {
         tt.match = matcher;
         return tt;
     }
+    static _capture(regex: RegExp): TokenType {
+        let tt = new TokenType();
+        regex = TokenType._fixRegex(regex);
+        tt.match = tokenizer => {
+            return tokenizer.cursor.capture(regex);
+        };
+        return tt;
+    }
 }
 
 interface TokenMatcher {
@@ -234,7 +242,7 @@ class Cursor {
         let regex2 = regex;
         let s = this.src.substr(this.index);
         var res = regex2.exec(s);
-        if (res == null || res.length <= 1)
+        if (res == null || res[1]==null) //res.length <= 1
             return null;
         let index = s.indexOf(res[1]);
         let range = this.getRange(this.index + index, res[1].length);

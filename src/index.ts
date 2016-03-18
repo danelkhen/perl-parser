@@ -107,6 +107,7 @@ class IndexPage {
 
     generateCode() {
         let writer = new AstWriter();
+        writer.addParentheses = $("#cbAddParentheses").prop("checked");
         writer.main();
         writer.write(this.unit);
         this.generatedCode = writer.sb.join("");

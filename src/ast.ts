@@ -252,7 +252,7 @@ class TrinaryExpression extends Expression {
 }
 
 class UnresolvedExpression extends Expression {
-    nodes: Array<Expression | Operator | Block>;
+    nodes: AstNode[];//Expression | Operator | Block
 }
 
 class Operator extends AstNode {

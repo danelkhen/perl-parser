@@ -70,9 +70,10 @@ class TokenTypes {
     // * unless the delimiter is ''.
     static heredoc = new HereDocTokenType();// TokenTypes._custom(TokenTypes.match(/<<"([a-zA-Z0-9]+)"[\s\S]*$/m);
     static heredocValue = TokenType._custom(t=> null);// TokenTypes._custom(TokenTypes.match(/<<"([a-zA-Z0-9]+)"[\s\S]*$/m);
+    static bareString = TokenType._capture(/(\-?[a-zA-Z_]+[a-zA-Z0-9_]*)?\s*?\=>/);
     static qq = TokenType._rs([/qq\|[^|]*\|/, /qq\{[^\}]*\}/]);
-    static qw = TokenType._rs([/qw\s*\/[^\/]*\//m, /qw\s*<[^>]*>/m, /qw\s*\([^\)]*\)/m, /qw\s*\[[^\]]*\]/m]);
-    static qr = TokenType._rs([/qr\/.*\//, /qr\(.*\)/]);//Regexp-like quote
+    static qw = TokenType._rs([/qw\s*\/[^\/]*\//m, /qw\s*<[^>]*>/m, /qw\s*\([^\)]*\)/m, /qw\s*\[[^\]]*\]/m, /qw\s*\{[^\{]*\}/m]);
+    static qr = TokenType._rs([/qr\/.*\//, /qr\(.*?\)/, /qr\{.*?\}/]);//Regexp-like quote
     static qx = TokenType._rs([/qx\/.*\//, /`.*`/]);
     static tr = TokenType._rs([/tr\/.*\/.*\/[cdsr]*/, /tr\{.*\}\{.*\}/]); //token replace
     static q = TokenType._rs([/q\{[^\}]*\}/]);
@@ -81,7 +82,7 @@ class TokenTypes {
     
     static statementModifiers = ["if", "unless", "while", "until", "for", "foreach", "when"];
     static namedUnaryOperators = [
-        "gethostbyname", "localtime", 
+        "gethostbyname", "localtime",
         "alarm", "getnetbyname", "lock", "rmdir",
         "caller", "getpgrp", "log", "scalar",
         "chdir", "getprotobyname", "lstat", "sin",
@@ -93,10 +94,10 @@ class TokenTypes {
         "lc", "readlink", "ucfirst",
         "exists", "lcfirst", "ref", "umask",
         "exit", "length", "require", "undef",
-        
-        "goto", 
-        ];
-    
+
+        "goto",
+    ];
+
     static specialNamedUnaryOperators = [
         "do", "eval",   //Also parsed as terms are the do {} and eval {} constructs, as well as subroutine and method calls, and the anonymous constructors [] and {} .
         "return", //Unlike most named operators, this is also exempt from the looks-like-a-function rule, so return ("foo")."bar" will cause "bar" to be part of the argument to return.
@@ -109,7 +110,7 @@ class TokenTypes {
         "BEGIN", "package",
         //"use", "no", removed temporarily
         "my", "our", //"local",
-        "sub", "elsif", "else", "unless", "__END__", 
+        "sub", "elsif", "else", "unless", "__END__",
         "and", "not", "or",
         "eq", "ne", "cmp",
         "lt", "gt", "le", "ge",
@@ -134,6 +135,7 @@ class TokenTypes {
     static subtractAssign = TokenType._r(/\-=/);
     static multiplyAssign = TokenType._r(/\+=/);
     static divideAssign = TokenType._r(/\/=/);
+    static xorAssign = TokenType._r(/\^=/);
     static divDivAssign = TokenType._r(/\/\/=/);
 
     static orAssign = TokenType._r(/\|\|=/);
@@ -150,7 +152,7 @@ class TokenTypes {
     static interpolatedString = TokenType._r(/\"[^"]*\"/);
     static string = TokenType._r(/\'[^\']*\'/);
     static regex = TokenType._custom(TokenTypes._matchRegex);//_r(/\/.*\/[a-z]*/);
-    static regexSubstitute = TokenType._rs([/s\/.*\/.*\/[a-z]*/, /s#.*#.*#[a-z]*/]);  // s/abc/def/mg
+    static regexSubstitute = TokenType._rs([/s\/.*\/.*\/[a-z]*/, /s#.*#.*#[a-z]*/, /s\{.*\}\{.*\}[a-z]*/]);  // s/abc/def/mg
     static regexMatch = TokenType._rs([/m\/.*\/[a-z]*/, /m#.*#[a-z]*/]);  // s/abc/def/mg
 
     static colon = TokenType._r(/\:/);
@@ -229,6 +231,8 @@ class TokenTypes {
         TokenTypes.div,
         TokenTypes.plus,
         TokenTypes.multiplyString,
+        TokenTypes.equals,
+        TokenTypes.notEquals,
     ];
     static unaryOperators: TokenType[] = [
         TokenTypes.inc,
@@ -275,9 +279,13 @@ class TokenTypes {
         let res = cursor.next(/^\/.*\/[a-z]*/);
         if (res == null)
             return null;
-        let code = res.text.substring(0, res.text.lastIndexOf("/") + 1);
-        if (code == "//")
+        if (cursor.next(/^\/\/\s*?\,/) != null)  //make //, to be considered regex
+            return res;
+        if (cursor.next(/^\/\//) != null)  //prevent // from being considered regex
             return null;
+        //let code = res.text.substring(0, res.text.lastIndexOf("/") + 1);
+        //if (code == "//")
+        //    return null;
         console.log("Detected regex", res.text, lastToken);
         return res;
     }

@@ -96,6 +96,7 @@ var IndexPage = (function () {
     };
     IndexPage.prototype.generateCode = function () {
         var writer = new AstWriter();
+        writer.addParentheses = $("#cbAddParentheses").prop("checked");
         writer.main();
         writer.write(this.unit);
         this.generatedCode = writer.sb.join("");

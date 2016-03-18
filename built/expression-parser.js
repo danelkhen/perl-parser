@@ -51,7 +51,7 @@ var ExpressionParser = (function (_super) {
             TokenTypes.not,
             TokenTypes.greaterThan, TokenTypes.smallerOrEqualsThan, TokenTypes.smallerThan,
             TokenTypes.numericCompare,
-            TokenTypes.concatAssign, TokenTypes.divideAssign, TokenTypes.subtractAssign,
+            TokenTypes.concatAssign, TokenTypes.divideAssign, TokenTypes.subtractAssign, TokenTypes.xorAssign,
             TokenTypes.orAssign,
             TokenTypes.addAssign, TokenTypes.multiplyAssign, TokenTypes.divDivAssign,
             TokenTypes.plus, TokenTypes.minus, TokenTypes.multiply, TokenTypes.multiplyString, TokenTypes.div,
@@ -127,7 +127,7 @@ var ExpressionParser = (function (_super) {
             lastExpression = node;
             return this.parseExpressionOrOperator(lastExpression);
         }
-        else if (this.token.isAny([TokenTypes.integer, TokenTypes.interpolatedString, TokenTypes.qq, TokenTypes.string, TokenTypes.qw, TokenTypes.qx, TokenTypes.q, TokenTypes.heredoc])) {
+        else if (this.token.isAny([TokenTypes.integer, TokenTypes.interpolatedString, TokenTypes.qq, TokenTypes.string, TokenTypes.bareString, TokenTypes.qw, TokenTypes.qx, TokenTypes.q, TokenTypes.heredoc])) {
             if (lastExpression != null)
                 return lastExpression; //shouldn't continue parsing
             return this.parseValueExpression();

@@ -63,6 +63,14 @@ var TokenType = (function () {
         tt.match = matcher;
         return tt;
     };
+    TokenType._capture = function (regex) {
+        var tt = new TokenType();
+        regex = TokenType._fixRegex(regex);
+        tt.match = function (tokenizer) {
+            return tokenizer.cursor.capture(regex);
+        };
+        return tt;
+    };
     return TokenType;
 }());
 var Token = (function () {
@@ -244,7 +252,7 @@ var Cursor = (function () {
         var regex2 = regex;
         var s = this.src.substr(this.index);
         var res = regex2.exec(s);
-        if (res == null || res.length <= 1)
+        if (res == null || res[1] == null)
             return null;
         var index = s.indexOf(res[1]);
         var range = this.getRange(this.index + index, res[1].length);

@@ -120,7 +120,7 @@ var TokenReader = (function () {
         return res;
     };
     TokenReader.prototype.onUnexpectedToken = function () {
-        this.logger.error("unexecpted token type", this.token, this.token.range.start.line, this.token.range.start.column);
+        this.logger.error("unexecpted token type", this.token, this.token.range.start);
         return null;
     };
     return TokenReader;
