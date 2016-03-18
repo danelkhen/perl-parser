@@ -13,6 +13,9 @@ chdir $foo || die; # (chdir $foo) || die
 chdir $foo * 20;   # chdir ($foo * 20)
 
 
+map { $_->staff_id => 1 } Bookings::Db::BAM::Buddy->search_where({ confirmed => 1 });
+
+
 
 
 

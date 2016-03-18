@@ -121,8 +121,14 @@ var TokenTypes = (function () {
     // * unless the delimiter is ''.
     TokenTypes.heredoc = new HereDocTokenType(); // TokenTypes._custom(TokenTypes.match(/<<"([a-zA-Z0-9]+)"[\s\S]*$/m);
     TokenTypes.heredocValue = TokenType._custom(function (t) { return null; }); // TokenTypes._custom(TokenTypes.match(/<<"([a-zA-Z0-9]+)"[\s\S]*$/m);
-    TokenTypes.bareString = TokenType._capture(/(\-?[a-zA-Z_]+[a-zA-Z0-9_]*)?\s*?\=>/);
-    TokenTypes.qq = TokenType._rs([/qq\|[^|]*\|/, /qq\{[^\}]*\}/]);
+    TokenTypes.bareString = TokenType._custom(function (t) {
+        var lastToken = TokenTypes._findLastNonWhitespaceOrCommentToken(t.tokens);
+        if (lastToken != null && lastToken.isAny([TokenTypes.arrow, TokenTypes.packageSeparator]))
+            return null;
+        var res = t.cursor.capture(/^(\-?[a-zA-Z_]+[a-zA-Z0-9_]*)?\s*?\=>/);
+        return res;
+    });
+    TokenTypes.qq = TokenType._rs([/qq\s*?\|[^|]*\|/, /qq\s*?\{[^\}]*\}/]);
     TokenTypes.qw = TokenType._rs([/qw\s*\/[^\/]*\//m, /qw\s*<[^>]*>/m, /qw\s*\([^\)]*\)/m, /qw\s*\[[^\]]*\]/m, /qw\s*\{[^\{]*\}/m]);
     TokenTypes.qr = TokenType._rs([/qr\/.*\//, /qr\(.*?\)/, /qr\{.*?\}/]); //Regexp-like quote
     TokenTypes.qx = TokenType._rs([/qx\/.*\//, /`.*`/]);
@@ -189,13 +195,11 @@ var TokenTypes = (function () {
     TokenTypes.braceClose = TokenType._r(/\}/);
     TokenTypes.bracketOpen = TokenType._r(/\[/);
     TokenTypes.bracketClose = TokenType._r(/\]/);
-    TokenTypes.smallerOrEqualsThan = TokenType._r(/\<=/);
-    TokenTypes.greaterOrEqualsThan = TokenType._r(/\>=/);
     TokenTypes.interpolatedString = TokenType._r(/\"[^"]*\"/);
     TokenTypes.string = TokenType._r(/\'[^\']*\'/);
     TokenTypes.regex = TokenType._custom(TokenTypes._matchRegex); //_r(/\/.*\/[a-z]*/);
     TokenTypes.regexSubstitute = TokenType._rs([/s\/.*\/.*\/[a-z]*/, /s#.*#.*#[a-z]*/, /s\{.*\}\{.*\}[a-z]*/]); // s/abc/def/mg
-    TokenTypes.regexMatch = TokenType._rs([/m\/.*\/[a-z]*/, /m#.*#[a-z]*/]); // s/abc/def/mg
+    TokenTypes.regexMatch = TokenType._rs([/m\/.*\/[a-z]*/, /m#.*#[a-z]*/, /m\{.*\}[a-z]*/]); // s/abc/def/mg
     TokenTypes.colon = TokenType._r(/\:/);
     TokenTypes.question = TokenType._r(/\?/);
     //unary:
@@ -205,6 +209,8 @@ var TokenTypes = (function () {
     TokenTypes.lastIndexVar = TokenType._r(/\$#/);
     //binary
     TokenTypes.numericCompare = TokenType._r(/\<=\>/);
+    TokenTypes.smallerOrEqualsThan = TokenType._r(/\<=/);
+    TokenTypes.greaterOrEqualsThan = TokenType._r(/\>=/);
     TokenTypes.regexEquals = TokenType._r(/=\~/);
     TokenTypes.regexNotEquals = TokenType._r(/\!\~/);
     TokenTypes.smallerThan = TokenType._r(/\</);

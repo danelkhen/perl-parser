@@ -374,7 +374,7 @@
             args.nodes = this.takeAsLongAs(i + 1, arg=> {
                 if (!allowCommas && arg instanceof Operator && arg.token.isAny([TokenTypes.comma, TokenTypes.fatComma]))
                     return false;
-                if (arg instanceof Operator && arg.token.isAny([TokenTypes.colon]))
+                if (arg instanceof Operator && arg.token.isAny([TokenTypes.colon, TokenTypes.question]))
                     return false;
                 if (arg instanceof Operator && arg.token.isAnyKeyword(["and", "or", "not"]))
                     return false;

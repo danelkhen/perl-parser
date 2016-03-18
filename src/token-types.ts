@@ -70,8 +70,14 @@ class TokenTypes {
     // * unless the delimiter is ''.
     static heredoc = new HereDocTokenType();// TokenTypes._custom(TokenTypes.match(/<<"([a-zA-Z0-9]+)"[\s\S]*$/m);
     static heredocValue = TokenType._custom(t=> null);// TokenTypes._custom(TokenTypes.match(/<<"([a-zA-Z0-9]+)"[\s\S]*$/m);
-    static bareString = TokenType._capture(/(\-?[a-zA-Z_]+[a-zA-Z0-9_]*)?\s*?\=>/);
-    static qq = TokenType._rs([/qq\|[^|]*\|/, /qq\{[^\}]*\}/]);
+    static bareString = TokenType._custom(t => {
+        let lastToken = TokenTypes._findLastNonWhitespaceOrCommentToken(t.tokens);
+        if (lastToken != null && lastToken.isAny([TokenTypes.arrow, TokenTypes.packageSeparator]))
+            return null;
+        let res = t.cursor.capture(/^(\-?[a-zA-Z_]+[a-zA-Z0-9_]*)?\s*?\=>/);
+        return res;
+    });
+    static qq = TokenType._rs([/qq\s*?\|[^|]*\|/, /qq\s*?\{[^\}]*\}/]);
     static qw = TokenType._rs([/qw\s*\/[^\/]*\//m, /qw\s*<[^>]*>/m, /qw\s*\([^\)]*\)/m, /qw\s*\[[^\]]*\]/m, /qw\s*\{[^\{]*\}/m]);
     static qr = TokenType._rs([/qr\/.*\//, /qr\(.*?\)/, /qr\{.*?\}/]);//Regexp-like quote
     static qx = TokenType._rs([/qx\/.*\//, /`.*`/]);
@@ -147,13 +153,11 @@ class TokenTypes {
     static braceClose = TokenType._r(/\}/);
     static bracketOpen = TokenType._r(/\[/);
     static bracketClose = TokenType._r(/\]/);
-    static smallerOrEqualsThan = TokenType._r(/\<=/);
-    static greaterOrEqualsThan = TokenType._r(/\>=/);
     static interpolatedString = TokenType._r(/\"[^"]*\"/);
     static string = TokenType._r(/\'[^\']*\'/);
     static regex = TokenType._custom(TokenTypes._matchRegex);//_r(/\/.*\/[a-z]*/);
     static regexSubstitute = TokenType._rs([/s\/.*\/.*\/[a-z]*/, /s#.*#.*#[a-z]*/, /s\{.*\}\{.*\}[a-z]*/]);  // s/abc/def/mg
-    static regexMatch = TokenType._rs([/m\/.*\/[a-z]*/, /m#.*#[a-z]*/]);  // s/abc/def/mg
+    static regexMatch = TokenType._rs([/m\/.*\/[a-z]*/, /m#.*#[a-z]*/, /m\{.*\}[a-z]*/]);  // s/abc/def/mg
 
     static colon = TokenType._r(/\:/);
     static question = TokenType._r(/\?/);
@@ -167,6 +171,8 @@ class TokenTypes {
     
     //binary
     static numericCompare = TokenType._r(/\<=\>/);
+    static smallerOrEqualsThan = TokenType._r(/\<=/);
+    static greaterOrEqualsThan = TokenType._r(/\>=/);
     static regexEquals = TokenType._r(/=\~/);
     static regexNotEquals = TokenType._r(/\!\~/);
     static smallerThan = TokenType._r(/\</);
