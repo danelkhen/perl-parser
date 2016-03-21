@@ -79,7 +79,7 @@ class TokenTypes {
     });
     static qq = TokenType._rs([/qq\s*?\|[^|]*\|/, /qq\s*?\{[^\}]*\}/]);
     static qw = TokenType._rs([/qw\s*\/[^\/]*\//m, /qw\s*<[^>]*>/m, /qw\s*\([^\)]*\)/m, /qw\s*\[[^\]]*\]/m, /qw\s*\{[^\{]*\}/m]);
-    static qr = TokenType._rs([/qr\/.*\//, /qr\(.*?\)/, /qr\{.*?\}/]);//Regexp-like quote
+    static qr = TokenType._rs([/qr\/.*\/[a-z]*/, /qr\(.*?\)[a-z]*/, /qr\{.*?\}[a-z]*/]);//Regexp-like quote
     static qx = TokenType._rs([/qx\/.*\//, /`.*`/]);
     static tr = TokenType._rs([/tr\/.*\/.*\/[cdsr]*/, /tr\{.*\}\{.*\}/]); //token replace
     static q = TokenType._rs([/q\{[^\}]*\}/]);
@@ -171,8 +171,8 @@ class TokenTypes {
     
     //binary
     static numericCompare = TokenType._r(/\<=\>/);
-    static smallerOrEqualsThan = TokenType._r(/\<=/);
-    static greaterOrEqualsThan = TokenType._r(/\>=/);
+    static smallerThanOrEquals = TokenType._r(/\<=/);
+    static greaterThanOrEquals = TokenType._r(/\>=/);
     static regexEquals = TokenType._r(/=\~/);
     static regexNotEquals = TokenType._r(/\!\~/);
     static smallerThan = TokenType._r(/\</);
@@ -220,7 +220,9 @@ class TokenTypes {
         TokenTypes.regexEquals,
         TokenTypes.regexNotEquals,
         TokenTypes.smallerThan,
+        TokenTypes.smallerThanOrEquals,
         TokenTypes.greaterThan,
+        TokenTypes.greaterThanOrEquals,
         TokenTypes.arrow,
         TokenTypes.comma,
         TokenTypes.fatComma,
@@ -292,7 +294,7 @@ class TokenTypes {
         //let code = res.text.substring(0, res.text.lastIndexOf("/") + 1);
         //if (code == "//")
         //    return null;
-        console.log("Detected regex", res.text, lastToken);
+        //console.log("Detected regex", res.text, lastToken);
         return res;
     }
 

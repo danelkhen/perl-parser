@@ -79,7 +79,7 @@
         }
         else if (this.token.isAnyKeyword(["foreach", "for"]))
             return this.parseForEachOrForStatement();
-        else if (this.token.isKeyword("while"))
+        else if (this.token.isAnyKeyword(["while","until"]))
             return this.parseWhileStatement();
         else if (this.token.isKeyword("__END__"))
             return this.parseEndStatement();
@@ -202,7 +202,9 @@
     }
     parseWhileStatement(): WhileStatement {
         let node = this.create(WhileStatement);
-        node.keywordToken = this.expectKeyword("while");
+        if (!this.token.isAnyKeyword(["while", "until"]))
+            throw new Error();
+        node.keywordToken = this.token;
         node.keywordTokenPost = this.nextNonWhitespaceToken(node);
 
         node.parenOpenToken = this.expect(TokenTypes.parenOpen, node);

@@ -103,7 +103,7 @@ var TokenTypes = (function () {
         //let code = res.text.substring(0, res.text.lastIndexOf("/") + 1);
         //if (code == "//")
         //    return null;
-        console.log("Detected regex", res.text, lastToken);
+        //console.log("Detected regex", res.text, lastToken);
         return res;
     };
     TokenTypes.identifierRegex = /[a-zA-Z_][a-zA-Z_0-9]*/;
@@ -130,7 +130,7 @@ var TokenTypes = (function () {
     });
     TokenTypes.qq = TokenType._rs([/qq\s*?\|[^|]*\|/, /qq\s*?\{[^\}]*\}/]);
     TokenTypes.qw = TokenType._rs([/qw\s*\/[^\/]*\//m, /qw\s*<[^>]*>/m, /qw\s*\([^\)]*\)/m, /qw\s*\[[^\]]*\]/m, /qw\s*\{[^\{]*\}/m]);
-    TokenTypes.qr = TokenType._rs([/qr\/.*\//, /qr\(.*?\)/, /qr\{.*?\}/]); //Regexp-like quote
+    TokenTypes.qr = TokenType._rs([/qr\/.*\/[a-z]*/, /qr\(.*?\)[a-z]*/, /qr\{.*?\}[a-z]*/]); //Regexp-like quote
     TokenTypes.qx = TokenType._rs([/qx\/.*\//, /`.*`/]);
     TokenTypes.tr = TokenType._rs([/tr\/.*\/.*\/[cdsr]*/, /tr\{.*\}\{.*\}/]); //token replace
     TokenTypes.q = TokenType._rs([/q\{[^\}]*\}/]);
@@ -209,8 +209,8 @@ var TokenTypes = (function () {
     TokenTypes.lastIndexVar = TokenType._r(/\$#/);
     //binary
     TokenTypes.numericCompare = TokenType._r(/\<=\>/);
-    TokenTypes.smallerOrEqualsThan = TokenType._r(/\<=/);
-    TokenTypes.greaterOrEqualsThan = TokenType._r(/\>=/);
+    TokenTypes.smallerThanOrEquals = TokenType._r(/\<=/);
+    TokenTypes.greaterThanOrEquals = TokenType._r(/\>=/);
     TokenTypes.regexEquals = TokenType._r(/=\~/);
     TokenTypes.regexNotEquals = TokenType._r(/\!\~/);
     TokenTypes.smallerThan = TokenType._r(/\</);
@@ -243,7 +243,9 @@ var TokenTypes = (function () {
         TokenTypes.regexEquals,
         TokenTypes.regexNotEquals,
         TokenTypes.smallerThan,
+        TokenTypes.smallerThanOrEquals,
         TokenTypes.greaterThan,
+        TokenTypes.greaterThanOrEquals,
         TokenTypes.arrow,
         TokenTypes.comma,
         TokenTypes.fatComma,

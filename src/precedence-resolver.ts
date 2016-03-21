@@ -39,7 +39,7 @@
 
     //isFunction(node: Expression | Operator | Block): boolean {
     //}
-    resolve(allowNonParenthesizedList?: boolean) {
+    resolve(allowNonParenthesizedNoCommaList?: boolean) {
         if (this.nodes.length == 1 && this.nodes[0] instanceof Expression)
             return <Expression>this.nodes[0];
 
@@ -48,6 +48,7 @@
         this.nodes.ofType(HashRefCreationExpression).forEach(t=> this.resolveCodeRefOrDeref(t));
         this.nodes.ofType(HashRefCreationExpression).forEach(t=> this.resolveHashMemberAccess(t));
         this.nodes.ofType(ArrayRefDeclaration).forEach(t=> this.resolveArrayMemberAccess(t));
+        this.nodes.ofType(Operator).where(t=> t.token.is(TokenTypes.bitwiseAnd)).forEach(t=> this.resolveSigilPrefixUnary(t));
         //Statement modifiers (hack)
         this.nodes.ofType(Operator).where(t=> t.token.isAnyKeyword(TokenTypes.statementModifiers)).forEach(t=> this.resolveStatementModifier(t));
 
@@ -62,8 +63,8 @@
         this.nodes.ofType(Operator).where(t=> t.token.isAny([TokenTypes.inc, TokenTypes.dec])).forEach(t=> this.resolveAutoIncDec(t));
         //console.log("resolved", this.nodes);
         //    right	**
-        //    right	! ~ \ and unary + and - //TODO: moved to be under namedUnaryOperators - since !exists $a->{"b"}
-        this.nodes.reversed().ofType(Operator).where(t=> t.token.isAny([TokenTypes.not, TokenTypes.tilda, TokenTypes.makeRef, TokenTypes.sigil, TokenTypes.lastIndexVar, TokenTypes.plus, TokenTypes.minus /*TODO: coderef TokenTypes.multiply, TokenTypes.plus, TokenTypes.minus*/])).forEach(t=> this.resolvePrefixUnary(t));
+        //    right	! ~ \ and unary + and -
+        this.nodes.reversed().ofType(Operator).where(t=> t.token.isAny([TokenTypes.not, TokenTypes.tilda, TokenTypes.makeRef, TokenTypes.sigil, TokenTypes.lastIndexVar, TokenTypes.plus, TokenTypes.minus,  /*TODO: coderef TokenTypes.multiply*/])).forEach(t=> this.resolvePrefixUnary(t));
         //console.log("resolved", this.nodes);
         //    left	=~ !~
         this.nodes.ofType(Operator).where(t=> t.token.isAny([TokenTypes.regexEquals, TokenTypes.regexNotEquals])).forEach(t=> this.resolveBinary(t));
@@ -77,14 +78,12 @@
         //        left	<< >>
         //        nonassoc	named unary operators
         this.nodes.ofType(NamedMemberExpression).where(t=> this.isNamedUnaryOperator(t)).forEach(t=> this.resolveNamedUnaryOperator(t));
-
-        //this.nodes.reversed().ofType(Operator).where(t=> t.token.isAny([TokenTypes.not, TokenTypes.tilda, TokenTypes.makeRef, TokenTypes.sigil, TokenTypes.lastIndexVar, TokenTypes.plus, TokenTypes.minus /*TODO: coderef TokenTypes.multiply, TokenTypes.plus, TokenTypes.minus*/])).forEach(t=> this.resolvePrefixUnary(t));        
         
         //console.log("resolved", this.nodes);
         //        nonassoc	< > <= >= lt gt le ge            //TODO: lt gt le ge
         this.nodes.ofType(Operator).where(t=> t.token.isAny([
-            TokenTypes.greaterThan, TokenTypes.greaterOrEqualsThan,
-            TokenTypes.smallerThan, TokenTypes.smallerOrEqualsThan,
+            TokenTypes.greaterThan, TokenTypes.greaterThanOrEquals,
+            TokenTypes.smallerThan, TokenTypes.smallerThanOrEquals,
         ]) || t.token.isAnyKeyword(["lt", "gt", "le", "ge"])).forEach(t=> this.resolveBinary(t));
         //console.log("resolved", this.nodes);
         //        nonassoc	== != <=> eq ne cmp ~~
@@ -95,7 +94,9 @@
             .forEach(t=> this.resolveBinary(t));
         //console.log("resolved", this.nodes);
         //        left	&
+        this.nodes.ofType(Operator).where(t=> t.token.is(TokenTypes.bitwiseAnd)).forEach(t=> this.resolveBinary(t));
         //        left	| ^
+        this.nodes.ofType(Operator).where(t=> t.token.isAny([TokenTypes.bitwiseOr, TokenTypes.bitwiseXor])).forEach(t=> this.resolveBinary(t));
         //        left	&&
         this.nodes.ofType(Operator).where(t=> t.token.is(TokenTypes.and)).forEach(t=> this.resolveBinary(t));
         //        left	|| //
@@ -130,7 +131,11 @@
 
         //console.log("resolved", this.nodes);
         if (this.nodes.length > 1) {
-            if (allowNonParenthesizedList && this.nodes.where(t=> t instanceof Expression || t instanceof Block).length == this.nodes.length) {
+            if (allowNonParenthesizedNoCommaList && this.nodes.where(t=> t instanceof Expression || t instanceof Block).length == this.nodes.length) {
+                if (this.nodes.length > 2)
+                    throw new Error();
+                if (this.nodes.length == 2 && !(this.nodes[0] instanceof Block) && !(this.nodes[0] instanceof HashRefCreationExpression)) //if the latter, convert to block
+                    throw new Error();
                 let node = new NonParenthesizedList();
                 node.items = <Expression[]>this.nodes.select(t=> t instanceof Block ? this.toBlockExpression(t) : t);
                 node.itemsSeparators = [];
@@ -200,7 +205,7 @@
         if (index <= 0)
             return node;
         let left = this.nodes[index - 1];
-        if (left instanceof NamedMemberExpression) {
+        if (left instanceof Expression){ //NamedMemberExpression) {
             let node2 = new InvocationExpression();
             node2.target = left;
             node2.arguments = node;
@@ -279,7 +284,7 @@
                 return node;
             let node2 = new HashMemberAccessExpression();
             node2.member = node;
-            node2.target = <Expression>left;
+            node2.target = this.toMemberExpression(left);
             this.nodes.removeAt(index - 1);
             this.nodes[index - 1] = node2;
             return node2;
@@ -302,7 +307,7 @@
             let node2 = new ArrayMemberAccessExpression();
             node2.member = node;
             if (left instanceof Expression) {
-                node2.target = left;
+                node2.target = this.toMemberExpression(left);
                 this.nodes.removeAt(index - 1);
                 this.nodes[index - 1] = node2;
             }
@@ -323,9 +328,9 @@
         node.trueExpression = <Expression>this.nodes[index + 1];
         node.colonOperator = <Operator>this.nodes[index + 2];
         node.falseExpression = <Expression>this.nodes[index + 3];
-        console.log("before", this.nodes.length);
+        //console.log("before", this.nodes.length);
         this.nodes.splice(index - 1, 5, node);
-        console.log("after", this.nodes.length);
+        //console.log("after", this.nodes.length);
         return node;
     }
 
@@ -335,7 +340,7 @@
         return node;
     }
     isBinaryOperator(op: Operator): boolean {
-        return op.token.isAny(TokenTypes.binaryOperators) || op.token.isAnyKeyword(["and", "or", "eq", "ne", "cmp", ]);
+        return op.token.isAny(TokenTypes.binaryOperators) || op.token.isAnyKeyword(["and", "or", "eq", "ne", "cmp", "ge", "le", "gt", "lt"]);
     }
 
     //isUnaryOperator(op: Operator): boolean {
@@ -490,6 +495,23 @@
         node.expression = <Expression>this.nodes[index - 1];
         this.nodes.removeAt(index - 1);
         this.nodes[index - 1] = node;
+        return node;
+    }
+
+    resolveSigilPrefixUnary(op: Operator) {
+        let node = new PrefixUnaryExpression();
+        let index = this.nodes.indexOf(op);
+        let left = this.nodes[index - 1];
+        if (left instanceof Expression)
+            return null;//op;
+        let right = [this.nodes[index + 1]];
+        if (right[0] instanceof NamedMemberExpression && this.isNamedUnaryOperator(<NamedMemberExpression>right[0]))
+            right.add(this.nodes[index + 2]);
+        let right2 = this.resolve3(right);
+        node.operator = op;
+        node.expression = right2;
+        this.nodes.removeRange(right);
+        this.nodes[index] = node;
         return node;
     }
 

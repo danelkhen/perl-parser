@@ -44,9 +44,9 @@
         this.log("parseExpression", this.token, lastExpression);
         if (this.token.isAny([
             TokenTypes.assignment, TokenTypes.concat, TokenTypes.divDiv, TokenTypes.regexEquals, TokenTypes.regexNotEquals,
-            TokenTypes.equals, TokenTypes.notEquals, TokenTypes.and, TokenTypes.or, TokenTypes.greaterOrEqualsThan,
+            TokenTypes.equals, TokenTypes.notEquals, TokenTypes.and, TokenTypes.or, TokenTypes.greaterThanOrEquals,
             TokenTypes.not,
-            TokenTypes.greaterThan, TokenTypes.smallerOrEqualsThan, TokenTypes.smallerThan,
+            TokenTypes.greaterThan, TokenTypes.smallerThanOrEquals, TokenTypes.smallerThan,
             TokenTypes.numericCompare,
             TokenTypes.concatAssign, TokenTypes.divideAssign, TokenTypes.subtractAssign, TokenTypes.xorAssign,
             TokenTypes.orAssign,
