@@ -1,5 +1,9 @@
-﻿
-class Logger {
+﻿/// <reference path="../typings/main/ambient/es6-shim/es6-shim.d.ts" />
+import {Token, TokenType} from "./token";
+import {TokenTypes} from "./token-types";
+import {AstNode} from "./ast";
+
+export class Logger {
     log(...args) {
         //console.log.apply(console, args);
     }
@@ -13,7 +17,7 @@ class Logger {
     }
 }
 
-class TokenReader {
+export class TokenReader {
     tokens: Token[];
     token: Token;
     tokenIndex = -1;
@@ -115,83 +119,10 @@ class TokenReader {
 
 
 
-interface RegExp {
-    execFrom(index: number, s: string): RegExpExecArray;
-    testFrom(index: number, s: string): boolean;
-}
-
-RegExp.prototype.execFrom = function (index: number, s: string): RegExpExecArray {
-    let re: RegExp = this;
-    re.lastIndex = index;
-    return re.exec(s);
-}
-RegExp.prototype.testFrom = function (index: number, s: string): boolean {
-    let re: RegExp = this;
-    re.lastIndex = index;
-    return re.test(s);
-}
 
 
-let DEBUG = true;
-function safeTry<T>(action: (...args: any[]) => T): Promise<T> {
-    return new Promise<T>((resolve, reject) => {
-        if (DEBUG) {
-            let res = action();
-            resolve(res);
-        }
-        else {
-            try {
-                let res = action();
-                resolve(res);
-            }
-            catch (e) {
-                reject(e);
-            }
-        }
 
-    });
-}
-
-
-interface Array<T> {
-    withItemBetweenEach<R>(item: R): Array<T | R>;
-    ofType<R extends T>(type: Type<R>): Array<R>;
-    selectFirst<V>(selector: (item: T) => V, predicate: (item: T) => boolean): V;
-    selectFirstNonNull<V>(selector: (item: T) => V): V;
-    reversed():T[];
-}
-Array.prototype.ofType = function (ctor) {
-    return this.where(t=> t instanceof ctor);
-}
-
-Array.prototype.withItemBetweenEach = function (item) {
-    let list = [];
-    for (let i = 0; i < this.length; i++) {
-        if (i > 0)
-            list.push(item);
-        list.push(this[i]);
-    }
-    return list;
-}
-Array.prototype.selectFirstNonNull = function (selector) {
-    return this.selectFirst(selector, t=> t != null);
-}
-Array.prototype.selectFirst = function (selector, predicate) {
-    for (let i = 0; i < this.length; i++) {
-        let item = this[i];
-        let res = selector(item);
-        if (predicate(res))
-            return res;
-    }
-    return null;
-}
-Array.prototype.reversed = function () {
-    let x = this.toArray();
-    x.reverse();
-    return x;
-}
-
-class AstNodeFixator {
+export class AstNodeFixator {
     process(node: AstNode) {
         let props = Object.keys(node);
         props.forEach(prop=> {
@@ -218,3 +149,23 @@ class AstNodeFixator {
 }
 
 
+
+export let DEBUG = true;
+export function safeTry<T>(action: (...args: any[]) => T): Promise<T> {
+    return new Promise<T>((resolve, reject) => {
+        if (DEBUG) {
+            let res = action();
+            resolve(res);
+        }
+        else {
+            try {
+                let res = action();
+                resolve(res);
+            }
+            catch (e) {
+                reject(e);
+            }
+        }
+
+    });
+}

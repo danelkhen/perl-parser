@@ -1,4 +1,17 @@
-﻿class PrecedenceResolver {
+﻿import {TokenTypes} from "./token-types";
+
+import {
+AstNode, Expression, Statement, UnresolvedExpression, SimpleName, SubroutineDeclaration, SubroutineExpression, ArrayMemberAccessExpression, ArrayRefDeclaration,
+BarewordExpression, BeginStatement, BinaryExpression, Block, BlockExpression, BlockStatement, ElseStatement, ElsifStatement, EmptyStatement, EndStatement,
+ExpressionStatement, ForEachStatement, ForStatement, HashMemberAccessExpression, HashRefCreationExpression, IfStatement, InvocationExpression, MemberExpression,
+NamedMemberExpression, NativeFunctionInvocation, NativeInvocation_BlockAndListOrExprCommaList, NativeInvocation_BlockOrExpr, NonParenthesizedList, NoStatement,
+Operator, PackageDeclaration, ParenthesizedList, PostfixUnaryExpression, PrefixUnaryExpression, QwExpression, RawExpression, RawStatement, RegexExpression,
+ReturnExpression, TrinaryExpression, Unit, UnlessStatement, UseOrNoStatement, UseStatement, ValueExpression, VariableDeclarationExpression, VariableDeclarationStatement, WhileStatement,
+HasArrow, HasLabel,
+} from "./ast";
+
+
+export class PrecedenceResolver {
     constructor(public mbe: UnresolvedExpression) {
         this.nodes = mbe.nodes.toArray();
     }
@@ -205,7 +218,7 @@
         if (index <= 0)
             return node;
         let left = this.nodes[index - 1];
-        if (left instanceof Expression){ //NamedMemberExpression) {
+        if (left instanceof Expression) { //NamedMemberExpression) {
             let node2 = new InvocationExpression();
             node2.target = left;
             node2.arguments = node;
@@ -245,6 +258,28 @@
         }
         return null;
     }
+    toMemberExpressionOrExpression(node: AstNode): Expression {
+        if (node instanceof Expression) {
+            if (node instanceof MemberExpression) {
+                return node;
+            }
+            else if (node instanceof ArrayRefDeclaration) {
+                let node2 = new ArrayMemberAccessExpression();
+                node2.member = node;
+                return node2;
+            }
+            else if (node instanceof HashRefCreationExpression) {
+                let node2 = new HashMemberAccessExpression();
+                node2.member = node;
+                return node2;
+            }
+            else if (node instanceof ParenthesizedList) {
+                return this.resolveInvocation(node);
+            }
+        }
+        return null;
+    }
+
     resolveArrow(op: Operator) {
         let index = this.nodes.indexOf(op);
         let left = this.nodes[index - 1];
@@ -284,7 +319,7 @@
                 return node;
             let node2 = new HashMemberAccessExpression();
             node2.member = node;
-            node2.target = this.toMemberExpression(left);
+            node2.target = this.toMemberExpressionOrExpression(left);
             this.nodes.removeAt(index - 1);
             this.nodes[index - 1] = node2;
             return node2;
@@ -307,7 +342,7 @@
             let node2 = new ArrayMemberAccessExpression();
             node2.member = node;
             if (left instanceof Expression) {
-                node2.target = this.toMemberExpression(left);
+                node2.target = this.toMemberExpressionOrExpression(left);
                 this.nodes.removeAt(index - 1);
                 this.nodes[index - 1] = node2;
             }

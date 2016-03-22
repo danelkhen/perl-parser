@@ -1,8 +1,15 @@
-﻿
-interface TokenQuery {
+﻿/// <reference path="extensions.ts" />
+import {Token, TokenType} from "./token";
+import {AstWriter} from "./ast-writer";
+import {AstNode} from "./ast";
+import {TokenReader, Logger} from "./utils";
+import {TokenTypes} from "./token-types";
+
+
+export interface TokenQuery {
     (token: Token): boolean;
 }
-interface TokenSetter {
+export interface TokenSetter {
     (token: Token): boolean;
 }
 
@@ -10,32 +17,32 @@ interface TokenSetter {
     
 //}
 
-class ParserBase {
+export class ParserBase {
     onUnexpectedToken(): any {
         this.reader.onUnexpectedToken();
         return null;
     }
-    expectIdentifier(value?: string):Token {
+    expectIdentifier(value?: string): Token {
         return this.reader.expectIdentifier(value);
     }
-    expectKeyword(value?: string):Token {
-        if(this.reader.expectKeyword(value))
+    expectKeyword(value?: string): Token {
+        if (this.reader.expectKeyword(value))
             return this.token;
         return null;
     }
-    expectAny(types: TokenType[], node?: AstNode):Token {
+    expectAny(types: TokenType[], node?: AstNode): Token {
         let res = this.reader.expectAny(types);
         if (res && node != null)
             node.tokens.add(this.token);
         return this.token;
     }
-    expect(type: TokenType, node?: AstNode):Token {
+    expect(type: TokenType, node?: AstNode): Token {
         let res = this.reader.expect(type);
         if (res && node != null)
             node.tokens.add(this.token);
         return this.token;
     }
-    expectToken(query: TokenQuery, node?: AstNode):Token {
+    expectToken(query: TokenQuery, node?: AstNode): Token {
         if (query(this.token)) {
             if (node != null)
                 node.tokens.add(this.token);
@@ -73,7 +80,7 @@ class ParserBase {
     nextToken() {
         return this.reader.nextToken();
     }
-    nextNonWhitespaceToken(node?: AstNode):Token[] {
+    nextNonWhitespaceToken(node?: AstNode): Token[] {
         let skipped = this.reader.nextNonWhitespaceToken();
         if (node != null)
             node.tokens.addRange(skipped);

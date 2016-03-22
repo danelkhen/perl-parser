@@ -1,10 +1,27 @@
-﻿"use strict";
-$(main);
-function main() {
-    new IndexPage().main();
-}
+﻿/// <reference path="../src/extensions.ts" />
+"use strict";
 
-class IndexPage {
+import {Token, TokenType, File2,} from "../src/token";
+import {AstWriter} from "../src/ast-writer";
+import {ParserBase} from "../src/parser-base";
+import {ExpressionParser} from "../src/expression-parser";
+import {Parser} from "../src/parser";
+import {
+AstNode, Expression, Statement, UnresolvedExpression, SimpleName, SubroutineDeclaration, SubroutineExpression, ArrayMemberAccessExpression, ArrayRefDeclaration,
+BarewordExpression, BeginStatement, BinaryExpression, Block, BlockExpression, BlockStatement, ElseStatement, ElsifStatement, EmptyStatement, EndStatement,
+ExpressionStatement, ForEachStatement, ForStatement, HashMemberAccessExpression, HashRefCreationExpression, IfStatement, InvocationExpression, MemberExpression,
+NamedMemberExpression, NativeFunctionInvocation, NativeInvocation_BlockAndListOrExprCommaList, NativeInvocation_BlockOrExpr, NonParenthesizedList, NoStatement,
+Operator, PackageDeclaration, ParenthesizedList, PostfixUnaryExpression, PrefixUnaryExpression, QwExpression, RawExpression, RawStatement, RegexExpression,
+ReturnExpression, TrinaryExpression, Unit, UnlessStatement, UseOrNoStatement, UseStatement, ValueExpression, VariableDeclarationExpression, VariableDeclarationStatement, WhileStatement,
+HasArrow, HasLabel,
+} from "../src/ast";
+import {PrecedenceResolver} from "../src/precedence-resolver";
+import {TokenTypes} from "../src/token-types";
+import {Tokenizer} from "../src/tokenizer";
+import {safeTry, TokenReader, Logger, AstNodeFixator} from "../src/utils";
+import "../src/extensions";
+
+export class IndexPage {
 
     tokenToElement: Map<Token, HTMLElement> = new Map<Token, HTMLElement>();
     tbUrl: JQuery;
@@ -88,7 +105,7 @@ class IndexPage {
             this.tokens = tok.tokens;
             this.renderTokens();
 
-            var statements = parser.doParse();
+            var statements = parser.parse();
             console.log(statements);
             let unit = new Unit();
             unit.statements = statements;
@@ -277,9 +294,6 @@ interface TreeNodeData {
     children: TreeNodeData[];
 }
 
-interface Function {
-    name: string;
-}
 
 
 
@@ -505,4 +519,10 @@ class CodeBuilder<T extends AstNode> {
         return node;
     }
 
+}
+
+
+$(main);
+export function main() {
+    new IndexPage().main();
 }

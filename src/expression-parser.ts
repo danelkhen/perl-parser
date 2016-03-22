@@ -1,4 +1,23 @@
-﻿class ExpressionParser extends ParserBase {
+﻿"use strict";
+import {Token, TokenType} from "./token";
+import {TokenTypes} from "./token-types";
+import {AstWriter} from "./ast-writer";
+import {ParserBase} from "./parser-base";
+import {Parser} from "./parser";
+import {
+AstNode, Expression, Statement, UnresolvedExpression, SimpleName, SubroutineDeclaration, SubroutineExpression, ArrayMemberAccessExpression, ArrayRefDeclaration,
+BarewordExpression, BeginStatement, BinaryExpression, Block, BlockExpression, BlockStatement, ElseStatement, ElsifStatement, EmptyStatement, EndStatement,
+ExpressionStatement, ForEachStatement, ForStatement, HashMemberAccessExpression, HashRefCreationExpression, IfStatement, InvocationExpression, MemberExpression,
+NamedMemberExpression, NativeFunctionInvocation, NativeInvocation_BlockAndListOrExprCommaList, NativeInvocation_BlockOrExpr, NonParenthesizedList, NoStatement,
+Operator, PackageDeclaration, ParenthesizedList, PostfixUnaryExpression, PrefixUnaryExpression, QwExpression, RawExpression, RawStatement, RegexExpression,
+ReturnExpression, TrinaryExpression, Unit, UnlessStatement, UseOrNoStatement, UseStatement, ValueExpression, VariableDeclarationExpression, VariableDeclarationStatement, WhileStatement,
+HasArrow, HasLabel,
+} from "./ast";
+import {PrecedenceResolver} from "./precedence-resolver";
+
+
+
+export class ExpressionParser extends ParserBase {
     parser: Parser;
 
 
@@ -63,7 +82,7 @@
         ]) || this.token.isAnyKeyword([
             "if", "unless", "while", "until", "for", "foreach", "when", //statement modifiers
             "and", "or", "ne", "cmp", "not",
-            "ge", "le", "eq",  "lt", "gt",
+            "ge", "le", "eq", "lt", "gt",
         ])) { 
             
             //if (this.token.isAnyKeyword(["for", "foreach"])) {           //for,foreach postfix have list after them without parantheses

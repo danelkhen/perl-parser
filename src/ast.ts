@@ -1,5 +1,10 @@
 ﻿"use strict";
-class AstNode {
+
+import {Token} from "./token";
+import {AstWriter} from "./ast-writer";
+
+
+export class AstNode {
 
     parentNode: AstNode;
     parentNodeProp: string;
@@ -16,26 +21,26 @@ class AstNode {
         return writer.sb.join("");
     }
 }
-class Statement extends AstNode {
+export class Statement extends AstNode {
     isStatement = true;
 }
 
-class EmptyStatement extends Statement {
+export class EmptyStatement extends Statement {
     semicolonToken: Token;
 }
 
-class Expression extends AstNode {
+export class Expression extends AstNode {
     isExpression = true;
 }
 
-class Block extends AstNode {
+export class Block extends AstNode {
     braceOpenToken: Token;
     braceOpenTokenPost: Token[];
     statements: Statement[];
     braceCloseToken: Token;
 }
 
-//class ParenthesizedExpression extends Expression {
+//export class ParenthesizedExpression extends Expression {
 //    parenOpenToken: Token;
 //    parenOpenTokenPost: Token[];
 //    expression: Expression;
@@ -43,19 +48,19 @@ class Block extends AstNode {
 //}
 
 
-class ParenthesizedList extends Expression {
+export class ParenthesizedList extends Expression {
     parenOpenToken: Token;
     parenOpenTokenPost: Token[];
     list: NonParenthesizedList;
     parenCloseToken: Token;
 }
 
-class NonParenthesizedList extends Expression {
+export class NonParenthesizedList extends Expression {
     itemsSeparators: Operator[];
     items: Expression[];
 }
 
-class HashRefCreationExpression extends Expression {
+export class HashRefCreationExpression extends Expression {
     braceOpenToken: Token;
     braceOpenTokenPost: Token[];
     list: NonParenthesizedList;
@@ -63,18 +68,18 @@ class HashRefCreationExpression extends Expression {
 }
 
 
-class ArrayRefDeclaration extends Expression {
+export class ArrayRefDeclaration extends Expression {
     bracketOpenToken: Token;
     bracketOpenTokenPost: Token[];
     items: Expression[];
     itemsSeparators: Operator[];
     bracketCloseToken: Token;
 }
-class Unit extends AstNode {
+export class Unit extends AstNode {
     statements: Statement[];
 }
 
-class PackageDeclaration extends Statement {
+export class PackageDeclaration extends Statement {
     packageToken: Token;
     packageTokenPost: Token[];
     semicolonToken: Token;
@@ -83,15 +88,15 @@ class PackageDeclaration extends Statement {
     name: Expression;//TODO:MemberExpression;
 }
 
-class VariableDeclarationStatement extends Statement {
+export class VariableDeclarationStatement extends Statement {
     declaration: VariableDeclarationExpression;
     semicolonToken: Token;
 }
 
-class SimpleName extends Expression {
+export class SimpleName extends Expression {
     name: string;
 }
-class VariableDeclarationExpression extends Expression {
+export class VariableDeclarationExpression extends Expression {
     myOurToken: Token;
     myOurTokenPost: Token[];
     variables: Expression;  //my $name, my ($name, $age)
@@ -101,30 +106,30 @@ class VariableDeclarationExpression extends Expression {
     initializer: Expression;
 }
 
-class SubroutineDeclaration extends Statement {
+export class SubroutineDeclaration extends Statement {
     declaration: SubroutineExpression;
     semicolonToken: Token;
 }
 
-class RegexExpression extends Expression {
+export class RegexExpression extends Expression {
     value: string;
 }
 
-class BlockStatement extends Statement {
+export class BlockStatement extends Statement {
     block: Block;
     blockPost: Token[];
     semicolonToken: Token;
 }
 
 
-class ExpressionStatement extends Statement {
+export class ExpressionStatement extends Statement {
     expression: Expression;
     expressionPost: Token[];
     semicolonToken: Token;
 
 }
 
-class UseOrNoStatement extends Statement {
+export class UseOrNoStatement extends Statement {
     useToken: Token;
     useTokenPost: Token[];
     modulePostTokens: Token[];
@@ -135,30 +140,30 @@ class UseOrNoStatement extends Statement {
     list: Expression;
 }
 
-class UseStatement extends UseOrNoStatement {
+export class UseStatement extends UseOrNoStatement {
 }
-class NoStatement extends UseOrNoStatement {
+export class NoStatement extends UseOrNoStatement {
 }
 
-class MemberExpression extends Expression {
+export class MemberExpression extends Expression {
     target: Expression;
     arrow: boolean;
     //TODO: arrowOperator:Operator;
     memberSeparatorToken: Token;
 }
-class NamedMemberExpression extends MemberExpression implements HasArrow {
+export class NamedMemberExpression extends MemberExpression implements HasArrow {
     name: string;
 }
 
-class HashMemberAccessExpression extends MemberExpression implements HasArrow {
+export class HashMemberAccessExpression extends MemberExpression implements HasArrow {
     member: HashRefCreationExpression;
 }
 
-class ArrayMemberAccessExpression extends MemberExpression implements HasArrow {
+export class ArrayMemberAccessExpression extends MemberExpression implements HasArrow {
     member: ArrayRefDeclaration;
 }
 
-class InvocationExpression extends MemberExpression implements HasArrow {
+export class InvocationExpression extends MemberExpression implements HasArrow {
     target: Expression;
     targetPost: Token[];
     memberSeparatorToken: Token;
@@ -168,33 +173,33 @@ class InvocationExpression extends MemberExpression implements HasArrow {
     //arrowToken: Token;
 }
 
-class BlockExpression extends Expression {
+export class BlockExpression extends Expression {
     block: Block;
 }
-class BarewordExpression extends Expression {
+export class BarewordExpression extends Expression {
     value: string;
 }
 
-//class DerefMemberExpression extends Expression {
+//export class DerefMemberExpression extends Expression {
 
 //}
 
-class QwExpression extends Expression {
+export class QwExpression extends Expression {
     items: ValueExpression[];
 }
-class ValueExpression extends Expression {
+export class ValueExpression extends Expression {
     value: any;
 }
 
-//class ReturnStatement extends Statement {
+//export class ReturnStatement extends Statement {
 //    value: any;
 //    expression: Expression;
 //}
-class EndStatement extends Statement {
+export class EndStatement extends Statement {
     endToken: Token;
 }
 
-class IfStatement extends Statement {
+export class IfStatement extends Statement {
     keywordToken: Token;
     keywordTokenPost: Token[];
     parenOpenToken: Token;
@@ -207,42 +212,42 @@ class IfStatement extends Statement {
     else: Statement;
     semicolonToken: Token;
 }
-class UnlessStatement extends IfStatement {
+export class UnlessStatement extends IfStatement {
 }
 
-class ElsifStatement extends IfStatement {
+export class ElsifStatement extends IfStatement {
 }
-class ElseStatement extends Statement {
+export class ElseStatement extends Statement {
     keywordToken: Token;
     keywordTokenPost: Token[];
     block: Block;
     semicolonToken: Token;
 }
 
-class PrefixUnaryExpression extends Expression {
+export class PrefixUnaryExpression extends Expression {
     operator: Operator;
     operatorPost: Token[];
     expression: Expression;
 }
-class PostfixUnaryExpression extends Expression {
+export class PostfixUnaryExpression extends Expression {
     expression: Expression;
     operator: Operator;
     operatorPost: Token[];
 }
 
-class ReturnExpression extends Expression {
+export class ReturnExpression extends Expression {
     returnToken: Token;
     returnTokenPost: Token[];
     expression: Expression;
 }
 
-class BinaryExpression extends Expression {
+export class BinaryExpression extends Expression {
     left: Expression;
     operator: Operator;
     right: Expression;
 }
 
-class TrinaryExpression extends Expression {
+export class TrinaryExpression extends Expression {
     condition: Expression;
     questionOperator: Operator;
     trueExpression: Expression;
@@ -251,11 +256,11 @@ class TrinaryExpression extends Expression {
     falseExpression: Expression;
 }
 
-class UnresolvedExpression extends Expression {
+export class UnresolvedExpression extends Expression {
     nodes: AstNode[];//Expression | Operator | Block
 }
 
-class Operator extends AstNode {
+export class Operator extends AstNode {
     token: Token;
     value: string;
     toString() { return this.value + " {Operator}"; }
@@ -265,7 +270,7 @@ class Operator extends AstNode {
     LABEL foreach VAR (LIST) BLOCK
     LABEL foreach VAR (LIST) BLOCK continue BLOCK
 */
-class ForEachStatement extends Statement {
+export class ForEachStatement extends Statement {
     label: SimpleName;
     forEachToken: Token;
     forEachTokenPost: Token[];
@@ -276,7 +281,7 @@ class ForEachStatement extends Statement {
     block: Block;
     semicolonToken: Token;
 }
-class ForStatement extends Statement {
+export class ForStatement extends Statement {
     forToken: Token;
     forTokenPost: Token[];
     parenCloseToken: Token;
@@ -294,7 +299,7 @@ class ForStatement extends Statement {
     block: Block;
     semicolonToken: Token;
 }
-class WhileStatement extends Statement {
+export class WhileStatement extends Statement {
     keywordToken: Token;
     keywordTokenPost: Token[];
     parenCloseToken: Token;
@@ -306,28 +311,28 @@ class WhileStatement extends Statement {
     block: Block
     semicolonToken: Token;
 }
-class BeginStatement extends Statement {
+export class BeginStatement extends Statement {
     beginToken: Token;
     beginTokenPost: Token[];
     block: Block;
     semicolonToken: Token;
 }
 
-interface HasLabel {
+export interface HasLabel {
     label: SimpleName;
 }
-interface HasArrow {
+export interface HasArrow {
     arrow: boolean;
 }
 
-class RawStatement extends Statement{
-    code:string;
+export class RawStatement extends Statement {
+    code: string;
 }
 
-class RawExpression extends Expression{
-    code:string;
+export class RawExpression extends Expression {
+    code: string;
 }
-class SubroutineExpression extends Expression {
+export class SubroutineExpression extends Expression {
     subToken: Token;
     subTokenPost: Token[];
     namePost: Token[];
@@ -344,12 +349,12 @@ class SubroutineExpression extends Expression {
     block: Block;
 }
 
-class NativeFunctionInvocation extends Expression {
+export class NativeFunctionInvocation extends Expression {
 }
 
 /// map BLOCK LIST
 /// map EXPR,LIST
-class NativeInvocation_BlockAndListOrExprCommaList extends NativeFunctionInvocation {
+export class NativeInvocation_BlockAndListOrExprCommaList extends NativeFunctionInvocation {
     keywordToken: Token;
     keywordTokenPost: Token[];
 
@@ -365,7 +370,7 @@ class NativeInvocation_BlockAndListOrExprCommaList extends NativeFunctionInvocat
 
 /// eval BLOCK
 /// eval EXPR
-class NativeInvocation_BlockOrExpr extends NativeFunctionInvocation {
+export class NativeInvocation_BlockOrExpr extends NativeFunctionInvocation {
     keywordToken: Token;
     keywordTokenPost: Token[];
 
@@ -374,26 +379,26 @@ class NativeInvocation_BlockOrExpr extends NativeFunctionInvocation {
 }
 
 
-//A TERM has the highest precedence in Perl. They include:
-// variables,  $hello
-// quote and quote-like operators,  qq<abc>
-// any expression in parentheses,   (7 + 8)
-//and any function whose arguments are parenthesized.   $myFunc()
-//Actually, there aren't really functions in this sense, just list operators and unary operators behaving as functions because you put parentheses around the arguments. These are all documented in perlfunc.
-//If any list operator (print(), etc.) or any unary operator (chdir(), etc.) is followed by a left parenthesis as the next token, the operator and arguments within parentheses are taken to be of highest precedence, just like a normal function call.
-//In the absence of parentheses, the precedence of list operators such as print, sort, or chmod is either very high or very low depending on whether you are looking at the left side or the right side of the operator. For example, in
-//class TERM {
-//}
+    //A TERM has the highest precedence in Perl. They include:
+    // variables,  $hello
+    // quote and quote-like operators,  qq<abc>
+    // any expression in parentheses,   (7 + 8)
+    //and any function whose arguments are parenthesized.   $myFunc()
+    //Actually, there aren't really functions in this sense, just list operators and unary operators behaving as functions because you put parentheses around the arguments. These are all documented in perlfunc.
+    //If any list operator (print(), etc.) or any unary operator (chdir(), etc.) is followed by a left parenthesis as the next token, the operator and arguments within parentheses are taken to be of highest precedence, just like a normal function call.
+    //In the absence of parentheses, the precedence of list operators such as print, sort, or chmod is either very high or very low depending on whether you are looking at the left side or the right side of the operator. For example, in
+    //export class TERM {
+    //}
 
-//class BracedExpression extends Expression {
+    //export class BracedExpression extends Expression {
 
-//    toHashRefCreationExpression(): HashRefCreationExpression {
-//        throw new Error();
-//    }
-//    toHashMemberAccessExpression(): HashMemberAccessExpression{
-//        throw new Error();
-//    }
-//    toBlock(): Block {
-//        throw new Error();
-//    }
-//}
+    //    toHashRefCreationExpression(): HashRefCreationExpression {
+    //        throw new Error();
+    //    }
+    //    toHashMemberAccessExpression(): HashMemberAccessExpression{
+    //        throw new Error();
+    //    }
+    //    toBlock(): Block {
+    //        throw new Error();
+    //    }
+    //}

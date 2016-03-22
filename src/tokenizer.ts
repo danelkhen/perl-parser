@@ -1,7 +1,9 @@
-﻿/// <reference path="../typings/browser.d.ts" />
-"use strict";
+﻿"use strict";
 
-class Tokenizer {
+import {Token, File2, Cursor, TokenType} from "./token";
+import {TokenTypes} from "./token-types";
+
+export class Tokenizer {
     file: File2;
     cursor: Cursor;
     tempTokenTypes: TokenType[] = [];

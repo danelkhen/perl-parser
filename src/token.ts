@@ -1,5 +1,9 @@
-﻿"use strict";
-class TokenType {
+﻿/// <reference path="extensions.ts" />
+"use strict";
+import {Tokenizer} from "./tokenizer";
+//import {TokenTypes} from "./token-types";
+
+export class TokenType {
     name: string;
     tag: any;
 
@@ -82,11 +86,11 @@ class TokenType {
     }
 }
 
-interface TokenMatcher {
+export interface TokenMatcher {
     (tokenizer: Tokenizer): TextRange2;
 }
 
-class Token {
+export class Token {
     constructor(public range: TextRange2, public type: TokenType, value?: string) {
         if (this.range == null)
             this.value = value;
@@ -98,7 +102,7 @@ class Token {
         return this.type.name + " " + this.value;
     }
     isAnyKeyword(values: string[]): boolean {
-        return this.is(TokenTypes.keyword) && values.contains(this.value);
+        return this.is2("keyword") && values.contains(this.value);
     }
     isAny(types: TokenType[]): boolean {
         return types.any(t=> this.is(t));
@@ -110,14 +114,21 @@ class Token {
             return false;
         return true;
     }
+    is2(typeName: string, value?: string) {
+        if (this.type.name != typeName)
+            return false;
+        if (value != null && this.value != value)
+            return false;
+        return true;
+    }
     isKeyword(value?: string) {
-        return this.is(TokenTypes.keyword, value);
+        return this.is2("keyword", value);
     }
     isIdentifier(value?: string) {
-        return this.is(TokenTypes.identifier, value);
+        return this.is2("identifier", value);
     }
     isAnyIdentifier(values: string[]) {
-        return this.is(TokenTypes.identifier) && values.contains(this.value);
+        return this.is2("identifier") && values.contains(this.value);
     }
 
 }
@@ -125,7 +136,7 @@ class Token {
 
 
 
-class TextRange2 {
+export class TextRange2 {
     constructor(public file: File2, public start: File2Pos, public end?: File2Pos) {
         if (this.end == null)
             this.end = this.start;
@@ -135,7 +146,7 @@ class TextRange2 {
     get text(): string { return this.file.text.substr(this.index, this.length); }
 }
 
-class File2 {
+export class File2 {
     constructor(name, text) {
         this.name = name;
         this.text = text;
@@ -194,7 +205,7 @@ class File2 {
     newLineIndexes: number[] = [];
 }
 
-class File2Pos {
+export class File2Pos {
     line: number;
     column: number;
     index: number;
@@ -205,7 +216,7 @@ class File2Pos {
 }
 
 
-class Cursor {
+export class Cursor {
     constructor(public pos: File2Pos) {
     }
 
@@ -242,7 +253,7 @@ class Cursor {
         let regex2 = regex;
         let s = this.src.substr(this.index);
         var res = regex2.exec(s);
-        if (res == null || res[1]==null) //res.length <= 1
+        if (res == null || res[1] == null) //res.length <= 1
             return null;
         let index = s.indexOf(res[1]);
         let range = this.getRange(this.index + index, res[1].length);
@@ -260,7 +271,7 @@ class Cursor {
 
 
 
-class ArrayHelper {
+export class ArrayHelper {
     static firstIndex<T>(list: T[], predicate: (item: T) => boolean): number {
         for (let i = 0; i < list.length; i++) {
             if (predicate(list[i]))

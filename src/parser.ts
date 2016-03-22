@@ -1,10 +1,28 @@
-﻿class Parser extends ParserBase {
+﻿import {Token, TokenType} from "./token";
+import {TokenTypes} from "./token-types";
+import {ParserBase} from "./parser-base";
+import {ExpressionParser} from "./expression-parser";
+
+import {
+AstNode, Expression, Statement, UnresolvedExpression, SimpleName, SubroutineDeclaration, SubroutineExpression, ArrayMemberAccessExpression, ArrayRefDeclaration,
+BarewordExpression, BeginStatement, BinaryExpression, Block, BlockExpression, BlockStatement, ElseStatement, ElsifStatement, EmptyStatement, EndStatement,
+ExpressionStatement, ForEachStatement, ForStatement, HashMemberAccessExpression, HashRefCreationExpression, IfStatement, InvocationExpression, MemberExpression,
+NamedMemberExpression, NativeFunctionInvocation, NativeInvocation_BlockAndListOrExprCommaList, NativeInvocation_BlockOrExpr, NonParenthesizedList, NoStatement,
+Operator, PackageDeclaration, ParenthesizedList, PostfixUnaryExpression, PrefixUnaryExpression, QwExpression, RawExpression, RawStatement, RegexExpression,
+ReturnExpression, TrinaryExpression, Unit, UnlessStatement, UseOrNoStatement, UseStatement, ValueExpression, VariableDeclarationExpression, VariableDeclarationStatement, WhileStatement,
+HasArrow, HasLabel,
+} from "./ast";
+
+import {safeTry, TokenReader, Logger, AstNodeFixator} from "./utils";
+
+
+export class Parser extends ParserBase {
     init() {
         this.expressionParser = this.createExpressionParser();
     }
     expressionParser: ExpressionParser;
 
-    public doParse(): Statement[] {
+    public parse(): Statement[] {
         this.nextToken();
         let statements: Statement[] = [];
         safeTry(() => this.parseStatementsUntil(null, statements)).catch(e=> console.error("parse error", e));
@@ -79,7 +97,7 @@
         }
         else if (this.token.isAnyKeyword(["foreach", "for"]))
             return this.parseForEachOrForStatement();
-        else if (this.token.isAnyKeyword(["while","until"]))
+        else if (this.token.isAnyKeyword(["while", "until"]))
             return this.parseWhileStatement();
         else if (this.token.isKeyword("__END__"))
             return this.parseEndStatement();
@@ -342,7 +360,7 @@
         node.semicolonToken = this.parseOptionalSemicolon();
         return node;
     }
-    parseVariableDeclarationStatement() {
+    parseVariableDeclarationStatement(): VariableDeclarationStatement {
         let node = this.create(VariableDeclarationStatement);
         node.declaration = this.expressionParser.parseVariableDeclarationExpression();
         node.semicolonToken = this.expect(TokenTypes.semicolon, node);
@@ -419,11 +437,5 @@
         parser.parser = this;
         return parser;
     }
-
-
-
-
-
 }
-
 

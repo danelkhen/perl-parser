@@ -1,5 +1,8 @@
 ﻿"use strict";
-class HereDocTokenType extends TokenType {
+import {Token, TokenType, TextRange2} from "./token";
+import {Tokenizer} from "./tokenizer";
+
+export class HereDocTokenType extends TokenType {
 
     tryTokenize(tokenizer: Tokenizer): number {
         if (!tokenizer.cursor.startsWith("<<"))
@@ -40,7 +43,7 @@ class HereDocTokenType extends TokenType {
 }
 
 
-class TokenTypes {
+export class TokenTypes {
     static identifierRegex = /[a-zA-Z_][a-zA-Z_0-9]*/;
     static all: TokenType[];
     static init() {
