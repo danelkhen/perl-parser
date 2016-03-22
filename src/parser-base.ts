@@ -2,7 +2,7 @@
 import {Token, TokenType} from "./token";
 import {AstWriter} from "./ast-writer";
 import {AstNode} from "./ast";
-import {TokenReader, Logger} from "./utils";
+import {TokenReader, Logger, LogItem, LogLevel} from "./utils";
 import {TokenTypes} from "./token-types";
 
 
@@ -57,12 +57,12 @@ export class ParserBase {
             node.tokens.add(this.token);
         return res;
     }
-    log(...args) {
+    log(...args:any[]) {
         this.logger.log(args);
     }
-    error(...args) {
-        this.logger.error(args);
-    }
+    //error(...args:any[]) {
+    //    this.logger.error(args);
+    //}
     logger: Logger;
     reader: TokenReader;
     get token(): Token { return this.reader.token; }

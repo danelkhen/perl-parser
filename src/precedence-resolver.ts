@@ -1,4 +1,5 @@
 ﻿import {TokenTypes} from "./token-types";
+import {Logger, LogLevel} from "./utils";
 
 import {
 AstNode, Expression, Statement, UnresolvedExpression, SimpleName, SubroutineDeclaration, SubroutineExpression, ArrayMemberAccessExpression, ArrayRefDeclaration,
@@ -16,6 +17,7 @@ export class PrecedenceResolver {
         this.nodes = mbe.nodes.toArray();
     }
     nodes: AstNode[];
+    logger:Logger;
 
     //isOperatorOrKeyword(node:Expression | Operator, operators: TokenType[], keywords: string[]) {
 
@@ -28,6 +30,7 @@ export class PrecedenceResolver {
     }
     resolve2(mbe: UnresolvedExpression, allowNonParenthesizedList?: boolean): Expression {
         let resolver = new PrecedenceResolver(mbe);
+        resolver.logger = this.logger;
         return resolver.resolve(allowNonParenthesizedList);
     }
     resolveStatementModifier(op: Operator) {
@@ -154,7 +157,7 @@ export class PrecedenceResolver {
                 node.itemsSeparators = [];
                 return node;
             }
-            console.warn("mbe not completely resolved", this.mbe.toCode(), this.mbe, this.nodes);
+            this.logger.warn(["mbe not completely resolved", this.mbe.toCode(), this.mbe, this.nodes]);
             return this.mbe;
 
         }

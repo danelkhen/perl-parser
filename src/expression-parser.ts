@@ -38,7 +38,9 @@ export class ExpressionParser extends ParserBase {
     }
 
     resolveExpression(mbe: UnresolvedExpression): Expression {
-        let mbe2 = new PrecedenceResolver(mbe).resolve();
+        let resolver = new PrecedenceResolver(mbe);
+        resolver.logger = this.logger;
+        let mbe2 = resolver.resolve();
         return mbe2;
     }
     parseExpression(): Expression {
@@ -297,7 +299,7 @@ export class ExpressionParser extends ParserBase {
             node.namePost = this.skipWhitespaceAndComments();
         }
         else if (this.token.is(TokenTypes.keyword)) {
-            console.warn("subroutine named after a keyword", this.token);
+            this.logger.warn(["subroutine named after a keyword", this.token]);
             node.name = this.parser.parseSimpleName();
             node.namePost = this.skipWhitespaceAndComments();
         }

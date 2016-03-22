@@ -25,7 +25,10 @@ export class Parser extends ParserBase {
     public parse(): Statement[] {
         this.nextToken();
         let statements: Statement[] = [];
-        safeTry(() => this.parseStatementsUntil(null, statements)).catch(e=> console.error("parse error", e));
+        safeTry(() => this.parseStatementsUntil(null, statements)).catch(e=> {
+            let e2:Error = e;
+            this.logger.error([e2.message || "Unknown error:\n"+e.stack, this.token, ]);
+        });
         return statements;
     }
 
@@ -163,7 +166,7 @@ export class Parser extends ParserBase {
 
     parseForEachOrForStatement(): Statement {
         if (!this.token.isAnyKeyword(["foreach", "for"])) {
-            this.error();
+            this.onUnexpectedToken();
             return null;
         }
         if (this.isForStatement())
