@@ -36,7 +36,7 @@ export class PrecedenceResolver {
     resolveStatementModifier(op: Operator) {
         let index = this.nodes.indexOf(op);
         if (index <= 0)
-            throw new Error();
+            throw new Error("resolveStatementModifier");
         let left = new UnresolvedExpression();
         left.nodes = this.nodes.slice(0, index);
         let right = new UnresolvedExpression();
@@ -148,10 +148,10 @@ export class PrecedenceResolver {
         //console.log("resolved", this.nodes);
         if (this.nodes.length > 1) {
             if (allowNonParenthesizedNoCommaList && this.nodes.where(t=> t instanceof Expression || t instanceof Block).length == this.nodes.length) {
-                if (this.nodes.length > 2)
-                    throw new Error();
-                if (this.nodes.length == 2 && !(this.nodes[0] instanceof Block) && !(this.nodes[0] instanceof HashRefCreationExpression)) //if the latter, convert to block
-                    throw new Error();
+                //if (this.nodes.length > 2)
+                //    throw new Error();
+                //if (this.nodes.length == 2 && !(this.nodes[0] instanceof Block) && !(this.nodes[0] instanceof HashRefCreationExpression)) //if the latter, convert to block
+                //    throw new Error();
                 let node = new NonParenthesizedList();
                 node.items = <Expression[]>this.nodes.select(t=> t instanceof Block ? this.toBlockExpression(t) : t);
                 node.itemsSeparators = [];
@@ -184,7 +184,7 @@ export class PrecedenceResolver {
                 this.nodes.removeAt(index);
             }
             else if (right != null)
-                throw new Error();
+                throw new Error("resolveComma");
             return left;
         }
         //else if (left instanceof Expression && right instanceof NonParenthesizedList) {
@@ -213,7 +213,7 @@ export class PrecedenceResolver {
             return list;
         }
         else
-            throw new Error();
+            throw new Error("resolveComma");
     }
 
     resolveInvocation(node: ParenthesizedList): Expression {
@@ -288,11 +288,11 @@ export class PrecedenceResolver {
         let left = this.nodes[index - 1];
         let right = this.toMemberExpression(this.nodes[index + 1]);
         if (right == null)
-            throw new Error();
+            throw new Error("resolveArrow");
         if (left instanceof Expression) {
             let rootMember = this.getRootMember(right);
             if (rootMember.target != null)
-                throw new Error();
+                throw new Error("resolveArrow");
             rootMember.target = left;
             rootMember.arrow = op.token.is(TokenTypes.arrow);
             rootMember.memberSeparatorToken = op.token; //TODO:.arrowOperator = op;
@@ -302,7 +302,7 @@ export class PrecedenceResolver {
             return right;
         }
         else {
-            throw new Error();
+            throw new Error("resolveArrow");
         }
     }
 
@@ -358,7 +358,7 @@ export class PrecedenceResolver {
 
     resolveTrinaryExpression(op: Operator): TrinaryExpression {
         if (this.nodes.length < 5)
-            throw new Error();
+            throw new Error("resolveTrinaryExpression");
         let index = this.nodes.indexOf(op);
         let node = new TrinaryExpression();
         node.condition = <Expression>this.nodes[index - 1];
@@ -524,7 +524,7 @@ export class PrecedenceResolver {
         let right = this.nodes[index + 1];
         if (right instanceof Expression)
             return this.resolvePrefixUnary(op);
-        throw new Error();
+        throw new Error("resolveAutoIncDec");
     }
     resolvePostfixUnary(op: Operator) {
         let node = new PostfixUnaryExpression();

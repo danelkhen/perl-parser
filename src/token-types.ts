@@ -7,7 +7,7 @@ export class HereDocTokenType extends TokenType {
     tryTokenize(tokenizer: Tokenizer): number {
         if (!tokenizer.cursor.startsWith("<<"))
             return 0;
-        let matchers = [/^<<\s*"([a-zA-Z0-9_]+)"/, /^<<\s*'([a-zA-Z0-9_]+)'/, /^<<\s*([a-zA-Z0-9_]+)/];
+        let matchers = [/^<<\s*"([a-zA-Z0-9_\-]+)"/, /^<<\s*'([a-zA-Z0-9_\-]+)'/, /^<<\s*([a-zA-Z0-9_]+)/];
         let range = tokenizer.cursor.nextAny(matchers);
         if (range == null)
             return 0;
@@ -285,7 +285,7 @@ export class TokenTypes {
         let lastToken = TokenTypes._findLastNonWhitespaceOrCommentToken(tokenizer.tokens);
         if (lastToken == null)
             return null;
-        if (lastToken.isAny([TokenTypes.braceClose, TokenTypes.parenClose]))
+        if (lastToken.isAny([TokenTypes.braceClose, TokenTypes.parenClose, TokenTypes.sigiledIdentifier, TokenTypes.integer]))
             return null;
         let res = cursor.next(/^\/.*\/[a-z]*/);
         if (res == null)

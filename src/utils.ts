@@ -7,19 +7,19 @@ export class Logger {
     items: LogItem[] = [];
     add(item: LogItem) {
         this.items.add(item);
-        if(item.level==LogLevel.error)
+        if (item.level == LogLevel.error)
             console.log(item.toCompilerMessage());
     }
-    log(args:any[]) {
+    log(args: any[]) {
         let item = LogItem.fromArgs(args);
         this.add(item);
     }
-    error(args:any[]) {
+    error(args: any[]) {
         let item = LogItem.fromArgs(args);
         item.level = LogLevel.error;
         this.add(item);
     }
-    warn(args:any[]) {
+    warn(args: any[]) {
         let item = LogItem.fromArgs(args);
         item.level = LogLevel.warning;
         this.add(item);
@@ -122,6 +122,7 @@ export class TokenReader {
     }
     onUnexpectedToken(): any {
         let item = new LogItem();
+        item.msg = "Unexpected token";
         item.token = this.token;
         item.level = LogLevel.error;
         this.logger.add(item);
@@ -138,7 +139,7 @@ export class LogItem {
     node: AstNode;
     range: TextRange2;
     data: any;
-    Error:Error;
+    error: Error;
 
 
 
@@ -162,8 +163,10 @@ export class LogItem {
                     item.token = arg;
                 else if (arg instanceof AstNode)
                     item.node = arg;
-                else if (arg instanceof Error)
+                else if (arg instanceof Error) {
                     item.error = arg;
+                    item.msg = (<Error>arg).message;
+                }
                 item[arg.constructor.name] = arg;
             }
             else {
@@ -188,9 +191,9 @@ export class LogItem {
     toCompilerMessage(): string {
         let range = this.getRange();
         if (range == null) {
-            if(this.msg!=null)
+            if (this.msg != null)
                 return this.msg;
-            if(this.data!=null)
+            if (this.data != null)
                 return this.data;
             return this.msg;
         }
@@ -201,6 +204,7 @@ export class LogItem {
         let code = "0000";
         let msg = this.msg;
         let final = `${filename}(${line},${col}): ${level} ${code}: ${msg}`;
+        final += "\n" + range.file.getLineText(line);
         return final;
     }
 
