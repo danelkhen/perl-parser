@@ -77,18 +77,32 @@ tool.run().catch(t=> console.log("CATCH", t)).then(t=> console.log("FINISHED", t
 
 export class ExpressionTester extends Refactor {
     unit: Unit;
+    shouldCheck(node: Expression): boolean {
+        if (node instanceof BinaryExpression || node instanceof MemberExpression)
+            return true;
+        if (node instanceof InvocationExpression) {
+            let target = node.target;
+            if(target instanceof NamedMemberExpression && target.name=="use")
+                return false;
+            return true;
+        }
+        return false;
+    }
     process() {
-        let exps = this.getDescendants(this.unit).ofType(Expression);//(t=> t instanceof Expression);
+        let exps = this.getDescendants(this.unit).ofType(Expression).where(t=> this.shouldCheck(t));
 
         let promises = exps.select(exp => this.processExp(exp));
-        return Promise.all(promises).then(t=> console.log("FINISHED TESTING"));
+        return Promise.all(promises).then(list=> {
+            list = list.exceptNulls();
+            console.log("FINISHED TESTING", { success: list.where(t=> t.success).length, fail: list.where(t=> !t.success).length });
+        });
     }
 
-    processExp(exp: Expression):Promise<ExpressionTesterReport> {
+    processExp(exp: Expression): Promise<ExpressionTesterReport> {
         let expCode = exp.toCode();
         return deparse(expCode).then(deparsed=> {
             if (deparsed == null) {
-                //console.log("skipping: ", expCode);
+                console.log("skipping: ", expCode);
                 return;
             }
             console.log("testing", expCode);
@@ -99,7 +113,7 @@ export class ExpressionTester extends Refactor {
             var mineClean = mine.replace(/\s/g, "");
             if (deparsedClean.startsWith("(") && !mineClean.startsWith("("))
                 mineClean = "(" + mineClean + ")";
-            let report:ExpressionTesterReport  = { success: deparsedClean == mineClean, code: expCode, dprs: deparsedClean, mine: mineClean, };
+            let report: ExpressionTesterReport = { success: deparsedClean == mineClean, code: expCode, dprs: deparsedClean, mine: mineClean, };
             console.log("tested", report);
             return report;
         }).catch(t=> console.error(t));
@@ -107,9 +121,9 @@ export class ExpressionTester extends Refactor {
 }
 
 interface ExpressionTesterReport {
-    success:boolean;
-    code:string;
-    dprs:string;
-    mine:string;
+    success: boolean;
+    code: string;
+    dprs: string;
+    mine: string;
 }
 

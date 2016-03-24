@@ -93,6 +93,7 @@ export class AstWriter {
     //}
 
     addParentheses = false;//true;
+    deparseFriendly = false;
     write(obj: any) {
         if (obj == null)
             return;
@@ -117,6 +118,10 @@ export class AstWriter {
             }
             if (this.addParentheses && node instanceof BinaryExpression) {
                 list = ["(", list, ")"];
+            }
+            if (this.deparseFriendly && node instanceof MemberExpression && node.arrow) {
+                list = ["$$", node.target, node.memberSeparatorToken];
+
             }
             let all = [[node.whitespaceBefore], list, [node.whitespaceAfter]];
             this.write(all);
