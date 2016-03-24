@@ -14,8 +14,9 @@ export class AstNode {
     whitespaceBefore: Token[];
     whitespaceAfter: Token[];
 
-    toCode() {
+    toCode(opts?: { addParentheses?: boolean }) {
         let writer = new AstWriter();
+        writer.addParentheses = opts != null && opts.addParentheses;
         writer.main();
         writer.write(this);
         return writer.sb.join("");
@@ -31,6 +32,7 @@ export class EmptyStatement extends Statement {
 
 export class Expression extends AstNode {
     isExpression = true;
+    resolvedFrom: UnresolvedExpression;
 }
 
 export class Block extends AstNode {

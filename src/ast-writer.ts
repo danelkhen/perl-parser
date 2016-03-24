@@ -111,7 +111,7 @@ export class AstWriter {
                 list.insert(1, "(");
                 list.add(")");
             }
-            if (this.addParentheses && node instanceof InvocationExpression) {
+            if (this.addParentheses && node instanceof InvocationExpression && !(node.arguments instanceof ParenthesizedList)) {
                 list.insert(3, "(");
                 list.add(")");
             }

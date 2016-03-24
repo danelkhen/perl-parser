@@ -19,8 +19,8 @@ import {TokenTypes} from "../src/token-types";
 import {Tokenizer} from "../src/tokenizer";
 import {safeTry, TokenReader, Logger, AstNodeFixator} from "../src/utils";
 import "../src/extensions";
-
-
+import {deparse} from "./deparse";
+import {Refactor} from "../src/refactor";
 class PerlParserTool {
     filename: string;
     data: string;
@@ -28,16 +28,17 @@ class PerlParserTool {
     tokens: Token[];
     unit: Unit;
 
-    run(): Promise<any> {
-        //console.log("PerlParserTool", this.filename);
+    readFile(filename: string): Promise<string> {
         return new Promise((resolve, reject) => {
             fs.readFile(this.filename, 'utf8', (err, data) => {
                 if (err)
                     throw err;
-                this.data = data;
-                this.run2();
+                resolve(data);
             });
         });
+    }
+    run(): Promise<any> {
+        return this.readFile(this.filename).then(t=> this.data = t).then(t=> this.run2());
     }
     run2() {
         this.code = this.data;
@@ -58,6 +59,9 @@ class PerlParserTool {
         let unit = new Unit();
         unit.statements = statements;
         this.unit = unit;
+        let tester = new ExpressionTester();
+        tester.unit = this.unit;
+        return tester.process();
         //console.log("DONE");//, unit);
 
     }
@@ -65,6 +69,47 @@ class PerlParserTool {
 
 
 
+
 let tool = new PerlParserTool();
 tool.filename = process.argv[2]; //0=node 1=pp.js 2=real_arg
-tool.run().catch(t=>console.log("CATCH", t)).then(t=>console.log("FINISHED", t));
+tool.run().catch(t=> console.log("CATCH", t)).then(t=> console.log("FINISHED", t));
+
+
+export class ExpressionTester extends Refactor {
+    unit: Unit;
+    process() {
+        let exps = this.getDescendants(this.unit).ofType(Expression);//(t=> t instanceof Expression);
+
+        let promises = exps.select(exp => this.processExp(exp));
+        return Promise.all(promises).then(t=> console.log("FINISHED TESTING"));
+    }
+
+    processExp(exp: Expression):Promise<ExpressionTesterReport> {
+        let expCode = exp.toCode();
+        return deparse(expCode).then(deparsed=> {
+            if (deparsed == null) {
+                //console.log("skipping: ", expCode);
+                return;
+            }
+            console.log("testing", expCode);
+            let mine = exp.toCode({ addParentheses: true });
+            var deparsedClean = deparsed.replace(/\s/g, "");
+            if (deparsedClean.endsWith(";"))
+                deparsedClean = deparsedClean = deparsedClean.substr(0, deparsedClean.length - 1);
+            var mineClean = mine.replace(/\s/g, "");
+            if (deparsedClean.startsWith("(") && !mineClean.startsWith("("))
+                mineClean = "(" + mineClean + ")";
+            let report:ExpressionTesterReport  = { success: deparsedClean == mineClean, code: expCode, dprs: deparsedClean, mine: mineClean, };
+            console.log("tested", report);
+            return report;
+        }).catch(t=> console.error(t));
+    }
+}
+
+interface ExpressionTesterReport {
+    success:boolean;
+    code:string;
+    dprs:string;
+    mine:string;
+}
+

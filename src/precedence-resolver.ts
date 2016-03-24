@@ -17,7 +17,7 @@ export class PrecedenceResolver {
         this.nodes = mbe.nodes.toArray();
     }
     nodes: AstNode[];
-    logger:Logger;
+    logger: Logger;
 
     //isOperatorOrKeyword(node:Expression | Operator, operators: TokenType[], keywords: string[]) {
 
@@ -155,6 +155,7 @@ export class PrecedenceResolver {
                 let node = new NonParenthesizedList();
                 node.items = <Expression[]>this.nodes.select(t=> t instanceof Block ? this.toBlockExpression(t) : t);
                 node.itemsSeparators = [];
+                //node.resolvedFrom = this.mbe;
                 return node;
             }
             this.logger.warn(["mbe not completely resolved", this.mbe.toCode(), this.mbe, this.nodes]);
@@ -162,6 +163,7 @@ export class PrecedenceResolver {
 
         }
         let resolved = <Expression>this.nodes[0];
+        //resolved.resolvedFrom = this.mbe;
         return resolved;
         //return this.mbe;
     }

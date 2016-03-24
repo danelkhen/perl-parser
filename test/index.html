@@ -6,21 +6,15 @@
     <link href="index.css" rel="stylesheet" />
     <script src="//cdnjs.cloudflare.com/ajax/libs/systemjs/0.19.24/system.src.js"></script>
     <script>
-        // set our baseURL reference path
         System.config({
             baseURL: '../built/test/test/',
             defaultJSExtensions: true,
         });
-
-        // loads /app/main.js
-        System.import('index.js');//.then(t=>t.main());
+        System.import('index.js');
     </script>
     <script src="//code.jquery.com/jquery-2.2.2.js"></script>
-    <!--<script src="../libs/jquery-2.2.0.min.js"></script>-->
     <script src="../libs/corex.js"></script>
     <script src="../libs/corex-jquery.js"></script>
-    <!--<script src="../built/src/perl-parser.js"></script>-->
-    <!--<script src="../built/test/index.js"></script>-->
 </head>
 <body>
     <table class="layout" id="layout1">
