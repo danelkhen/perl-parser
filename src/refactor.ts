@@ -20,6 +20,16 @@ HasArrow, HasLabel,
 
 
 export class Refactor {
+    getTokens(node: AstNode): Token[] {
+        let list: Token[] = [];
+        Object.keys(node).where(key=> key != "parentNode").select(key=> node[key]).forEach(obj=> {
+            if (obj instanceof Array)
+                list.addRange(obj.where(t=> t instanceof Token));
+            else if (obj instanceof Token)
+                list.add(obj);
+        });
+        return list;
+    }
     getChildren(node: AstNode): AstNode[] {
         let list: AstNode[] = [];
         Object.keys(node).where(key=> key != "parentNode").select(key=> node[key]).forEach(obj=> {

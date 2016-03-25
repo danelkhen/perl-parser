@@ -9,5 +9,8 @@
         "outDir": "../built/src-node"
     },
     "exclude": [
+        "../typings",
+        "../node_modules",
+        "../test"
     ]
 }

@@ -14,9 +14,10 @@ export class AstNode {
     whitespaceBefore: Token[];
     whitespaceAfter: Token[];
 
-    toCode(opts?: { addParentheses?: boolean }) {
+    toCode(opts?: { addParentheses?: boolean, deparseFriendly?:boolean }) {
         let writer = new AstWriter();
         writer.addParentheses = opts != null && opts.addParentheses;
+        writer.deparseFriendly = opts != null && opts.deparseFriendly;
         writer.main();
         writer.write(this);
         return writer.sb.join("");

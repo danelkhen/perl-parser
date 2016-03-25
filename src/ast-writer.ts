@@ -11,6 +11,7 @@ HasArrow, HasLabel,
 } from "./ast";
 
 import {Token} from "./token";
+import {TokenTypes} from "./token-types";
 
 export class AstWriter {
     sb: string[];
@@ -92,6 +93,14 @@ export class AstWriter {
     //        return this.getHandler(type.prototype);
     //}
 
+    tryGetSingleBracedBareword(node: HashRefCreationExpression): string {
+        if (node == null || node.list == null || node.list.items == null || node.list.items.length != 1)
+            return null;
+        let item = node.list.items[0];
+        if (item instanceof NamedMemberExpression)
+            return item.name;
+        return null;
+    }
     addParentheses = false;//true;
     deparseFriendly = false;
     write(obj: any) {
@@ -113,15 +122,32 @@ export class AstWriter {
                 list.add(")");
             }
             if (this.addParentheses && node instanceof InvocationExpression && !(node.arguments instanceof ParenthesizedList)) {
-                list.insert(3, "(");
-                list.add(")");
+                let target = node.target;
+                if (this.deparseFriendly && target instanceof NamedMemberExpression && target.name == "return") {
+                    //do NOT add parentheses in return expressions (for deparse).
+                }
+                else {
+                    list.insert(3, "(");
+                    list.add(")");
+                }
             }
             if (this.addParentheses && node instanceof BinaryExpression) {
                 list = ["(", list, ")"];
             }
-            if (this.deparseFriendly && node instanceof MemberExpression && node.arrow) {
-                list = ["$$", node.target, node.memberSeparatorToken];
-
+            if (this.deparseFriendly && node instanceof HashMemberAccessExpression && node.arrow) {
+                let name = this.tryGetSingleBracedBareword(node.member);
+                if (name != null) {
+                    let index = list.indexOf(node.member);
+                    list[index] = "{'" + name + "'}";
+                }
+            }
+            if (this.deparseFriendly && node instanceof NamedMemberExpression && node.name == "shift") {
+                let parentNode = node.parentNode;
+                if (parentNode != null && parentNode instanceof InvocationExpression && node.parentNodeProp == "target" && parentNode.arguments != null) {
+                    //skip in case shift is already an invocation with prms
+                }
+                else
+                    list = ["shift(@ARGV)"];
             }
             let all = [[node.whitespaceBefore], list, [node.whitespaceAfter]];
             this.write(all);
@@ -134,7 +160,16 @@ export class AstWriter {
         }
         else if (obj instanceof Token) {
             let token = <Token>obj;
-            this.sb.push(token.value);
+            if (this.deparseFriendly && token.is(TokenTypes.whitespace)) {
+                let s = token.value;
+                if (s == "")
+                    s = "";
+                else
+                    s = " ";
+                this.sb.push(s);
+            }
+            else
+                this.sb.push(token.value);
         }
         //else if (obj instanceof Operator) {
         //    let op = <Operator>obj;

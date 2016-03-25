@@ -281,7 +281,7 @@ interface String {
     isFloat(): any;
     last(predicate: any): any;
     splitAt(index: any): any;
-    lines(): any;
+    lines(): string[];
 }
 interface NumberConstructor {
     generate(min: any, max: any, step: any): any;

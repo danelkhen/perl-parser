@@ -1,7 +1,7 @@
 ﻿/// <reference path="../src/extensions.ts" />
 "use strict";
 
-import {Token, TokenType, File2,} from "../src/token";
+import {Token, TokenType, File2, } from "../src/token";
 import {AstWriter} from "../src/ast-writer";
 import {ParserBase} from "../src/parser-base";
 import {ExpressionParser} from "../src/expression-parser";
@@ -53,6 +53,8 @@ export class IndexPage {
         if (lastUrl != null && lastUrl != "")
             this.tbUrl.val(lastUrl);
         this.tbUrl.change(e=> this.update());
+        $("#cbAddParentheses").change(e=> this.update());
+        $("#cbDeparseFriendly").change(e=> this.update());
         this.update();
     }
 
@@ -124,8 +126,12 @@ export class IndexPage {
     }
 
     generateCode() {
+        new AstNodeFixator().process(this.unit);
+
         let writer = new AstWriter();
         writer.addParentheses = $("#cbAddParentheses").prop("checked");
+        writer.deparseFriendly = $("#cbDeparseFriendly").prop("checked");
+
         writer.main();
         writer.write(this.unit);
         this.generatedCode = writer.sb.join("");

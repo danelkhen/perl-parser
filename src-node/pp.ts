@@ -19,7 +19,7 @@ import {TokenTypes} from "../src/token-types";
 import {Tokenizer} from "../src/tokenizer";
 import {safeTry, TokenReader, Logger, AstNodeFixator} from "../src/utils";
 import "../src/extensions";
-import {deparse} from "./deparse";
+import {Deparse} from "./deparse";
 import {Refactor} from "../src/refactor";
 class PerlParserTool {
     filename: string;
@@ -78,52 +78,113 @@ tool.run().catch(t=> console.log("CATCH", t)).then(t=> console.log("FINISHED", t
 export class ExpressionTester extends Refactor {
     unit: Unit;
     shouldCheck(node: Expression): boolean {
-        if (node instanceof BinaryExpression || node instanceof MemberExpression)
-            return true;
+        if (node instanceof BlockExpression)
+            return false;
+        if (node instanceof NamedMemberExpression && node.target == null)
+            return false;
         if (node instanceof InvocationExpression) {
             let target = node.target;
-            if(target instanceof NamedMemberExpression && target.name=="use")
+            if (target instanceof NamedMemberExpression && target.name == "use")
                 return false;
             return true;
         }
+        if (node instanceof BinaryExpression || node instanceof MemberExpression)
+            return true;
         return false;
     }
     process() {
+        new AstNodeFixator().process(this.unit);
         let exps = this.getDescendants(this.unit).ofType(Expression).where(t=> this.shouldCheck(t));
 
         let promises = exps.select(exp => this.processExp(exp));
-        return Promise.all(promises).then(list=> {
+        let x = <Promise<ExpressionTesterReport[]>><any>Promise.all(promises); //tsc bug
+        x.then(list=> {
             list = list.exceptNulls();
             console.log("FINISHED TESTING", { success: list.where(t=> t.success).length, fail: list.where(t=> !t.success).length });
         });
     }
 
+    generateFilename(node: Expression) {
+        let token = node.token
+        if (token == null) {
+            let refactor = new Refactor();
+            token = refactor.getTokens(node)[0];
+            if (token == null) {
+                token = refactor.getChildren(node).selectFirstNonNull(t=> refactor.getTokens(t)[0]);
+                if (token == null) {
+                    console.warn("generateFilename - token is null for", node.constructor);
+                    return null;
+                }
+            }
+        }
+        let pos = token.range.start;
+        let filename = token.range.file.name.split(/[\\\/]/).last();
+        let s = `${filename}_${pos.line}_${pos.column}`;
+        //console.log("generateFilename", s);
+        return s;
+
+    }
+
+    extractImplicitInvocationSubs(node: AstNode) {
+        if (node instanceof NamedMemberExpression && node.target == null) { //bareword
+            console.log("found bareword", node.toCode());
+            if (node.token != null && (node.token.isKeyword() || node.token.isAnyIdentifier(TokenTypes.namedUnaryOperators)))
+                return [];
+            let parentNode = node.parentNode;
+            if (parentNode != null && parentNode instanceof InvocationExpression && node.parentNodeProp == "target" && parentNode.arguments != null && !(parentNode.arguments instanceof ParenthesizedList)) {
+                return [node.name];
+            }
+        }
+        return new Refactor().getChildren(node).selectMany(t=> this.extractImplicitInvocationSubs(t));
+    }
+    filenameIndex = 0;
     processExp(exp: Expression): Promise<ExpressionTesterReport> {
         let expCode = exp.toCode();
-        return deparse(expCode).then(deparsed=> {
-            if (deparsed == null) {
-                console.log("skipping: ", expCode);
+        let filename = this.generateFilename(exp);
+        if (filename != null)
+            filename = "C:\\temp\\perl\\" + filename + "_" + (this.filenameIndex++) + ".pm";
+        let subs = this.extractImplicitInvocationSubs(exp);
+        if (subs.length > 0)
+            console.log("subs", subs);
+        else if (expCode.contains("croak")) {
+            throw new Error("didn't detect the sub!");
+        }
+
+        return new Deparse().deparse(expCode, { filename: filename, tryAsAssignment: true, assumeSubs: subs }).then(deparsedRes=> {
+            let deparsed = deparsedRes.deparsed;
+            if (!deparsedRes.success) {
+                console.log("couldn't deparse: ", expCode);//, exp);
                 return;
             }
-            console.log("testing", expCode);
-            let mine = exp.toCode({ addParentheses: true });
-            var deparsedClean = deparsed.replace(/\s/g, "");
+            //console.log("testing", expCode);
+            let mine = exp.toCode({ addParentheses: true, deparseFriendly: true });
+            var deparsedClean = deparsed.trim();//.replace(/\s/g, "");
             if (deparsedClean.endsWith(";"))
                 deparsedClean = deparsedClean = deparsedClean.substr(0, deparsedClean.length - 1);
-            var mineClean = mine.replace(/\s/g, "");
+            var mineClean = mine.trim();//.replace(/\s/g, "");
             if (deparsedClean.startsWith("(") && !mineClean.startsWith("("))
                 mineClean = "(" + mineClean + ")";
-            let report: ExpressionTesterReport = { success: deparsedClean == mineClean, code: expCode, dprs: deparsedClean, mine: mineClean, };
-            console.log("tested", report);
+            let report: ExpressionTesterReport = { success: deparsedClean == mineClean, mine: mineClean, code: expCode, dprs: deparsedClean, filename: filename, exp: exp };
+            if (!report.success) {
+                console.log("");
+                console.log(filename);
+                console.log(report.code);
+                console.log(report.mine);
+                console.log(report.dprs);
+                //console.log(report.exp);
+                console.log("");
+            }
             return report;
         }).catch(t=> console.error(t));
     }
 }
 
 interface ExpressionTesterReport {
+    filename: string;
     success: boolean;
     code: string;
     dprs: string;
     mine: string;
+    exp: Expression;
 }
 
