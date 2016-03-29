@@ -7,7 +7,7 @@ export class Logger {
     items: LogItem[] = [];
     add(item: LogItem) {
         this.items.add(item);
-        if (item.level == LogLevel.error)
+        if (item.level == LogLevel.error || item.level==LogLevel.warning)
             console.log(item.toCompilerMessage());
     }
     log(args: any[]) {

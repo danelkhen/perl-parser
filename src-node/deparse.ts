@@ -7,9 +7,14 @@ import "../../../libs/corex";
 export class Deparse {
     index = 100000;
     _deparse(code: string, opts?: DeparseOptions): Promise<DeparseResult> {
+        let phBegin = "PLACEHOLDERBEGIN();";
+        let phEnd = "PLACEHOLDEREND();";
+        code = `${phBegin}\n${code};\n${phEnd}\n`;
+        let ignores:string[] = [];
         if (opts.assumeSubs) {
-            let subs = opts.assumeSubs.select(t=> `sub ${t}`).join("\n")
-            code = subs + "\n"+ code;
+            let subs = opts.assumeSubs.select(t=> `sub ${t};`).join("\n");
+            code = subs + "\n" + code;
+            ignores = opts.assumeSubs.select(t=> `sub ${t} ;`);
         }
 
 
@@ -17,12 +22,15 @@ export class Deparse {
             this.index++;
             let filename = opts.filename || "C:\\temp\\perl\\" + (this.index++) + ".tmp.pm";
             let cmd = "perl -MO=Deparse,-p " + JSON.stringify(filename);//-E " + JSON.stringify(code);
+            //console.log("CODE", code);
             fs.writeFileSync(filename, code);
             exec(cmd, (error, stdout, stderr) => {
                 let dr: DeparseResult = { success: false, deparsed: null };
 
                 let out = stdout.toString();
                 let err = stderr.toString();
+                //console.log(out);
+                //console.log(err);
                 if (!err.contains("syntax OK")) {
                     fs.appendFileSync(filename, "\n\n\n\n\n" + out + "\n\n\n\n\n" + err);
                     resolve(dr);
@@ -31,7 +39,13 @@ export class Deparse {
                 fs.unlinkSync(filename);
 
                 let lines = out.lines();
-                let res = lines.where(t=> !t.startsWith("use feature ")).join("\n");//.first(t=> t.startsWith("("));
+                let start = lines.findIndex(t=>t==phBegin);
+                let end = lines.findIndex(t=>t==phEnd);
+                let lines2 = lines.slice(start+1, end);
+                let res = lines2.join("\n");
+                //let res = lines.where(t=>
+                //    !t.startsWith("use feature ") || ignores.contains(t)
+                //).join("\n");//.first(t=> t.startsWith("("));
                 dr.deparsed = res;
                 dr.success = true;
                 resolve(dr);
@@ -44,7 +58,7 @@ export class Deparse {
             return this._deparse(code, opts).then(depRes=> {
                 if (depRes.success)
                     return depRes;
-                let opts2 = { filename: opts.filename, tryAsAssignment: false };
+                let opts2: DeparseOptions = { filename: opts.filename, tryAsAssignment: false, assumeSubs: opts.assumeSubs };
                 return this._deparse("$GGGGGGGG = " + code, opts).then(depRes => {
                     if (!depRes.success)
                         return depRes;

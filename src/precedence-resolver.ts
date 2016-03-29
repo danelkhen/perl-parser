@@ -18,6 +18,8 @@ export class PrecedenceResolver {
     }
     nodes: AstNode[];
     logger: Logger;
+    parentNode: Expression;
+
 
     //isOperatorOrKeyword(node:Expression | Operator, operators: TokenType[], keywords: string[]) {
 
@@ -56,8 +58,17 @@ export class PrecedenceResolver {
     //isFunction(node: Expression | Operator | Block): boolean {
     //}
     resolve(allowNonParenthesizedNoCommaList?: boolean) {
-        if (this.nodes.length == 1 && this.nodes[0] instanceof Expression)
-            return <Expression>this.nodes[0];
+        if (this.nodes.length == 1) {
+            let node = this.nodes[0];
+            if (node instanceof Expression)
+                return node;
+            if (node instanceof Operator && this.parentNode instanceof HashRefCreationExpression) { //$a->{not}
+                let node2 = new ValueExpression();
+                node2.token = node.token;
+                node2.value = node.value;
+                return node2;
+            }
+        }
 
         //TEMP HACKS
         this.nodes.ofType(Operator).where(t=> t.token.is(TokenTypes.packageSeparator)).forEach(t=> this.resolveArrow(t));
@@ -322,6 +333,11 @@ export class PrecedenceResolver {
         if (left instanceof Expression) {// || (left instanceof Operator && left.token.is(TokenTypes.arrow)))) {
             if (left instanceof NamedMemberExpression && left.token.is(TokenTypes.identifier))  //ggg {hello}
                 return node;
+            let list = node.list;
+            //if (list instanceof NonParenthesizedList && list.items.length == 1 && list.itemsSeparators.length==0) {
+            //    let item = list.items[0];
+            //    if(item instanceof Unar
+            //}
             let node2 = new HashMemberAccessExpression();
             node2.member = node;
             node2.target = this.toMemberExpressionOrExpression(left);

@@ -97,7 +97,7 @@ export class AstWriter {
         if (node == null || node.list == null || node.list.items == null || node.list.items.length != 1)
             return null;
         let item = node.list.items[0];
-        if (item instanceof NamedMemberExpression)
+        if (item instanceof NamedMemberExpression && item.token.isAny([TokenTypes.identifier, TokenTypes.keyword]))
             return item.name;
         return null;
     }
@@ -124,7 +124,8 @@ export class AstWriter {
             if (this.addParentheses && node instanceof InvocationExpression && !(node.arguments instanceof ParenthesizedList)) {
                 let target = node.target;
                 if (this.deparseFriendly && target instanceof NamedMemberExpression && target.name == "return") {
-                    //do NOT add parentheses in return expressions (for deparse).
+                    let t = node;
+                    list = [t.target, [t.memberSeparatorToken || " "], [t.arguments]]
                 }
                 else {
                     list.insert(3, "(");
@@ -132,9 +133,21 @@ export class AstWriter {
                 }
             }
             if (this.addParentheses && node instanceof BinaryExpression) {
-                list = ["(", list, ")"];
+                list = ["(", node.left, " ", node.operator, " ", node.right, ")"];
             }
-            if (this.deparseFriendly && node instanceof HashMemberAccessExpression && node.arrow) {
+            if (this.deparseFriendly && node instanceof InvocationExpression && node.target != null && node.target.token.isIdentifier("eval") && node.arguments instanceof Block) {
+                let block = <Block><any>node.arguments;
+                let doBody: any = block.statements;
+                if (block.statements.length == 1) {
+                    let st = block.statements[0];
+                    if (st instanceof ExpressionStatement)
+                        doBody = ["(", st.expression, ")"];
+                    if (st instanceof EmptyStatement)
+                        doBody = ["()"];
+                }
+                list = ["eval {\n    do {\n        ", doBody, "\n    }\n}"];
+            }
+            if (this.deparseFriendly && node instanceof HashMemberAccessExpression) {
                 let name = this.tryGetSingleBracedBareword(node.member);
                 if (name != null) {
                     let index = list.indexOf(node.member);
@@ -149,7 +162,29 @@ export class AstWriter {
                 else
                     list = ["shift(@ARGV)"];
             }
-            let all = [[node.whitespaceBefore], list, [node.whitespaceAfter]];
+            if (this.deparseFriendly && node instanceof NamedMemberExpression && node.token.isAny([TokenTypes.identifier, TokenTypes.keyword]) && !node.arrow) {
+                let parent = node.parentNode;
+                if (parent instanceof NamedMemberExpression && parent.arrow) {
+                    let node2: Expression = node;
+                    let names: string[] = [];
+                    while (node2 != null && node2 instanceof NamedMemberExpression && !node2.arrow && node.token.isAny([TokenTypes.identifier, TokenTypes.keyword])) {
+                        let node3 = <NamedMemberExpression>node2;
+                        names.push(node3.name);
+                        node2 = node3.target;
+                    }
+                    if (node2 == null) {
+                        list = ["'" + names.reversed().join("::") + "'"];
+                    }
+                }
+            }
+            let all;
+            if (this.deparseFriendly) {
+                all = list;
+                if(node instanceof Statement)
+                    all.push("\n");
+            }
+            else
+                all = [[node.whitespaceBefore], list, [node.whitespaceAfter]];
             this.write(all);
         }
         else if (obj instanceof Array) {
@@ -180,8 +215,8 @@ export class AstWriter {
         }
     }
 
-    map: Map<Function, (node) => Array<any>> = new Map<Function, (node) => Array<any>>();
-    register<T>(type: Type<T>, func: (node: T) => Array<any>) {
+    map: Map<Function, (node) => Array<any>> = new Map<Function, (node) => any>();
+    register<T>(type: Type<T>, func: (node: T) => any) {
         this.map.set(type, func);
     }
 

@@ -37,15 +37,16 @@ export class ExpressionParser extends ParserBase {
         return mbe;
     }
 
-    resolveExpression(mbe: UnresolvedExpression): Expression {
+    resolveExpression(mbe: UnresolvedExpression, parentNode?:Expression): Expression {
         let resolver = new PrecedenceResolver(mbe);
+        resolver.parentNode = parentNode;
         resolver.logger = this.logger;
         let mbe2 = resolver.resolve();
         return mbe2;
     }
-    parseExpression(): Expression {
+    parseExpression(parentNode?:Expression): Expression {
         let mbe = this.parseFlatExpressionsAndOperators();
-        let mbe2 = this.resolveExpression(mbe);
+        let mbe2 = this.resolveExpression(mbe, parentNode);
         return mbe2;
     }
 
@@ -447,7 +448,7 @@ export class ExpressionParser extends ParserBase {
         node.braceOpenToken = this.expect(TokenTypes.braceOpen);
         node.braceOpenTokenPost = this.nextNonWhitespaceToken();
         if (!this.token.is(TokenTypes.braceClose)) {
-            node.list = this.parseNonParenthesizedList();
+            node.list = this.parseNonParenthesizedList(node);
             //node.items = node2.items;
             //node.itemsSeparators = node2.itemsSeparators;
         }
@@ -565,9 +566,9 @@ export class ExpressionParser extends ParserBase {
         //this.nextToken();
         return node;
     }
-    parseNonParenthesizedList(): NonParenthesizedList {
+    parseNonParenthesizedList(parentNode?:Expression): NonParenthesizedList {
         let node = this.create(NonParenthesizedList);
-        let node2 = this.parseExpression();
+        let node2 = this.parseExpression(parentNode);
         if (node2 instanceof NonParenthesizedList)
             return node2;
         node.items = [node2];

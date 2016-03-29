@@ -23,7 +23,6 @@ import {Deparse} from "./deparse";
 import {Refactor} from "../src/refactor";
 class PerlParserTool {
     filename: string;
-    data: string;
     code: string;
     tokens: Token[];
     unit: Unit;
@@ -37,12 +36,27 @@ class PerlParserTool {
             });
         });
     }
+    args2: PerlParserArgs;
     run(): Promise<any> {
-        return this.readFile(this.filename).then(t=> this.data = t).then(t=> this.run2());
+        this.args2 = <PerlParserArgs>this.argsToObject(["-e"]);
+        console.log(this.args2);
+        if (this.args2["-e"] != null) {
+            this.filename = "";
+            this.code = this.args2["-e"];
+            this.run2();
+            return Promise.resolve();
+        }
+        else if (this.args2.rest.length > 0) {
+            this.filename = this.args2.rest[0];//this.args[2]; //0=node 1=pp.js 2=real_arg
+            return this.readFile(this.filename).then(t=> this.code = t).then(t=> this.run2());
+        }
+        else
+            throw new Error("no params");
+
+
     }
     run2() {
-        this.code = this.data;
-        let file = new File2(this.filename, this.data);
+        let file = new File2(this.filename, this.code);
         let tok = new Tokenizer();
         tok.file = file;
         tok.main();
@@ -65,19 +79,43 @@ class PerlParserTool {
         //console.log("DONE");//, unit);
 
     }
+
+    args: string[];
+    argsToObject(flags: string[]) {
+        let index = -1;
+        let args = this.args;
+        let obj = { rest: <string[]>[] };
+        while (index < args.length) {
+            index++;
+            let arg = args[index];
+            if (flags.contains(arg)) {
+                index++;
+                let arg2 = args[index];
+                obj[arg] = arg2;
+            }
+            else {
+                obj.rest.push(arg);
+            }
+        }
+        return obj;
+    }
+
+}
+
+interface PerlParserArgs {
+    "-e": string;
+    rest: string[];
 }
 
 
 
 
-let tool = new PerlParserTool();
-tool.filename = process.argv[2]; //0=node 1=pp.js 2=real_arg
-tool.run().catch(t=> console.log("CATCH", t)).then(t=> console.log("FINISHED", t));
-
-
 export class ExpressionTester extends Refactor {
     unit: Unit;
     shouldCheck(node: Expression): boolean {
+        let parent = node.parentNode;
+        if (parent instanceof Expression && this.shouldCheck(parent))
+            return false;
         if (node instanceof BlockExpression)
             return false;
         if (node instanceof NamedMemberExpression && node.target == null)
@@ -88,7 +126,12 @@ export class ExpressionTester extends Refactor {
                 return false;
             return true;
         }
-        if (node instanceof BinaryExpression || node instanceof MemberExpression)
+        if (node instanceof BinaryExpression) {
+            if (TokenTypes.statementModifiers.contains(node.operator.value))
+                return false;
+            return true;
+        }
+        if (node instanceof MemberExpression)
             return true;
         return false;
     }
@@ -126,8 +169,8 @@ export class ExpressionTester extends Refactor {
     }
 
     extractImplicitInvocationSubs(node: AstNode) {
-        if (node instanceof NamedMemberExpression && node.target == null) { //bareword
-            console.log("found bareword", node.toCode());
+        if (node instanceof NamedMemberExpression && node.target == null && node.token.isAny([TokenTypes.identifier, TokenTypes.keyword])) { //bareword
+            //console.log("found bareword", node.toCode());
             if (node.token != null && (node.token.isKeyword() || node.token.isAnyIdentifier(TokenTypes.namedUnaryOperators)))
                 return [];
             let parentNode = node.parentNode;
@@ -139,13 +182,20 @@ export class ExpressionTester extends Refactor {
     }
     filenameIndex = 0;
     processExp(exp: Expression): Promise<ExpressionTesterReport> {
-        let expCode = exp.toCode();
+        let writer = new AstWriter();
+        writer.register(Block, t=> "{;}");
+        writer.main();
+        writer.write(exp);
+        let expCode = writer.sb.join("");
+
+        //let expCode = exp.toCode();
         let filename = this.generateFilename(exp);
         if (filename != null)
             filename = "C:\\temp\\perl\\" + filename + "_" + (this.filenameIndex++) + ".pm";
         let subs = this.extractImplicitInvocationSubs(exp);
-        if (subs.length > 0)
-            console.log("subs", subs);
+        if (subs.length > 0) {
+            //console.log("subs", subs);
+        }
         else if (expCode.contains("croak")) {
             throw new Error("didn't detect the sub!");
         }
@@ -153,7 +203,7 @@ export class ExpressionTester extends Refactor {
         return new Deparse().deparse(expCode, { filename: filename, tryAsAssignment: true, assumeSubs: subs }).then(deparsedRes=> {
             let deparsed = deparsedRes.deparsed;
             if (!deparsedRes.success) {
-                console.log("couldn't deparse: ", expCode);//, exp);
+                console.error("couldn't deparse: ", expCode);//, exp);
                 return;
             }
             //console.log("testing", expCode);
@@ -165,15 +215,16 @@ export class ExpressionTester extends Refactor {
             if (deparsedClean.startsWith("(") && !mineClean.startsWith("("))
                 mineClean = "(" + mineClean + ")";
             let report: ExpressionTesterReport = { success: deparsedClean == mineClean, mine: mineClean, code: expCode, dprs: deparsedClean, filename: filename, exp: exp };
-            if (!report.success) {
-                console.log("");
-                console.log(filename);
-                console.log(report.code);
-                console.log(report.mine);
-                console.log(report.dprs);
-                //console.log(report.exp);
-                console.log("");
-            }
+            //if (!report.success) {
+            console.log("");
+            console.log(filename);
+            console.log(report.code);
+            console.log(report.mine);
+            console.log(report.dprs);
+            console.log(report.success ? "SUCCESS" : "FAIL");
+            //console.log(report.exp);
+            console.log("");
+            //}
             return report;
         }).catch(t=> console.error(t));
     }
@@ -188,3 +239,7 @@ interface ExpressionTesterReport {
     exp: Expression;
 }
 
+let tool = new PerlParserTool();
+tool.args = process.argv.skip(2);
+console.log(tool.args);
+tool.run();
