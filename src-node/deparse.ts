@@ -1,4 +1,4 @@
-﻿import {exec} from "child_process";
+﻿import * as proc from "child_process";
 import * as fs from "fs";
 import "../../../libs/corex";
 
@@ -24,7 +24,7 @@ export class Deparse {
             let cmd = "perl -MO=Deparse,-p " + JSON.stringify(filename);//-E " + JSON.stringify(code);
             //console.log("CODE", code);
             fs.writeFileSync(filename, code);
-            exec(cmd, (error, stdout, stderr) => {
+            proc.exec(cmd, (error, stdout, stderr) => {
                 let dr: DeparseResult = { success: false, deparsed: null };
 
                 let out = stdout.toString();

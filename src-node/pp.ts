@@ -56,6 +56,8 @@ class PerlParserTool {
 
     }
     run2() {
+        let expressionsFilename = "c:\\temp\\perl\\expressions.pm";
+        //fs.unlinkSync(expressionsFilename);
         let file = new File2(this.filename, this.code);
         let tok = new Tokenizer();
         tok.file = file;
@@ -75,7 +77,13 @@ class PerlParserTool {
         this.unit = unit;
         let tester = new ExpressionTester();
         tester.unit = this.unit;
-        return tester.process();
+        let expressions: string[] = [];
+        tester.onExpressionFound = e => {
+            expressions.push(e.code);
+        };
+        return tester.process().then(e=> {
+            return fs.writeFileSync(expressionsFilename, expressions.select(t=>t.trim()).distinct().orderBy([t=>t.contains("\n"), t=>t.length, t=>t]).join("\n------------------------------------------------------------------------\n"));
+        });
         //console.log("DONE");//, unit);
 
     }
@@ -141,7 +149,7 @@ export class ExpressionTester extends Refactor {
 
         let promises = exps.select(exp => this.processExp(exp));
         let x = <Promise<ExpressionTesterReport[]>><any>Promise.all(promises); //tsc bug
-        x.then(list=> {
+        return x.then(list=> {
             list = list.exceptNulls();
             console.log("FINISHED TESTING", { success: list.where(t=> t.success).length, fail: list.where(t=> !t.success).length });
         });
@@ -181,12 +189,15 @@ export class ExpressionTester extends Refactor {
         return new Refactor().getChildren(node).selectMany(t=> this.extractImplicitInvocationSubs(t));
     }
     filenameIndex = 0;
+    onExpressionFound(e: { code: string }) {
+    }
     processExp(exp: Expression): Promise<ExpressionTesterReport> {
         let writer = new AstWriter();
         writer.register(Block, t=> "{;}");
         writer.main();
         writer.write(exp);
         let expCode = writer.sb.join("");
+        this.onExpressionFound({code:expCode});
 
         //let expCode = exp.toCode();
         let filename = this.generateFilename(exp);

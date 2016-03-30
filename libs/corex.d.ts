@@ -110,7 +110,7 @@ interface Array<T> {
     min(): any;
     max(): any;
     getEnumerator(): any;
-    orderBy(selector: any, desc: any, comparer: any): any;
+    orderBy(selector: any, desc?: any, comparer?: any): T[];
     orderByDescending(selector: any, desc: any): any;
     sortBy(selector: any, desc: any, comparer: any): any;
     sortByDescending(selector: any): any;
