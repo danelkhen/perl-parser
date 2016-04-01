@@ -82,6 +82,7 @@ class PerlParserTool {
             expressions.push(e.code);
         };
         return tester.process().then(e=> {
+            console.log("SAVING");
             return fs.writeFileSync(expressionsFilename, expressions.select(t=> t.trim()).distinct().orderBy([t=> t.contains("\n"), t=> t.length, t=> t]).join("\n------------------------------------------------------------------------\n"));
         });
         //console.log("DONE");//, unit);
@@ -148,7 +149,7 @@ export class ExpressionTester extends Refactor {
         let exps = this.getDescendants(this.unit).ofType(Expression).where(t=> this.shouldCheck(t));
 
         return new Promise((resolve, reject) => {
-            exps.forEachAsyncProgressive((exp, cb) => this.processExp(exp).then(cb), list=> {
+            exps.take(10).forEachAsyncProgressive((exp, cb) => this.processExp(exp).then(cb), list=> {
                 list = list.exceptNulls();
                 console.log("FINISHED TESTING", { success: list.where(t=> t.success).length, fail: list.where(t=> !t.success).length });
                 resolve(list);
@@ -198,12 +199,34 @@ export class ExpressionTester extends Refactor {
     filenameIndex = 0;
     onExpressionFound(e: { code: string }) {
     }
-    processExp(exp: Expression): Promise<ExpressionTesterReport> {
+
+    redactVariable(name: string) {
+        if (name.startsWith("$"))
+            return "$a";
+        return name;
+    }
+    redactSingleBracedBareword(name: string) {
+        return "b";
+    }
+
+    toRedactedCode(exp: Expression, opts?: { addParentheses: boolean, deparseFriendly: boolean }) {
         let writer = new AstWriter();
-        writer.register(Block, t=> "{;}");
         writer.main();
+        writer.register(Block, t=> "{;}");
+        writer.register(NamedMemberExpression, t=> [[t.target, t.memberSeparatorToken], this.redactVariable(t.name)]);
+        writer.register(HashMemberAccessExpression, t=> {
+            let name = writer.tryGetSingleBracedBareword(t.member);
+            if (name != null)
+                return [t.target, [t.memberSeparatorToken], "{'"+this.redactSingleBracedBareword(name)+"'}"];
+            return t=> [t.target, [t.memberSeparatorToken], t.member];
+        });
+
         writer.write(exp);
-        let expCode = writer.sb.join("");
+        let code = writer.sb.join("");
+        return code;
+    }
+    processExp(exp: Expression): Promise<ExpressionTesterReport> {
+        let expCode = this.toRedactedCode(exp);//writer.sb.join("");
         this.onExpressionFound({ code: expCode });
 
         //let expCode = exp.toCode();
@@ -211,12 +234,12 @@ export class ExpressionTester extends Refactor {
         if (filename != null)
             filename = "C:\\temp\\perl\\" + filename + "_" + (this.filenameIndex++) + ".pm";
         let subs = this.extractImplicitInvocationSubs(exp);
-        if (subs.length > 0) {
-            //console.log("subs", subs);
-        }
-        else if (expCode.contains("croak")) {
-            throw new Error("didn't detect the sub!");
-        }
+        //if (subs.length > 0) {
+        //    //console.log("subs", subs);
+        //}
+        //else if (expCode.contains("croak")) {
+        //    throw new Error("didn't detect the sub!");
+        //}
 
         return new Deparse().deparse(expCode, { filename: filename, tryAsAssignment: true, assumeSubs: subs }).then(deparsedRes=> {
             let deparsed = deparsedRes.deparsed;
@@ -225,7 +248,7 @@ export class ExpressionTester extends Refactor {
                 return;
             }
             //console.log("testing", expCode);
-            let mine = exp.toCode({ addParentheses: true, deparseFriendly: true });
+            let mine = this.toRedactedCode(exp, { addParentheses: true, deparseFriendly: true });
             var deparsedClean = deparsed.trim();//.replace(/\s/g, "");
             if (deparsedClean.endsWith(";"))
                 deparsedClean = deparsedClean = deparsedClean.substr(0, deparsedClean.length - 1);

@@ -19,75 +19,25 @@ HasArrow, HasLabel,
 } from "./ast";
 
 
+
 export class Refactor {
     getTokens(node: AstNode): Token[] {
-        let list: Token[] = [];
-        Object.keys(node).where(key=> key != "parentNode").select(key=> node[key]).forEach(obj=> {
-            if (obj instanceof Array)
-                list.addRange(obj.where(t=> t instanceof Token));
-            else if (obj instanceof Token)
-                list.add(obj);
-        });
-        return list;
+        return node.query().getTokens();
     }
     getChildren(node: AstNode): AstNode[] {
-        let list: AstNode[] = [];
-        Object.keys(node).where(key=> key != "parentNode").select(key=> node[key]).forEach(obj=> {
-            if (obj instanceof Array)
-                list.addRange(obj.where(t=> t instanceof AstNode));
-            else if (obj instanceof AstNode)
-                list.add(obj);
-        });
-        return list;
+        return node.query().getChildren();
     }
-    getDescendants(root: AstNode):AstNode[] {
-        let stack: AstNode[] = [];
-        stack.addRange(this.getChildren(root));
-        let all: AstNode[] = [];
-        while (stack.length > 0) {
-            let node = stack.pop();
-            all.push(node);
-            let children = this.getChildren(node);
-            stack.addRange(children);
-        }
-        return all;
+    getDescendants(root: AstNode): AstNode[] {
+        return root.query().getDescendants();
     }
     first(node: AstNode, predicate: (node: AstNode) => boolean): AstNode {
-        let children = this.getChildren(node);
-        for (let child of children) {
-            if (predicate(child))
-                return child;
-            let res = this.first(child, predicate);
-            if (res != null)
-                return res;
-        }
-        return null;
+        return node.query().first(predicate);
     }
     selectFirstNonNull<R>(node: AstNode, predicate: (node: AstNode) => R): R {
-        let children = this.getChildren(node);
-        for (let child of children) {
-            let res = predicate(child);
-            if (res != null)
-                return res;
-            res = this.selectFirstNonNull(child, predicate);
-            if (res != null)
-                return res;
-        }
-        return null;
+        return node.query().selectFirstNonNull(predicate);
     }
     replaceNode(oldNode: AstNode, newNode: AstNode) {
-        let parentNode = oldNode.parentNode;
-        let prop = oldNode.parentNodeProp;
-        let value = parentNode[prop];
-        if (value instanceof Array) {
-            let index = value.indexOf(oldNode);
-            value[index] = newNode;
-        }
-        else {
-            parentNode[prop] = newNode;
-        }
-        newNode.parentNode = parentNode;
-        newNode.parentNodeProp = prop;
+        return oldNode.query().replaceNode(newNode);
     }
 
 }

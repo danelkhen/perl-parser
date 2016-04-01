@@ -1,6 +1,7 @@
 ﻿"use strict";
 
 import {Token} from "./token";
+import {TokenTypes} from "./token-types";
 import {AstWriter} from "./ast-writer";
 
 
@@ -13,8 +14,11 @@ export class AstNode {
     tokens: Token[] = [];
     whitespaceBefore: Token[];
     whitespaceAfter: Token[];
+    query(): AstQuery<AstNode> {
+        return AstQuery.of(this);
+    }
 
-    toCode(opts?: { addParentheses?: boolean, deparseFriendly?:boolean }) {
+    toCode(opts?: { addParentheses?: boolean, deparseFriendly?: boolean }) {
         let writer = new AstWriter();
         writer.addParentheses = opts != null && opts.addParentheses;
         writer.deparseFriendly = opts != null && opts.deparseFriendly;
@@ -156,6 +160,12 @@ export class MemberExpression extends Expression {
 }
 export class NamedMemberExpression extends MemberExpression implements HasArrow {
     name: string;
+    isVariableAccessExpression(): boolean {
+        return this.token != null && this.token.is(TokenTypes.sigiledIdentifier);
+    }
+    isBareword(): boolean {
+        return this.token != null && this.token.isAny([TokenTypes.identifier, TokenTypes.keyword]);
+    }
 }
 
 export class HashMemberAccessExpression extends MemberExpression implements HasArrow {
@@ -382,26 +392,122 @@ export class NativeInvocation_BlockOrExpr extends NativeFunctionInvocation {
 }
 
 
-    //A TERM has the highest precedence in Perl. They include:
-    // variables,  $hello
-    // quote and quote-like operators,  qq<abc>
-    // any expression in parentheses,   (7 + 8)
-    //and any function whose arguments are parenthesized.   $myFunc()
-    //Actually, there aren't really functions in this sense, just list operators and unary operators behaving as functions because you put parentheses around the arguments. These are all documented in perlfunc.
-    //If any list operator (print(), etc.) or any unary operator (chdir(), etc.) is followed by a left parenthesis as the next token, the operator and arguments within parentheses are taken to be of highest precedence, just like a normal function call.
-    //In the absence of parentheses, the precedence of list operators such as print, sort, or chmod is either very high or very low depending on whether you are looking at the left side or the right side of the operator. For example, in
-    //export class TERM {
-    //}
+//A TERM has the highest precedence in Perl. They include:
+// variables,  $hello
+// quote and quote-like operators,  qq<abc>
+// any expression in parentheses,   (7 + 8)
+//and any function whose arguments are parenthesized.   $myFunc()
+//Actually, there aren't really functions in this sense, just list operators and unary operators behaving as functions because you put parentheses around the arguments. These are all documented in perlfunc.
+//If any list operator (print(), etc.) or any unary operator (chdir(), etc.) is followed by a left parenthesis as the next token, the operator and arguments within parentheses are taken to be of highest precedence, just like a normal function call.
+//In the absence of parentheses, the precedence of list operators such as print, sort, or chmod is either very high or very low depending on whether you are looking at the left side or the right side of the operator. For example, in
+//export class TERM {
+//}
 
-    //export class BracedExpression extends Expression {
+//export class BracedExpression extends Expression {
 
-    //    toHashRefCreationExpression(): HashRefCreationExpression {
-    //        throw new Error();
-    //    }
-    //    toHashMemberAccessExpression(): HashMemberAccessExpression{
-    //        throw new Error();
-    //    }
-    //    toBlock(): Block {
-    //        throw new Error();
-    //    }
-    //}
+//    toHashRefCreationExpression(): HashRefCreationExpression {
+//        throw new Error();
+//    }
+//    toHashMemberAccessExpression(): HashMemberAccessExpression{
+//        throw new Error();
+//    }
+//    toBlock(): Block {
+//        throw new Error();
+//    }
+//}
+
+
+
+
+
+
+
+
+
+
+
+
+export class AstQuery<T extends AstNode> {
+    constructor(public root: AstNode) {
+    }
+
+    static of<V extends AstNode>(root: V): AstQuery<V> {
+        return new AstQuery(root);
+    }
+    getTokens(): Token[] {
+        let node = this.root;
+        let list: Token[] = [];
+        Object.keys(node).where(key=> key != "parentNode").select(key=> node[key]).forEach(obj=> {
+            if (obj instanceof Array)
+                list.addRange(obj.where(t=> t instanceof Token));
+            else if (obj instanceof Token)
+                list.add(obj);
+        });
+        return list;
+    }
+    getChildren(): AstNode[] {
+        let node = this.root;
+        let list: AstNode[] = [];
+        Object.keys(node).where(key=> key != "parentNode").select(key=> node[key]).forEach(obj=> {
+            if (obj instanceof Array)
+                list.addRange(obj.where(t=> t instanceof AstNode));
+            else if (obj instanceof AstNode)
+                list.add(obj);
+        });
+        return list;
+    }
+    getDescendants(): AstNode[] {
+        let stack: AstNode[] = [];
+        stack.addRange(this.getChildren());
+        let all: AstNode[] = [];
+        while (stack.length > 0) {
+            let node = stack.pop();
+            all.push(node);
+            let children = node.query().getChildren();
+            stack.addRange(children);
+        }
+        return all;
+    }
+    first(predicate: (node: AstNode) => boolean): AstNode {
+        let node = this.root;
+        let children = node.query().getChildren();
+        for (let child of children) {
+            if (predicate(child))
+                return child;
+            let res = child.query().first(predicate);
+            if (res != null)
+                return res;
+        }
+        return null;
+    }
+    selectFirstNonNull<R>(predicate: (node: AstNode) => R): R {
+        let node = this.root;
+        let children = node.query().getChildren();
+        for (let child of children) {
+            let res = predicate(child);
+            if (res != null)
+                return res;
+            res = child.query().selectFirstNonNull(predicate);
+            if (res != null)
+                return res;
+        }
+        return null;
+    }
+    replaceNode(newNode: AstNode) {
+        let oldNode = this.root;
+        let parentNode = oldNode.parentNode;
+        let prop = oldNode.parentNodeProp;
+        let value = parentNode[prop];
+        if (value instanceof Array) {
+            let index = value.indexOf(oldNode);
+            value[index] = newNode;
+        }
+        else {
+            parentNode[prop] = newNode;
+        }
+        newNode.parentNode = parentNode;
+        newNode.parentNodeProp = prop;
+        this.root = newNode;
+    }
+
+}
