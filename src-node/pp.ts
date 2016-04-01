@@ -82,7 +82,7 @@ class PerlParserTool {
             expressions.push(e.code);
         };
         return tester.process().then(e=> {
-            return fs.writeFileSync(expressionsFilename, expressions.select(t=>t.trim()).distinct().orderBy([t=>t.contains("\n"), t=>t.length, t=>t]).join("\n------------------------------------------------------------------------\n"));
+            return fs.writeFileSync(expressionsFilename, expressions.select(t=> t.trim()).distinct().orderBy([t=> t.contains("\n"), t=> t.length, t=> t]).join("\n------------------------------------------------------------------------\n"));
         });
         //console.log("DONE");//, unit);
 
@@ -147,11 +147,18 @@ export class ExpressionTester extends Refactor {
         new AstNodeFixator().process(this.unit);
         let exps = this.getDescendants(this.unit).ofType(Expression).where(t=> this.shouldCheck(t));
 
-        let promises = exps.select(exp => this.processExp(exp));
-        let x = <Promise<ExpressionTesterReport[]>><any>Promise.all(promises); //tsc bug
-        return x.then(list=> {
-            list = list.exceptNulls();
-            console.log("FINISHED TESTING", { success: list.where(t=> t.success).length, fail: list.where(t=> !t.success).length });
+        return new Promise((resolve, reject) => {
+            exps.forEachAsyncProgressive((exp, cb) => this.processExp(exp).then(cb), list=> {
+                list = list.exceptNulls();
+                console.log("FINISHED TESTING", { success: list.where(t=> t.success).length, fail: list.where(t=> !t.success).length });
+                resolve(list);
+            });
+            //let promises = exps.select(exp => this.processExp(exp));
+            //let x = <Promise<ExpressionTesterReport[]>><any>Promise.all(promises); //tsc bug
+            //return x.then(list=> {
+            //    list = list.exceptNulls();
+            //    console.log("FINISHED TESTING", { success: list.where(t=> t.success).length, fail: list.where(t=> !t.success).length });
+            //});
         });
     }
 
@@ -197,7 +204,7 @@ export class ExpressionTester extends Refactor {
         writer.main();
         writer.write(exp);
         let expCode = writer.sb.join("");
-        this.onExpressionFound({code:expCode});
+        this.onExpressionFound({ code: expCode });
 
         //let expCode = exp.toCode();
         let filename = this.generateFilename(exp);
