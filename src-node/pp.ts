@@ -21,6 +21,8 @@ import {safeTry, TokenReader, Logger, AstNodeFixator} from "../src/utils";
 import "../src/extensions";
 import {Deparse} from "./deparse";
 import {Refactor} from "../src/refactor";
+import {ExpressionTester} from "./expression-tester";
+
 class PerlParserTool {
     filename: string;
     code: string;
@@ -57,6 +59,7 @@ class PerlParserTool {
     }
     run2() {
         let expressionsFilename = "c:\\temp\\perl\\expressions.pm";
+        //fs.writeFileSync(expressionsFilename, "");
         //fs.unlinkSync(expressionsFilename);
         let file = new File2(this.filename, this.code);
         let tok = new Tokenizer();
@@ -77,13 +80,19 @@ class PerlParserTool {
         this.unit = unit;
         let tester = new ExpressionTester();
         tester.unit = this.unit;
-        let expressions: string[] = [];
-        tester.onExpressionFound = e => {
-            expressions.push(e.code);
-        };
-        return tester.process().then(e=> {
+        //let expressions: string[] = [];
+        //tester.onExpressionFound = e => {
+        //    expressions.push(e.code);
+        //    //console.log("onExpressionFound", expressions.length);
+        //    //fs.writeFileSync(expressionsFilename, expressions.select(t=> t.trim()).distinct().orderBy([t=> t.contains("\n"), t=> t.length, t=> t]).join("\n------------------------------------------------------------------------\n"));
+        //};
+        return tester.process().then(list=> {
+            let expressions = list.select(t=> t.code).distinct().orderBy([t=> t.contains("\n"), t=> t.length, t=> t]);
+            let reports = expressions.select(s=> list.first(x=> x.code == s));
+
+
             console.log("SAVING");
-            return fs.writeFileSync(expressionsFilename, expressions.select(t=> t.trim()).distinct().orderBy([t=> t.contains("\n"), t=> t.length, t=> t]).join("\n------------------------------------------------------------------------\n"));
+            return fs.writeFileSync(expressionsFilename, reports.select(t=> [JSON.stringify({success:t.success}), t.code, t.dprs, t.mine].join("\n")).join("\n------------------------------------------------------------------------\n"));
         });
         //console.log("DONE");//, unit);
 
@@ -117,168 +126,13 @@ interface PerlParserArgs {
 }
 
 
-
-
-export class ExpressionTester extends Refactor {
-    unit: Unit;
-    shouldCheck(node: Expression): boolean {
-        let parent = node.parentNode;
-        if (parent instanceof Expression && this.shouldCheck(parent))
-            return false;
-        if (node instanceof BlockExpression)
-            return false;
-        if (node instanceof NamedMemberExpression && node.target == null)
-            return false;
-        if (node instanceof InvocationExpression) {
-            let target = node.target;
-            if (target instanceof NamedMemberExpression && target.name == "use")
-                return false;
-            return true;
-        }
-        if (node instanceof BinaryExpression) {
-            if (TokenTypes.statementModifiers.contains(node.operator.value))
-                return false;
-            return true;
-        }
-        if (node instanceof MemberExpression)
-            return true;
-        return false;
-    }
-    process() {
-        new AstNodeFixator().process(this.unit);
-        let exps = this.getDescendants(this.unit).ofType(Expression).where(t=> this.shouldCheck(t));
-
-        return new Promise((resolve, reject) => {
-            exps.take(10).forEachAsyncProgressive((exp, cb) => this.processExp(exp).then(cb), list=> {
-                list = list.exceptNulls();
-                console.log("FINISHED TESTING", { success: list.where(t=> t.success).length, fail: list.where(t=> !t.success).length });
-                resolve(list);
-            });
-            //let promises = exps.select(exp => this.processExp(exp));
-            //let x = <Promise<ExpressionTesterReport[]>><any>Promise.all(promises); //tsc bug
-            //return x.then(list=> {
-            //    list = list.exceptNulls();
-            //    console.log("FINISHED TESTING", { success: list.where(t=> t.success).length, fail: list.where(t=> !t.success).length });
-            //});
-        });
-    }
-
-    generateFilename(node: Expression) {
-        let token = node.token
-        if (token == null) {
-            let refactor = new Refactor();
-            token = refactor.getTokens(node)[0];
-            if (token == null) {
-                token = refactor.getChildren(node).selectFirstNonNull(t=> refactor.getTokens(t)[0]);
-                if (token == null) {
-                    console.warn("generateFilename - token is null for", node.constructor);
-                    return null;
-                }
-            }
-        }
-        let pos = token.range.start;
-        let filename = token.range.file.name.split(/[\\\/]/).last();
-        let s = `${filename}_${pos.line}_${pos.column}`;
-        //console.log("generateFilename", s);
-        return s;
-
-    }
-
-    extractImplicitInvocationSubs(node: AstNode) {
-        if (node instanceof NamedMemberExpression && node.target == null && node.token.isAny([TokenTypes.identifier, TokenTypes.keyword])) { //bareword
-            //console.log("found bareword", node.toCode());
-            if (node.token != null && (node.token.isKeyword() || node.token.isAnyIdentifier(TokenTypes.namedUnaryOperators)))
-                return [];
-            let parentNode = node.parentNode;
-            if (parentNode != null && parentNode instanceof InvocationExpression && node.parentNodeProp == "target" && parentNode.arguments != null && !(parentNode.arguments instanceof ParenthesizedList)) {
-                return [node.name];
-            }
-        }
-        return new Refactor().getChildren(node).selectMany(t=> this.extractImplicitInvocationSubs(t));
-    }
-    filenameIndex = 0;
-    onExpressionFound(e: { code: string }) {
-    }
-
-    redactVariable(name: string) {
-        if (name.startsWith("$"))
-            return "$a";
-        return name;
-    }
-    redactSingleBracedBareword(name: string) {
-        return "b";
-    }
-
-    toRedactedCode(exp: Expression, opts?: { addParentheses: boolean, deparseFriendly: boolean }) {
-        let writer = new AstWriter();
-        writer.main();
-        writer.register(Block, t=> "{;}");
-        writer.register(NamedMemberExpression, t=> [[t.target, t.memberSeparatorToken], this.redactVariable(t.name)]);
-        writer.register(HashMemberAccessExpression, t=> {
-            let name = writer.tryGetSingleBracedBareword(t.member);
-            if (name != null)
-                return [t.target, [t.memberSeparatorToken], "{'"+this.redactSingleBracedBareword(name)+"'}"];
-            return t=> [t.target, [t.memberSeparatorToken], t.member];
-        });
-
-        writer.write(exp);
-        let code = writer.sb.join("");
-        return code;
-    }
-    processExp(exp: Expression): Promise<ExpressionTesterReport> {
-        let expCode = this.toRedactedCode(exp);//writer.sb.join("");
-        this.onExpressionFound({ code: expCode });
-
-        //let expCode = exp.toCode();
-        let filename = this.generateFilename(exp);
-        if (filename != null)
-            filename = "C:\\temp\\perl\\" + filename + "_" + (this.filenameIndex++) + ".pm";
-        let subs = this.extractImplicitInvocationSubs(exp);
-        //if (subs.length > 0) {
-        //    //console.log("subs", subs);
-        //}
-        //else if (expCode.contains("croak")) {
-        //    throw new Error("didn't detect the sub!");
-        //}
-
-        return new Deparse().deparse(expCode, { filename: filename, tryAsAssignment: true, assumeSubs: subs }).then(deparsedRes=> {
-            let deparsed = deparsedRes.deparsed;
-            if (!deparsedRes.success) {
-                console.error("couldn't deparse: ", expCode);//, exp);
-                return;
-            }
-            //console.log("testing", expCode);
-            let mine = this.toRedactedCode(exp, { addParentheses: true, deparseFriendly: true });
-            var deparsedClean = deparsed.trim();//.replace(/\s/g, "");
-            if (deparsedClean.endsWith(";"))
-                deparsedClean = deparsedClean = deparsedClean.substr(0, deparsedClean.length - 1);
-            var mineClean = mine.trim();//.replace(/\s/g, "");
-            if (deparsedClean.startsWith("(") && !mineClean.startsWith("("))
-                mineClean = "(" + mineClean + ")";
-            let report: ExpressionTesterReport = { success: deparsedClean == mineClean, mine: mineClean, code: expCode, dprs: deparsedClean, filename: filename, exp: exp };
-            //if (!report.success) {
-            console.log("");
-            console.log(filename);
-            console.log(report.code);
-            console.log(report.mine);
-            console.log(report.dprs);
-            console.log(report.success ? "SUCCESS" : "FAIL");
-            //console.log(report.exp);
-            console.log("");
-            //}
-            return report;
-        }).catch(t=> console.error(t));
-    }
-}
-
-interface ExpressionTesterReport {
-    filename: string;
-    success: boolean;
-    code: string;
-    dprs: string;
-    mine: string;
-    exp: Expression;
-}
+process.on('uncaughtException', (err) => {
+    console.error(`Caught exception: ${err}`);
+});
+process.on('unhandledRejection', (reason, p) => {
+    console.error("Unhandled Rejection at: Promise ", p, " reason: ", reason);
+    // application specific logging, throwing an error, or other logic here
+});
 
 let tool = new PerlParserTool();
 tool.args = process.argv.skip(2);

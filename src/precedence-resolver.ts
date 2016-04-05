@@ -182,6 +182,7 @@ export class PrecedenceResolver {
         let index = this.nodes.indexOf(op);
         let left = this.nodes[index - 1];
         let right = this.nodes[index + 1];
+        let isFatComma = op.token.is(TokenTypes.fatComma);
         //if (left instanceof NonParenthesizedList && right instanceof Expression) {
         //    left.items.addRange(right.items);
         //    left.itemsSeparators.addRange(right.itemsSeparators);
@@ -193,6 +194,11 @@ export class PrecedenceResolver {
             left.itemsSeparators.add(op);
             this.nodes.removeAt(index);
             if (right instanceof Expression) {
+                //if (isFatComma) {
+                //    let lastItem = left.items.last();
+                //    if(lastItem instanceof NamedMemberExpression && lastItem.isBareword())
+                //        lastItem.isCoercedToString = true;
+                //}
                 left.items.add(right);
                 this.nodes.removeAt(index);
             }

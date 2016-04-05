@@ -160,6 +160,7 @@ export class MemberExpression extends Expression {
 }
 export class NamedMemberExpression extends MemberExpression implements HasArrow {
     name: string;
+    //isCoercedToString:boolean;
     isVariableAccessExpression(): boolean {
         return this.token != null && this.token.is(TokenTypes.sigiledIdentifier);
     }

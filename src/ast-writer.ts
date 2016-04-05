@@ -99,10 +99,14 @@ export class AstWriter {
         let item = node.list.items[0];
         if (item instanceof NamedMemberExpression && item.token.isAny([TokenTypes.identifier, TokenTypes.keyword]))
             return item.name;
+        if (item instanceof ValueExpression && item.token.isAny([TokenTypes.identifier, TokenTypes.keyword]))
+            return item.value;
         return null;
     }
     addParentheses = false;//true;
     deparseFriendly = false;
+    collapseWhitespace = false;
+    ignoreComments = false;
     write(obj: any) {
         if (obj == null)
             return;
@@ -114,78 +118,85 @@ export class AstWriter {
                 console.warn("no writer for node", node);
                 return;
             }
-            let list = func(node);
-            if (list.some(t=> t == null))
-                console.warn("node generated array with nulls", node, list, func.toString());
-            if (this.addParentheses && node instanceof PrefixUnaryExpression) {
-                list.insert(1, "(");
-                list.add(")");
-            }
-            if (this.addParentheses && node instanceof InvocationExpression && !(node.arguments instanceof ParenthesizedList)) {
-                let target = node.target;
-                if (this.deparseFriendly && target instanceof NamedMemberExpression && target.name == "return") {
-                    let t = node;
-                    list = [t.target, [t.memberSeparatorToken || " "], [t.arguments]]
-                }
-                else {
-                    list.insert(3, "(");
+            let res = func(node);
+            if (res instanceof Array) {
+                let list = res;
+
+                if (list.some(t=> t == null))
+                    console.warn("node generated array with nulls", node, list, func.toString());
+                if (this.addParentheses && node instanceof PrefixUnaryExpression) {
+                    list.insert(1, "(");
                     list.add(")");
                 }
-            }
-            if (this.addParentheses && node instanceof BinaryExpression) {
-                list = ["(", node.left, " ", node.operator, " ", node.right, ")"];
-            }
-            if (this.deparseFriendly && node instanceof InvocationExpression && node.target != null && node.target.token.isIdentifier("eval") && node.arguments instanceof Block) {
-                let block = <Block><any>node.arguments;
-                let doBody: any = block.statements;
-                if (block.statements.length == 1) {
-                    let st = block.statements[0];
-                    if (st instanceof ExpressionStatement)
-                        doBody = ["(", st.expression, ")"];
-                    if (st instanceof EmptyStatement)
-                        doBody = ["()"];
+                if (this.addParentheses && node instanceof InvocationExpression && !(node.arguments instanceof ParenthesizedList)) {
+                    let target = node.target;
+                    if (this.deparseFriendly && target instanceof NamedMemberExpression && target.name == "return") {
+                        let t = node;
+                        list = [t.target, [t.memberSeparatorToken || " "], [t.arguments]]
+                    }
+                    else {
+                        list.insert(3, "(");
+                        list.add(")");
+                    }
                 }
-                list = ["eval {\n    do {\n        ", doBody, "\n    }\n}"];
-            }
-            if (this.deparseFriendly && node instanceof HashMemberAccessExpression) {
-                let name = this.tryGetSingleBracedBareword(node.member);
-                if (name != null) {
-                    let index = list.indexOf(node.member);
-                    list[index] = "{'" + name + "'}";
+                if (this.addParentheses && node instanceof BinaryExpression) {
+                    list = ["(", node.left, " ", node.operator, " ", node.right, ")"];
                 }
-            }
-            if (this.deparseFriendly && node instanceof NamedMemberExpression && node.name == "shift") {
-                let parentNode = node.parentNode;
-                if (parentNode != null && parentNode instanceof InvocationExpression && node.parentNodeProp == "target" && parentNode.arguments != null) {
-                    //skip in case shift is already an invocation with prms
+                if (this.deparseFriendly && node instanceof InvocationExpression && node.target != null && node.target.token.isIdentifier("eval") && node.arguments instanceof Block) {
+                    let block = <Block><any>node.arguments;
+                    let doBody: any = block.statements;
+                    if (block.statements.length == 1) {
+                        let st = block.statements[0];
+                        if (st instanceof ExpressionStatement)
+                            doBody = ["(", st.expression, ")"];
+                        if (st instanceof EmptyStatement)
+                            doBody = ["()"];
+                    }
+                    list = ["eval {\n    do {\n        ", doBody, "\n    }\n}"];
+                }
+                if (this.deparseFriendly && node instanceof HashMemberAccessExpression) {
+                    let name = this.tryGetSingleBracedBareword(node.member);
+                    if (name != null) {
+                        let index = list.indexOf(node.member);
+                        list[index] = "{'" + name + "'}";
+                    }
+                }
+                if (this.deparseFriendly && node instanceof NamedMemberExpression && node.name == "shift") {
+                    let parentNode = node.parentNode;
+                    if (parentNode != null && parentNode instanceof InvocationExpression && node.parentNodeProp == "target" && parentNode.arguments != null) {
+                        //skip in case shift is already an invocation with prms
+                    }
+                    else
+                        list = ["shift(@ARGV)"];
+                }
+                if (this.deparseFriendly && node instanceof NamedMemberExpression && node.token.isAny([TokenTypes.identifier, TokenTypes.keyword]) && !node.arrow) {
+                    let parent = node.parentNode;
+                    if (parent instanceof NamedMemberExpression && parent.arrow) {
+                        let node2: Expression = node;
+                        let names: string[] = [];
+                        while (node2 != null && node2 instanceof NamedMemberExpression && !node2.arrow && node.token.isAny([TokenTypes.identifier, TokenTypes.keyword])) {
+                            let node3 = <NamedMemberExpression>node2;
+                            names.push(node3.name);
+                            node2 = node3.target;
+                        }
+                        if (node2 == null) {
+                            list = ["'" + names.reversed().join("::") + "'"];
+                        }
+                    }
+                }
+                let all;
+                if (this.deparseFriendly) {
+                    all = list;
+                    if (node instanceof Statement)
+                        all.push("\n");
                 }
                 else
-                    list = ["shift(@ARGV)"];
+                    all = [[node.whitespaceBefore], list, [node.whitespaceAfter]];
+                this.write(all);
             }
-            if (this.deparseFriendly && node instanceof NamedMemberExpression && node.token.isAny([TokenTypes.identifier, TokenTypes.keyword]) && !node.arrow) {
-                let parent = node.parentNode;
-                if (parent instanceof NamedMemberExpression && parent.arrow) {
-                    let node2: Expression = node;
-                    let names: string[] = [];
-                    while (node2 != null && node2 instanceof NamedMemberExpression && !node2.arrow && node.token.isAny([TokenTypes.identifier, TokenTypes.keyword])) {
-                        let node3 = <NamedMemberExpression>node2;
-                        names.push(node3.name);
-                        node2 = node3.target;
-                    }
-                    if (node2 == null) {
-                        list = ["'" + names.reversed().join("::") + "'"];
-                    }
-                }
+            else {
+                this.write(res);
             }
-            let all;
-            if (this.deparseFriendly) {
-                all = list;
-                if(node instanceof Statement)
-                    all.push("\n");
-            }
-            else
-                all = [[node.whitespaceBefore], list, [node.whitespaceAfter]];
-            this.write(all);
         }
         else if (obj instanceof Array) {
             let list = <Array<any>>obj;
@@ -195,13 +206,15 @@ export class AstWriter {
         }
         else if (obj instanceof Token) {
             let token = <Token>obj;
-            if (this.deparseFriendly && token.is(TokenTypes.whitespace)) {
+            if ((this.collapseWhitespace || this.deparseFriendly) && token.is(TokenTypes.whitespace)) {
                 let s = token.value;
                 if (s == "")
                     s = "";
                 else
                     s = " ";
                 this.sb.push(s);
+            }
+            else if ((this.ignoreComments || this.deparseFriendly) && token.is(TokenTypes.comment)) {
             }
             else
                 this.sb.push(token.value);
