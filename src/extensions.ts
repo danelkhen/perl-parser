@@ -1,5 +1,4 @@
-﻿/// <reference path="../typings/main/ambient/es6-shim/es6-shim.d.ts" />
-interface RegExp {
+﻿interface RegExp {
     execFrom(index: number, s: string): RegExpExecArray;
     testFrom(index: number, s: string): boolean;
 }

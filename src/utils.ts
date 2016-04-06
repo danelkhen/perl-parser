@@ -1,5 +1,4 @@
-﻿/// <reference path="../typings/main/ambient/es6-shim/es6-shim.d.ts" />
-import {Token, TokenType, TextRange2, File2, File2Pos} from "./token";
+﻿import {Token, TokenType, TextRange2, File2, File2Pos} from "./token";
 import {TokenTypes} from "./token-types";
 import {AstNode} from "./ast";
 

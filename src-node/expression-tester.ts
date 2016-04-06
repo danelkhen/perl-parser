@@ -48,24 +48,12 @@ export class ExpressionTester extends Refactor {
             return true;
         return false;
     }
-    process() {
+    process(): Promise<ExpressionTesterReportItem[]> {
         new AstNodeFixator().process(this.unit);
         let exps = this.getDescendants(this.unit).ofType(Expression).where(t=> this.shouldCheck(t));
 
-        //return new Promise((resolve, reject) => {
-        //exps.take(100).forEachAsyncProgressive((exp, cb) => this.processExp(exp).then(cb), list=> {
-        //    list = list.exceptNulls();
-        //    console.log("FINISHED TESTING", { success: list.where(t=> t.success).length, fail: list.where(t=> !t.success).length });
-        //    resolve(list);
-        //});
-        //});
-        console.log("GGGGGGGGGGGGGGGGGGGGGGGGGGGGGG");
         let promises = exps.select(exp => this.processExp(exp));
-        //let i = 0;
-        //promises.forEach(t=> t.then(x=> console.log("damn", i++)));
-        //return;
-        console.log(Promise.all.toString());
-        let x = <Promise<ExpressionTesterReport[]>><any>Promise.all(promises); //tsc bug
+        let x = <Promise<ExpressionTesterReportItem[]>><any>Promise.all(promises); //tsc bug
         return x.then(list=> {
             list = list.exceptNulls();
             console.log("FINISHED TESTING", { success: list.where(t=> t.success).length, fail: list.where(t=> !t.success).length });
@@ -179,8 +167,8 @@ export class ExpressionTester extends Refactor {
         let code = writer.sb.join("");
         return code;
     }
-    processExp(exp: Expression): Promise<ExpressionTesterReport> {
-        let expCode = this.toCode(exp, { collapseWhitespace: true, redact: true, ignoreComments:true });//writer.sb.join("");
+    processExp(exp: Expression): Promise<ExpressionTesterReportItem> {
+        let expCode = this.toCode(exp, { collapseWhitespace: true, redact: true, ignoreComments: true });//writer.sb.join("");
         this.onExpressionFound({ code: expCode });
 
         //let expCode = exp.toCode();
@@ -209,7 +197,7 @@ export class ExpressionTester extends Refactor {
             var mineClean = mine.trim();//.replace(/\s/g, "");
             if (deparsedClean.startsWith("(") && !mineClean.startsWith("("))
                 mineClean = "(" + mineClean + ")";
-            let report: ExpressionTesterReport = { success: deparsedClean == mineClean, mine: mineClean, code: expCode, dprs: deparsedClean, filename: filename, exp: exp };
+            let report: ExpressionTesterReportItem = { success: deparsedClean == mineClean, mine: mineClean, code: expCode, dprs: deparsedClean, filename: filename, exp: exp };
             //if (!report.success) {
             console.log("");
             console.log(filename);
@@ -225,7 +213,7 @@ export class ExpressionTester extends Refactor {
     }
 }
 
-interface ExpressionTesterReport {
+export interface ExpressionTesterReportItem {
     filename: string;
     success: boolean;
     code: string;
@@ -233,3 +221,54 @@ interface ExpressionTesterReport {
     mine: string;
     exp: Expression;
 }
+
+
+
+
+export class ExpressionTesterReport {
+    items: ExpressionTesterReportItem[] = [];
+    filename: string;
+    sep = "\n#######################################################################\n";
+    loadSync() {
+        if (!fs.existsSync(this.filename))
+            return;
+        let s = fs.readFileSync(this.filename, "utf8");
+        let groups = s.split(this.sep);
+        let list = groups.select(group=> {
+            let lines = group.lines();
+            console.log(lines);
+            let item: ExpressionTesterReportItem = JSON.parse(lines[0]);
+            item.code = lines[1];
+            item.dprs = lines[2];
+            item.mine = lines[3];
+            return item;
+        });
+        this.items = list;
+    }
+    removeDoubles() {
+        let set = new Set<string>();
+        let length = this.items.length;
+        this.items.reversed().forEach((t, i) => {
+            if (set.has(t.code)) {
+                let index = length - i - 1;
+                let t2 = this.items[index];
+                this.items.removeAt(index);
+            }
+            else
+                set.add(t.code);
+        });
+    }
+    sort() {
+        this.items = this.items.orderBy([t=> t.code.contains("\n"), t=> t.code.length, t=> t.code]);
+    }
+    cleanup() {
+        this.removeDoubles();
+        this.sort();
+    }
+    saveSync() {
+        fs.writeFileSync(this.filename, this.items.select(t=> [JSON.stringify({ success: t.success }), t.code, t.dprs, t.mine].join("\n")).join(this.sep));
+    }
+}
+
+
+

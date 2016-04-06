@@ -21,7 +21,7 @@ import {safeTry, TokenReader, Logger, AstNodeFixator} from "../src/utils";
 import "../src/extensions";
 import {Deparse} from "./deparse";
 import {Refactor} from "../src/refactor";
-import {ExpressionTester} from "./expression-tester";
+import {ExpressionTester, ExpressionTesterReport} from "./expression-tester";
 
 class PerlParserTool {
     filename: string;
@@ -40,12 +40,19 @@ class PerlParserTool {
     }
     args2: PerlParserArgs;
     run(): Promise<any> {
-        this.args2 = <PerlParserArgs>this.argsToObject(["-e"]);
-        console.log(this.args2);
+        this.args2 = <PerlParserArgs>this.argsToObject(["-e", "-t", "-r"]);
+        console.log("ARGS", this.args2);
         if (this.args2["-e"] != null) {
             this.filename = "";
             this.code = this.args2["-e"];
-            this.run2();
+            return this.run2();
+        }
+        else if (this.args2["-t"]) {
+            this.test();
+            return Promise.resolve();
+        }
+        else if (this.args2["-r"]) {
+            this.report();
             return Promise.resolve();
         }
         else if (this.args2.rest.length > 0) {
@@ -54,11 +61,22 @@ class PerlParserTool {
         }
         else
             throw new Error("no params");
-
-
     }
-    run2() {
-        let expressionsFilename = "c:\\temp\\perl\\expressions.pm";
+    expressionsFilename = "c:\\temp\\perl\\expressions.pm";
+
+    test() {
+        throw new Error();
+    }
+    report() {
+        console.log("testing ", this.expressionsFilename);
+        let report2 = new ExpressionTesterReport();
+        report2.filename = this.expressionsFilename;
+        report2.loadSync();
+        console.log("success: ", report2.items.where(t=> t.success).length, "/", report2.items.length);
+    }
+    run2(): Promise<ExpressionTesterReport> {
+        let expressionsFilename = this.expressionsFilename;// "c:\\temp\\perl\\expressions.pm";
+        //return;
         //fs.writeFileSync(expressionsFilename, "");
         //fs.unlinkSync(expressionsFilename);
         let file = new File2(this.filename, this.code);
@@ -87,12 +105,19 @@ class PerlParserTool {
         //    //fs.writeFileSync(expressionsFilename, expressions.select(t=> t.trim()).distinct().orderBy([t=> t.contains("\n"), t=> t.length, t=> t]).join("\n------------------------------------------------------------------------\n"));
         //};
         return tester.process().then(list=> {
-            let expressions = list.select(t=> t.code).distinct().orderBy([t=> t.contains("\n"), t=> t.length, t=> t]);
-            let reports = expressions.select(s=> list.first(x=> x.code == s));
-
-
-            console.log("SAVING");
-            return fs.writeFileSync(expressionsFilename, reports.select(t=> [JSON.stringify({success:t.success}), t.code, t.dprs, t.mine].join("\n")).join("\n------------------------------------------------------------------------\n"));
+            let report = new ExpressionTesterReport();
+            report.filename = expressionsFilename;
+            report.loadSync();
+            report.items.addRange(list);
+            //console.log("NULLS", list.where(t=> t == null).length);
+            report.cleanup();
+            report.saveSync();
+            return report;
+            
+            //let expressions = list.select(t=> t.code).distinct().orderBy([t=> t.contains("\n"), t=> t.length, t=> t]);
+            //let reports = expressions.select(s=> list.first(x=> x.code == s));
+            //console.log("SAVING");
+            //return fs.writeFileSync(expressionsFilename, reports.select(t=> [JSON.stringify({success:t.success}), t.code, t.dprs, t.mine].join("\n")).join("\n------------------------------------------------------------------------\n"));
         });
         //console.log("DONE");//, unit);
 
@@ -109,6 +134,12 @@ class PerlParserTool {
             if (flags.contains(arg)) {
                 index++;
                 let arg2 = args[index];
+                console.log(arg, arg2);
+                if (arg2 == null || flags.contains(arg2)) {
+                    obj[arg] = true;
+                    index--;
+                    continue;
+                }
                 obj[arg] = arg2;
             }
             else {
@@ -122,6 +153,8 @@ class PerlParserTool {
 
 interface PerlParserArgs {
     "-e": string;
+    "-t": string;
+    "-r": string;
     rest: string[];
 }
 
