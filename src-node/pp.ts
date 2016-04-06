@@ -40,17 +40,18 @@ class PerlParserTool {
         });
     }
     args2: PerlParserArgs;
+    save: boolean;
     run(): Promise<any> {
-        this.args2 = <PerlParserArgs>this.argsToObject(["-e", "-t", "-r"]);
+        this.args2 = <PerlParserArgs>this.argsToObject(["-e", "-t", "-r", "-s"]);
         console.log("ARGS", this.args2);
+        this.save = this.args2["-s"] != null;
         if (this.args2["-e"] != null) {
             this.filename = "";
             this.code = this.args2["-e"];
             return this.run2();
         }
         else if (this.args2["-t"]) {
-            this.test();
-            return Promise.resolve();
+            return this.test();
         }
         else if (this.args2["-r"]) {
             this.report();
@@ -63,11 +64,37 @@ class PerlParserTool {
         else
             throw new Error("no params");
     }
-    expressionsFilename = "c:\\temp\\perl\\expressions.pm";
+    expressionsFilename = "C:\\Users\\Dan-el\\github\\perl-parser\\test\\expressions.pm";
 
     test() {
-        throw new Error();
+        console.log("testing ", this.expressionsFilename);
+        let report = new ExpressionTesterReport();
+        report.filename = this.expressionsFilename;
+        report.loadSync();
+        let successBefore = report.items.where(t=> t.success).length;
+        let exps = report.items.select(item=> this.parseExpression(item.code));
+
+        let tester = new ExpressionTester();
+        let promises = exps.select(exp => tester.testExp(exp));
+        return Promise.all(promises).then(items2=> {
+            console.log("NULLS", items2.select((t,i) =>  t==null ? exps[i].toCode() : null).where(t=>t!=null));
+            let successAfter = items2.where(t=> t.success).length;
+            console.log("before", successBefore, "after", successAfter, "total", items2.length);
+            report.items = items2;
+            if (this.save) {
+                console.log("saving");
+                report.saveSync();
+            }
+        });
+        //console.log("parsing", item.code);
+        //let exp = this.parseExpression(item.code);
+        ////console.log("parsed", exp);
+        //console.log("running test");
+        //return tester.testExp(exp).then(t=> console.log(t.success));
+        //console.log("success: ", report.items.where(t=> t.success).length, "/", report.items.length);
     }
+
+
     report() {
         console.log("testing ", this.expressionsFilename);
         let report2 = new ExpressionTesterReport();
@@ -75,12 +102,9 @@ class PerlParserTool {
         report2.loadSync();
         console.log("success: ", report2.items.where(t=> t.success).length, "/", report2.items.length);
     }
-    run2(): Promise<ExpressionTesterReport> {
-        let expressionsFilename = this.expressionsFilename;// "c:\\temp\\perl\\expressions.pm";
-        //return;
-        //fs.writeFileSync(expressionsFilename, "");
-        //fs.unlinkSync(expressionsFilename);
-        let file = new File2(this.filename, this.code);
+
+    parseUnit(filename: string, code: string): Unit {
+        let file = new File2(filename, code);
         let tok = new Tokenizer();
         tok.file = file;
         tok.main();
@@ -96,23 +120,38 @@ class PerlParserTool {
         //console.log(statements);
         let unit = new Unit();
         unit.statements = statements;
-        this.unit = unit;
+        return unit;
+    }
+    parseExpression(code: string) {
+        let unit = this.parseUnit("", code);
+        let st = unit.statements[0];
+        if (st instanceof ExpressionStatement) {
+            return st.expression;
+        }
+        throw new Error();
+    }
+    run2(): Promise<ExpressionTesterReport> {
+        let expressionsFilename = this.expressionsFilename;// "c:\\temp\\perl\\expressions.pm";
+
+        this.unit = this.parseUnit(this.filename, this.code);
+
         let tester = new ExpressionTester();
-        tester.unit = this.unit;
         //let expressions: string[] = [];
         //tester.onExpressionFound = e => {
         //    expressions.push(e.code);
         //    //console.log("onExpressionFound", expressions.length);
         //    //fs.writeFileSync(expressionsFilename, expressions.select(t=> t.trim()).distinct().orderBy([t=> t.contains("\n"), t=> t.length, t=> t]).join("\n------------------------------------------------------------------------\n"));
         //};
-        return tester.process().then(list=> {
+        return tester.testUnit(this.unit).then(list=> {
             let report = new ExpressionTesterReport();
-            console.log("merging results");
             report.filename = expressionsFilename;
             report.loadSync();
             report.items.addRange(list);
             report.cleanup();
-            report.saveSync();
+            if (this.save) {
+                console.log("merging and saving results");
+                report.saveSync();
+            }
             return report;
             
             //let expressions = list.select(t=> t.code).distinct().orderBy([t=> t.contains("\n"), t=> t.length, t=> t]);
@@ -156,15 +195,16 @@ interface PerlParserArgs {
     "-e": string;
     "-t": string;
     "-r": string;
+    "-s": string; //save
     rest: string[];
 }
 
 
 process.on('uncaughtException', (err) => {
-    console.error(`Caught exception: ${err}`);
+    console.error("Uncaught exception", err, err.stack);
 });
 process.on('unhandledRejection', (reason, p) => {
-    console.error("Unhandled Rejection at: Promise ", p, " reason: ", reason);
+    console.error("Unhandled Rejection at: Promise ", p, " reason: ", reason, reason.stack);
     // application specific logging, throwing an error, or other logic here
 });
 

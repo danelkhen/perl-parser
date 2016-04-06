@@ -48,11 +48,11 @@ export class ExpressionTester extends Refactor {
             return true;
         return false;
     }
-    process(): Promise<ExpressionTesterReportItem[]> {
-        new AstNodeFixator().process(this.unit);
-        let exps = this.getDescendants(this.unit).ofType(Expression).where(t=> this.shouldCheck(t));
+    testUnit(unit: Unit): Promise<ExpressionTesterReportItem[]> {
+        new AstNodeFixator().process(unit);
+        let exps = this.getDescendants(unit).ofType(Expression).where(t=> this.shouldCheck(t));
 
-        let promises = exps.select(exp => this.processExp(exp));
+        let promises = exps.select(exp => this.testExp(exp));
         let x = <Promise<ExpressionTesterReportItem[]>><any>Promise.all(promises); //tsc bug
         return x.then(list=> {
             list = list.exceptNulls();
@@ -95,8 +95,6 @@ export class ExpressionTester extends Refactor {
         return new Refactor().getChildren(node).selectMany(t=> this.extractImplicitInvocationSubs(t));
     }
     filenameIndex = 0;
-    onExpressionFound(e: { code: string }) {
-    }
 
     variableIndex = 1;
     funcIndex = 1;
@@ -167,18 +165,20 @@ export class ExpressionTester extends Refactor {
         let code = writer.sb.join("");
         return code;
     }
-    processExp(exp: Expression): Promise<ExpressionTesterReportItem> {
+    testExpCode(code: string): Promise<ExpressionTesterReportItem> {
+        return null;
+    }
+    testExp(exp: Expression): Promise<ExpressionTesterReportItem> {
         let expCode = this.toCode(exp, { collapseWhitespace: true, redact: true, ignoreComments: true });//writer.sb.join("");
-        this.onExpressionFound({ code: expCode });
 
         //let expCode = exp.toCode();
         let filename = this.generateFilename(exp);
         if (filename != null)
             filename = "C:\\temp\\perl\\" + filename + "_" + (this.filenameIndex++) + ".pm";
         let subs = this.extractImplicitInvocationSubs(exp);
-        //if (subs.length > 0) {
-        //    //console.log("subs", subs);
-        //}
+        if (subs.length > 0) {
+            console.log("subs", subs);
+        }
         //else if (expCode.contains("croak")) {
         //    throw new Error("didn't detect the sub!");
         //}
@@ -187,7 +187,7 @@ export class ExpressionTester extends Refactor {
             let deparsed = deparsedRes.deparsed;
             if (!deparsedRes.success) {
                 console.error("couldn't deparse: ", expCode);//, exp);
-                return { success: false, mine: mineClean, code: expCode, dprs: deparsedClean, filename: filename, exp: exp };;
+                return { success: false, mine: mineClean, code: expCode, dprs: deparsedClean, filename: filename, exp: exp };
             }
             //console.log("testing", expCode);
             let mine = this.toCode(exp, { addParentheses: true, deparseFriendly: true, redact: true });
@@ -201,9 +201,9 @@ export class ExpressionTester extends Refactor {
             //if (!report.success) {
             console.log("");
             console.log(filename);
-            console.log(report.code);
-            console.log(report.mine);
-            console.log(report.dprs);
+            console.log("ORIG: ", report.code);
+            console.log("DPRS: ", report.dprs);
+            console.log("MINE: ", report.mine);
             console.log(report.success ? "SUCCESS" : "FAIL");
             //console.log(report.exp);
             console.log("");

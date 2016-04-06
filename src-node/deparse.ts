@@ -20,39 +20,45 @@ export class Deparse {
         }
 
 
-        return new Promise((resolve, reject) => {
-            this.index++;
-            let filename = opts.filename || "C:\\temp\\perl\\" + (this.index++) + ".tmp.pm";
-            let cmd = "perl -MO=Deparse,-p " + JSON.stringify(filename);//-E " + JSON.stringify(code);
-            //console.log("CODE", code);
-            fs2.writeFile(filename, code).then(e=> {
-                cp2.exec(cmd).then(e2 => {
-                    let dr: DeparseResult = { success: false, deparsed: null };
+        //return new Promise((resolve, reject) => {
+        this.index++;
+        let filename = opts.filename || "C:\\temp\\perl\\" + (this.index++) + ".tmp.pm";
+        let cmd = "perl -MO=Deparse,-p " + JSON.stringify(filename);//-E " + JSON.stringify(code);
+        //console.log("CODE", code);
+        return fs2.writeFile(filename, code)
+            .then(e=> cp2.exec(cmd))
+            .then(e2 => {
+                let dr: DeparseResult = { success: false, deparsed: null };
 
-                    let out = e2.stdout.toString();
-                    let err = e2.stderr.toString();
-                    //console.log(out);
-                    //console.log(err);
-                    if (!err.contains("syntax OK")) {
-                        fs2.appendFile(filename, "\n\n\n\n\n" + out + "\n\n\n\n\n" + err).then(t=> resolve(dr));
-                        return;
-                    }
-                    fs2.unlink(filename).then(e3=> {
-                        let lines = out.lines();
-                        let start = lines.findIndex(t=> t == phBegin);
-                        let end = lines.findIndex(t=> t == phEnd);
-                        let lines2 = lines.slice(start + 1, end);
-                        let res = lines2.join("\n");
-                        //let res = lines.where(t=>
-                        //    !t.startsWith("use feature ") || ignores.contains(t)
-                        //).join("\n");//.first(t=> t.startsWith("("));
-                        dr.deparsed = res;
-                        dr.success = true;
-                        resolve(dr);
-                    });
+                let out = e2.stdout.toString();
+                let err = e2.stderr.toString();
+                //console.log("cmd", cmd);
+                //console.log("out", out);
+                //console.log("err", err);
+                if (!err.contains("syntax OK")) {
+                    //console.log("can't find syntax ok in out");
+                    return fs2.appendFile(filename, "\n\n\n\n\n" + out + "\n\n\n\n\n" + err).then(t=> dr);
+                }
+                if (out.contains("'???'")) {
+                    //console.log("found ??? in out");
+                    return fs2.appendFile(filename, "\n\n\n\n\n" + out + "\n\n\n\n\n" + err).then(t=> dr);
+                }
+                return fs2.unlink(filename).then(e3=> {
+                    let lines = out.lines();
+                    let start = lines.findIndex(t=> t == phBegin);
+                    let end = lines.findIndex(t=> t == phEnd);
+                    let lines2 = lines.slice(start + 1, end);
+                    let res = lines2.join("\n");
+                    //let res = lines.where(t=>
+                    //    !t.startsWith("use feature ") || ignores.contains(t)
+                    //).join("\n");//.first(t=> t.startsWith("("));
+                    dr.deparsed = res;
+                    dr.success = true;
+                    return dr;
+                    //resolve(dr);
                 });
             });
-        });
+        //});
     }
     deparse(code: string, opts?: DeparseOptions): Promise<DeparseResult> {
         opts = opts || {};
@@ -64,13 +70,15 @@ export class Deparse {
                 return this._deparse("$GGGGGGGG = " + code, opts).then(depRes => {
                     if (!depRes.success)
                         return depRes;
-                    if (depRes.deparsed.startsWith("($GGGGGGGGG = ") && depRes.deparsed.endsWith(");")) {
+                    if (depRes.deparsed.startsWith("($GGGGGGGG = ") && depRes.deparsed.endsWith(");")) {
                         console.log(depRes.deparsed);
-                        depRes.deparsed = depRes.deparsed.substring("($GGGGGGGGG = ".length, depRes.deparsed.length - 2);
+                        depRes.deparsed = depRes.deparsed.substring("($GGGGGGGG = ".length, depRes.deparsed.length - 2);
                         console.log(depRes.deparsed);
                         return depRes;
                     }
-                    throw new Error("Can't unwrap placeholder variable");
+                    console.error("Can't unwrap placeholder variable", depRes.deparsed);
+                    depRes.success = false;
+                    return depRes;
                 });
             });
         }

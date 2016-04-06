@@ -365,7 +365,11 @@ export class PrecedenceResolver {
     resolveArrayMemberAccess(node: ArrayRefDeclaration): Expression {
         let index = this.nodes.indexOf(node);
         let left = this.nodes[index - 1];
-        if (left != null && (left instanceof Expression || (left instanceof Operator && left.token.is(TokenTypes.arrow)))) {
+        if (left == null)
+            return node;
+        if(left instanceof NamedMemberExpression && left.isBareword())
+            return node;
+        if (left instanceof Expression || (left instanceof Operator && left.token.is(TokenTypes.arrow))) {
             let node2 = new ArrayMemberAccessExpression();
             node2.member = node;
             if (left instanceof Expression) {

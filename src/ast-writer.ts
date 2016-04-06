@@ -125,8 +125,12 @@ export class AstWriter {
                 if (list.some(t=> t == null))
                     console.warn("node generated array with nulls", node, list, func.toString());
                 if (this.addParentheses && node instanceof PrefixUnaryExpression) {
-                    list.insert(1, "(");
-                    list.add(")");
+                    if (this.deparseFriendly && node.operator!=null && node.operator.token != null && node.operator.token.is(TokenTypes.sigil)) {
+                    }
+                    else {
+                        list.insert(1, "(");
+                        list.add(")");
+                    }
                 }
                 if (this.addParentheses && node instanceof InvocationExpression && !(node.arguments instanceof ParenthesizedList)) {
                     let target = node.target;
