@@ -125,7 +125,7 @@ export class AstWriter {
                 if (list.some(t=> t == null))
                     console.warn("node generated array with nulls", node, list, func.toString());
                 if (this.addParentheses && node instanceof PrefixUnaryExpression) {
-                    if (this.deparseFriendly && node.operator!=null && node.operator.token != null && node.operator.token.is(TokenTypes.sigil)) {
+                    if (this.deparseFriendly && node.operator != null && node.operator.token != null && node.operator.token.is(TokenTypes.sigil)) {
                     }
                     else {
                         list.insert(1, "(");
@@ -144,7 +144,18 @@ export class AstWriter {
                     }
                 }
                 if (this.addParentheses && node instanceof BinaryExpression) {
-                    list = ["(", node.left, " ", node.operator, " ", node.right, ")"];
+                    //if (this.deparseFriendly && node.operator.token.isAny([TokenTypes.regexEquals, TokenTypes.regexNotEquals])) {
+                    //    let right = node.right;
+                    //    if (right instanceof ValueExpression && right.token.isAny([TokenTypes.qr])) {
+                    //        list = ["(", node.left, " ", node.operator, " ", node.right, ")"];
+                    //    }
+                    //    else {
+                    //        list = ["(", node.left, " ", node.operator, " ", "/", node.right, "/", ")"];
+                    //    }
+                    //}
+                    //else {
+                        list = ["(", node.left, " ", node.operator, " ", node.right, ")"];
+                    //}
                 }
                 if (this.deparseFriendly && node instanceof InvocationExpression && node.target != null && node.target.token.isIdentifier("eval") && node.arguments instanceof Block) {
                     let block = <Block><any>node.arguments;
