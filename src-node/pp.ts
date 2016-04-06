@@ -1,4 +1,5 @@
 ﻿import * as fs from "fs";
+import * as fs2 from "./fs2";
 import "../../../libs/corex";
 import {Token, TokenType, File2, } from "../src/token";
 import {AstWriter} from "../src/ast-writer";
@@ -57,7 +58,7 @@ class PerlParserTool {
         }
         else if (this.args2.rest.length > 0) {
             this.filename = this.args2.rest[0];//this.args[2]; //0=node 1=pp.js 2=real_arg
-            return this.readFile(this.filename).then(t=> this.code = t).then(t=> this.run2());
+            return fs2.readFile(this.filename, "utf8").then(t=> this.code = t.data).then(t=> this.run2());
         }
         else
             throw new Error("no params");
@@ -106,10 +107,10 @@ class PerlParserTool {
         //};
         return tester.process().then(list=> {
             let report = new ExpressionTesterReport();
+            console.log("merging results");
             report.filename = expressionsFilename;
             report.loadSync();
             report.items.addRange(list);
-            //console.log("NULLS", list.where(t=> t == null).length);
             report.cleanup();
             report.saveSync();
             return report;

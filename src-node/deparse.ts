@@ -1,5 +1,7 @@
-﻿import * as proc from "child_process";
-import * as fs from "fs";
+﻿//import * as cp from "child_process";
+import * as cp2 from "./cp2";
+//import * as fs from "fs";
+import * as fs2 from "./fs2";
 import "../../../libs/corex";
 
 
@@ -10,7 +12,7 @@ export class Deparse {
         let phBegin = "PLACEHOLDERBEGIN();";
         let phEnd = "PLACEHOLDEREND();";
         code = `${phBegin}\n${code};\n${phEnd}\n`;
-        let ignores:string[] = [];
+        let ignores: string[] = [];
         if (opts.assumeSubs) {
             let subs = opts.assumeSubs.select(t=> `sub ${t};`).join("\n");
             code = subs + "\n" + code;
@@ -23,32 +25,32 @@ export class Deparse {
             let filename = opts.filename || "C:\\temp\\perl\\" + (this.index++) + ".tmp.pm";
             let cmd = "perl -MO=Deparse,-p " + JSON.stringify(filename);//-E " + JSON.stringify(code);
             //console.log("CODE", code);
-            fs.writeFileSync(filename, code);
-            proc.exec(cmd, (error, stdout, stderr) => {
-                let dr: DeparseResult = { success: false, deparsed: null };
+            fs2.writeFile(filename, code).then(e=> {
+                cp2.exec(cmd).then(e2 => {
+                    let dr: DeparseResult = { success: false, deparsed: null };
 
-                let out = stdout.toString();
-                let err = stderr.toString();
-                //console.log(out);
-                //console.log(err);
-                if (!err.contains("syntax OK")) {
-                    fs.appendFileSync(filename, "\n\n\n\n\n" + out + "\n\n\n\n\n" + err);
-                    resolve(dr);
-                    return;
-                }
-                fs.unlinkSync(filename);
-
-                let lines = out.lines();
-                let start = lines.findIndex(t=>t==phBegin);
-                let end = lines.findIndex(t=>t==phEnd);
-                let lines2 = lines.slice(start+1, end);
-                let res = lines2.join("\n");
-                //let res = lines.where(t=>
-                //    !t.startsWith("use feature ") || ignores.contains(t)
-                //).join("\n");//.first(t=> t.startsWith("("));
-                dr.deparsed = res;
-                dr.success = true;
-                resolve(dr);
+                    let out = e2.stdout.toString();
+                    let err = e2.stderr.toString();
+                    //console.log(out);
+                    //console.log(err);
+                    if (!err.contains("syntax OK")) {
+                        fs2.appendFile(filename, "\n\n\n\n\n" + out + "\n\n\n\n\n" + err).then(t=> resolve(dr));
+                        return;
+                    }
+                    fs2.unlink(filename).then(e3=> {
+                        let lines = out.lines();
+                        let start = lines.findIndex(t=> t == phBegin);
+                        let end = lines.findIndex(t=> t == phEnd);
+                        let lines2 = lines.slice(start + 1, end);
+                        let res = lines2.join("\n");
+                        //let res = lines.where(t=>
+                        //    !t.startsWith("use feature ") || ignores.contains(t)
+                        //).join("\n");//.first(t=> t.startsWith("("));
+                        dr.deparsed = res;
+                        dr.success = true;
+                        resolve(dr);
+                    });
+                });
             });
         });
     }

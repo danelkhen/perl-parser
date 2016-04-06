@@ -236,7 +236,6 @@ export class ExpressionTesterReport {
         let groups = s.split(this.sep);
         let list = groups.select(group=> {
             let lines = group.lines();
-            console.log(lines);
             let item: ExpressionTesterReportItem = JSON.parse(lines[0]);
             item.code = lines[1];
             item.dprs = lines[2];
