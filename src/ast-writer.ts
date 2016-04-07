@@ -229,8 +229,11 @@ export class AstWriter {
         }
         else if (obj instanceof Token) {
             let token = <Token>obj;
-            if (this.deparseFriendly && token.is(TokenTypes.bareString)) {
-                this.sb.push("'"+token.value+"'");
+            if (this.deparseFriendly && token.is(TokenTypes.fatComma)) {
+                this.sb.push(",");
+            }
+            else if (this.deparseFriendly && token.is(TokenTypes.bareString)) {
+                this.sb.push("'" + token.value + "'");
             }
             else if ((this.collapseWhitespace || this.deparseFriendly) && token.is(TokenTypes.whitespace)) {
                 let s = token.value;

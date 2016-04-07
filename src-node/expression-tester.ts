@@ -155,7 +155,7 @@ export class ExpressionTester extends Refactor {
 
                 if (node.isBareword() && node.target == null) {
                     let parent = node.parentNode;
-                    if (parent!=null && parent instanceof InvocationExpression && node.parentNodeProp == "target") {
+                    if (parent != null && parent instanceof InvocationExpression && node.parentNodeProp == "target") {
                     }
                     else {
                         return [[node.target, node.memberSeparatorToken], this.redactVariableOrFunction(node.name), "()"];
@@ -239,9 +239,14 @@ export class ExpressionTester extends Refactor {
                     mine = mine.replaceAll("=>", ",");
                     success = dprs == mine;
                     if (!success) {
-                        dprs = dprs.replaceAll("&&", "and").replaceAll("||", "or");
-                        mine = mine.replaceAll("&&", "and").replaceAll("||", "or");
+                        dprs = dprs.replaceAll("&&", "and").replaceAll("||", "or").replaceAll("!", "not");
+                        mine = mine.replaceAll("&&", "and").replaceAll("||", "or").replaceAll("!", "not");
                         success = dprs == mine;
+                        if (!success) {
+                            dprs = dprs.replaceAll(";", "");
+                            mine = mine.replaceAll(";", "");
+                            success = dprs == mine;
+                        }
                     }
                 }
             }

@@ -1371,6 +1371,7 @@ sub is_scalar {
 sub maybe_parens {
     my $self = shift;
     my($text, $cx, $prec) = @_;
+    #print "maybe_parens\n";
     if ($prec < $cx              # unary ops nest just fine
 	or $prec == $cx and $cx != 4 and $cx != 16 and $cx != 21
 	or $self->{'parens'})
@@ -1387,6 +1388,7 @@ sub maybe_parens {
 # same as above, but get around the 'if it looks like a function' rule
 sub maybe_parens_unop {
     my $self = shift;
+    #print "maybe_parens_unop\n";
     my($name, $kid, $cx) = @_;
     if ($cx > 16 or $self->{'parens'}) {
 	$kid =  $self->deparse($kid, 1);
@@ -1415,6 +1417,7 @@ sub maybe_parens_unop {
 
 sub maybe_parens_func {
     my $self = shift;
+    #print "maybe_parens_func\n";
     my($func, $text, $cx, $prec) = @_;
     if ($prec <= $cx or substr($text, 0, 1) eq "(" or $self->{'parens'}) {
 	return "$func($text)";
@@ -2480,6 +2483,7 @@ sub pp_leavewhen  { givwhen(@_, $_[0]->keyword("when")); }
 sub pp_exists {
     my $self = shift;
     my($op, $cx) = @_;
+    #print "pp_exists $op $cx\n";
     my $arg;
     my $name = $self->keyword("exists");
     if ($op->private & OPpEXISTS_SUB) {
@@ -3069,6 +3073,7 @@ sub rv2gv_or_string {
 
 sub listop {
     my $self = shift;
+    #print "listop\n";
     my($op, $cx, $name, $kid, $nollafr) = @_;
     my(@exprs);
     my $parens = ($cx >= 5) || $self->{'parens'};
@@ -4020,20 +4025,35 @@ sub pp_multideref {
     my($op, $cx) = @_;
     my $text = "";
 
+    #DK
+    my $parens = 0;
+
     if ($op->private & OPpMULTIDEREF_EXISTS) {
-        $text = $self->keyword("exists"). " ";
+        #DK $text = $self->keyword("exists"). " ";
+        $text = $self->keyword("exists");
+        $parens = 1;
     }
     elsif ($op->private & OPpMULTIDEREF_DELETE) {
-        $text = $self->keyword("delete"). " ";
+        #DK $text = $self->keyword("delete"). " ";
+        $text = $self->keyword("delete");
+        $parens = 1;
     }
     elsif ($op->private & OPpLVAL_INTRO) {
-        $text = $self->keyword("local"). " ";
+        #DK $text = $self->keyword("local"). " ";
+        $text = $self->keyword("local");
+        $parens = 1;
     }
 
     if ($op->first && ($op->first->flags & OPf_KIDS)) {
         # arbitrary initial expression, e.g. f(1,2,3)->[...]
         $text .=  $self->deparse($op->first, 24);
     }
+
+    #DK
+    if($parens) {
+        $text .= "(";
+    }
+
 
     my @items = $op->aux_list($self->{curcv});
     my $actions = shift @items;
@@ -4132,6 +4152,11 @@ sub pp_multideref {
             last;
         }
         $actions >>= MDEREF_SHIFT;
+    }
+
+    #DK
+    if ($parens) {
+       $text.=")";
     }
 
     return $text;
