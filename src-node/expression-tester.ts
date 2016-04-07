@@ -192,11 +192,17 @@ export class ExpressionTester extends Refactor {
         //}
         let subs = [];
         for (let i = 0; i < 20; i++) {
-            subs.push("func_"+i);
+            subs.push("func_" + i);
         }
 
         return new Deparse().deparse(item.code, { filename: item.filename, tryAsAssignment: true, assumeSubs: subs })
-            .then(deparsedRes=> item.dprs = deparsedRes.deparsed).then(() => this.testDeparsedItem(item)).then(() => item);
+            .then(deparsedRes=> item.dprs = this.replaceNewLinesWithSpaces(deparsedRes.deparsed)).then(() => this.testDeparsedItem(item)).then(() => item);
+    }
+
+    replaceNewLinesWithSpaces(s: string): string {
+        if(s==null)
+            return null;
+        return s.replaceAll("\n", " ");
     }
 
     testDeparsedItem(item: ExpressionTesterReportItem) {
