@@ -263,7 +263,7 @@ interface String {
     startsWith(s: any): any;
     forEach(action: any): any;
     contains(s: any): any;
-    replaceAll(token: any, newToken: any, ignoreCase: any): string;
+    replaceAll(token: any, newToken: any, ignoreCase?: any): string;
     replaceMany(finds: any, replacer: any): any;
     truncateEnd(finalLength: any): any;
     truncateStart(finalLength: any): any;

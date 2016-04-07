@@ -168,58 +168,88 @@ export class ExpressionTester extends Refactor {
     testExpCode(code: string): Promise<ExpressionTesterReportItem> {
         return null;
     }
-    testExp(exp: Expression): Promise<ExpressionTesterReportItem> {
-        let expCode = this.toCode(exp, { collapseWhitespace: true, redact: true, ignoreComments: true });//writer.sb.join("");
 
-        //let expCode = exp.toCode();
-        let filename = this.generateFilename(exp);
-        if (filename != null)
-            filename = "C:\\temp\\perl\\" + filename + "_" + (this.filenameIndex++) + ".pm";
+    sanitizeExpCode(code: string) {
+        if (code == null)
+            return null;
+        code = code.trim();
+        if (code.endsWith(";"))
+            code = code.substr(0, code.length - 1);
+        if (!code.startsWith("(") || !code.endsWith(")"))
+            code = "(" + code + ")";
+        return code;
+    }
+    testExp(exp: Expression): Promise<ExpressionTesterReportItem> {
+        let item: ExpressionTesterReportItem = { exp: exp };
+        item.code = this.toCode(exp, { collapseWhitespace: true, redact: true, ignoreComments: true });//writer.sb.join("");
+
+        item.filename = this.generateFilename(exp);
+        if (item.filename != null)
+            item.filename = "C:\\temp\\perl\\" + item.filename + "_" + (this.filenameIndex++) + ".pm";
         let subs = this.extractImplicitInvocationSubs(exp);
         if (subs.length > 0) {
             console.log("subs", subs);
         }
-        //else if (expCode.contains("croak")) {
-        //    throw new Error("didn't detect the sub!");
-        //}
 
-        return new Deparse().deparse(expCode, { filename: filename, tryAsAssignment: true, assumeSubs: subs }).then(deparsedRes=> {
-            let deparsed = deparsedRes.deparsed;
-            if (!deparsedRes.success) {
-                console.error("couldn't deparse: ", expCode);//, exp);
-                return { success: false, mine: mineClean, code: expCode, dprs: deparsedClean, filename: filename, exp: exp };
-            }
-            //console.log("testing", expCode);
-            let mine = this.toCode(exp, { addParentheses: true, deparseFriendly: true, redact: true });
-            var deparsedClean = deparsed.trim();//.replace(/\s/g, "");
-            if (deparsedClean.endsWith(";"))
-                deparsedClean = deparsedClean = deparsedClean.substr(0, deparsedClean.length - 1);
-            var mineClean = mine.trim();//.replace(/\s/g, "");
-            if (deparsedClean.startsWith("(") && !mineClean.startsWith("("))
-                mineClean = "(" + mineClean + ")";
-            let report: ExpressionTesterReportItem = { success: deparsedClean == mineClean, mine: mineClean, code: expCode, dprs: deparsedClean, filename: filename, exp: exp };
-            //if (!report.success) {
-            console.log("");
-            console.log(filename);
-            console.log("ORIG: ", report.code);
-            console.log("DPRS: ", report.dprs);
-            console.log("MINE: ", report.mine);
-            console.log(report.success ? "SUCCESS" : "FAIL");
-            //console.log(report.exp);
-            console.log("");
-            //}
-            return report;
-        }).catch(t=> console.error(t));
+        return new Deparse().deparse(item.code, { filename: item.filename, tryAsAssignment: true, assumeSubs: subs })
+            .then(deparsedRes=> item.dprs = deparsedRes.deparsed).then(() => this.testDeparsedItem(item)).then(() => item);
     }
+
+    testDeparsedItem(item: ExpressionTesterReportItem) {
+        item.mine = this.toCode(item.exp, { addParentheses: true, deparseFriendly: true, redact: true });
+        let success;
+        let mine, dprs;
+        if (item.dprs == null) {
+            success = false;
+        }
+        else {
+            mine = this.sanitizeExpCode(item.mine);
+            dprs = this.sanitizeExpCode(item.dprs);
+            success = dprs == mine;
+            if (!success) {
+                dprs = dprs.replaceAll(" ", "");
+                mine = mine.replaceAll(" ", "");
+                success = dprs == mine;
+                if (!success) {
+                    dprs = dprs.replaceAll("=>", ",");
+                    mine = mine.replaceAll("=>", ",");
+                    success = dprs == mine;
+                    if (!success) {
+                        dprs = dprs.replaceAll("&&", "and").replaceAll("||", "or");
+                        mine = mine.replaceAll("&&", "and").replaceAll("||", "or");
+                        success = dprs == mine;
+                    }
+                }
+            }
+        }
+        item.success = success;
+
+        //if (!item.success) {
+        console.log("");
+        console.log(item.filename);
+        console.log("ORIG : ", item.code);
+        console.log("DPRS : ", item.dprs);
+        console.log("MINE : ", item.mine);
+        //console.log("DPRS2: ", dprs);
+        //console.log("MINE2: ", mine);
+        //console.log("EQ   : ", dprs == mine);
+        console.log(item.success ? "SUCCESS" : "FAIL");
+        //console.log(report.exp);
+        console.log("");
+        //}
+        return item;
+
+    }
+
 }
 
 export interface ExpressionTesterReportItem {
-    filename: string;
-    success: boolean;
-    code: string;
-    dprs: string;
-    mine: string;
-    exp: Expression;
+    filename?: string;
+    success?: boolean;
+    code?: string;
+    dprs?: string;
+    mine?: string;
+    exp?: Expression;
 }
 
 
@@ -228,7 +258,8 @@ export interface ExpressionTesterReportItem {
 export class ExpressionTesterReport {
     items: ExpressionTesterReportItem[] = [];
     filename: string;
-    sep = "\n#######################################################################\n";
+    sepText = "#######################################################################";
+    sep = /\r?\n#######################################################################\r?\n/;
     loadSync() {
         if (!fs.existsSync(this.filename))
             return;
@@ -265,7 +296,7 @@ export class ExpressionTesterReport {
         this.sort();
     }
     saveSync() {
-        fs.writeFileSync(this.filename, this.items.select(t=> [JSON.stringify({ success: t.success }), t.code, t.dprs, t.mine].join("\n")).join(this.sep));
+        fs.writeFileSync(this.filename, this.items.select(t=> [JSON.stringify({ success: t.success }), t.code, t.dprs, t.mine, this.sepText].join("\n")).join("\n"));
     }
 }
 

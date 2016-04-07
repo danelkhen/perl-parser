@@ -42,7 +42,7 @@ class PerlParserTool {
     args2: PerlParserArgs;
     save: boolean;
     run(): Promise<any> {
-        this.args2 = <PerlParserArgs>this.argsToObject(["-e", "-t", "-r", "-s"]);
+        this.args2 = <PerlParserArgs>this.argsToObject(["-e", "-t", "-r", "-s", "-d"]);
         console.log("ARGS", this.args2);
         this.save = this.args2["-s"] != null;
         if (this.args2["-e"] != null) {
@@ -72,20 +72,33 @@ class PerlParserTool {
         report.filename = this.expressionsFilename;
         report.loadSync();
         let successBefore = report.items.where(t=> t.success).length;
-        let exps = report.items.select(item=> this.parseExpression(item.code));
+        report.items.forEach(item=> item.exp = this.parseExpression(item.code));
 
-        let tester = new ExpressionTester();
-        let promises = exps.select(exp => tester.testExp(exp));
-        return Promise.all(promises).then(items2=> {
-            console.log("NULLS", items2.select((t,i) =>  t==null ? exps[i].toCode() : null).where(t=>t!=null));
-            let successAfter = items2.where(t=> t.success).length;
-            console.log("before", successBefore, "after", successAfter, "total", items2.length);
-            report.items = items2;
+        if (this.args2["-d"]) { //re-deparse
+            let tester = new ExpressionTester();
+            //console.log(report.items);
+            let promises = report.items.select(t => tester.testExp(t.exp));
+            return Promise.all(promises).then(items2=> {
+                console.log("NULLS", items2.select((t, i) => t == null ? report.items[i].exp.toCode() : null).where(t=> t != null));
+                let successAfter = items2.where(t=> t.success).length;
+                console.log("before", successBefore, "after", successAfter, "total", items2.length);
+                report.items = items2;
+                if (this.save) {
+                    console.log("saving");
+                    report.saveSync();
+                }
+            });
+        }
+        else {
+            let tester = new ExpressionTester();
+            report.items.forEach(t => tester.testDeparsedItem(t));
+            let successAfter = report.items.where(t=> t.success).length;
+            console.log("before", successBefore, "after", successAfter, "total", report.items.length);
             if (this.save) {
                 console.log("saving");
                 report.saveSync();
             }
-        });
+        }
         //console.log("parsing", item.code);
         //let exp = this.parseExpression(item.code);
         ////console.log("parsed", exp);
@@ -193,8 +206,9 @@ class PerlParserTool {
 
 interface PerlParserArgs {
     "-e": string;
-    "-t": string;
-    "-r": string;
+    "-t": string; //test
+    "-d": string; //re-deparse
+    "-r": string; 
     "-s": string; //save
     rest: string[];
 }
