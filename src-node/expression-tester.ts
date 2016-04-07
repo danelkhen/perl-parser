@@ -148,7 +148,13 @@ export class ExpressionTester extends Refactor {
                     return '"$x_i"';
                 return t.value;
             });
-            writer.register(NamedMemberExpression, t=> [[t.target, t.memberSeparatorToken], this.redactVariableOrFunction(t.name)]);
+            writer.register(NamedMemberExpression, node=> {
+                //let parent = node.parentNode;
+                //if (node.isBareword() && node.target != null) //== null && parent instanceof InvocationExpression && node.parentNodeProp == "target")
+                //    return [[node.target, node.memberSeparatorToken], this.redactVariableOrFunction(node.name)];
+                //return [[node.target, node.memberSeparatorToken], this.redactVariableOrFunction(node.name), "()"];
+                return [[node.target, node.memberSeparatorToken], this.redactVariableOrFunction(node.name)];
+            });
             writer.register(HashMemberAccessExpression, t=> {
                 let name = writer.tryGetSingleBracedBareword(t.member);
                 if (name != null) {
@@ -200,7 +206,7 @@ export class ExpressionTester extends Refactor {
     }
 
     replaceNewLinesWithSpaces(s: string): string {
-        if(s==null)
+        if (s == null)
             return null;
         return s.replaceAll("\n", " ");
     }
@@ -236,7 +242,7 @@ export class ExpressionTester extends Refactor {
 
         //if (!item.success) {
         console.log("");
-        console.log(item.filename);
+        console.log(item.filename || "");
         console.log("ORIG : ", item.code);
         console.log("DPRS : ", item.dprs);
         console.log("MINE : ", item.mine);

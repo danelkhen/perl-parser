@@ -106,7 +106,7 @@ export class RefArrayToRefUtil extends Refactor {
             //    if (res != null)
             //        console.warn("FOUND A BAD THING");
             //}
-            console.log(res);
+            //console.log(res);
             if (res == null)
                 break;
             let node = res.node;

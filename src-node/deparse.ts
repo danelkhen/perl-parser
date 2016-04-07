@@ -72,9 +72,9 @@ export class Deparse {
                     if (!depRes.success)
                         return depRes;
                     if (depRes.deparsed.startsWith("($GGGGGGGG = ") && depRes.deparsed.endsWith(");")) {
-                        console.log(depRes.deparsed);
+                        //console.log(depRes.deparsed);
                         depRes.deparsed = depRes.deparsed.substring("($GGGGGGGG = ".length, depRes.deparsed.length - 2);
-                        console.log(depRes.deparsed);
+                        //console.log(depRes.deparsed);
                         return depRes;
                     }
                     console.error("Can't unwrap placeholder variable", depRes.deparsed);
