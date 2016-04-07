@@ -1802,10 +1802,7 @@ String.prototype.splitAt = function (index) {
     return [this.substr(0, index), this.substr(index)];
 };
 String.prototype.lines = function () {
-    var x = this.match(/[^\r\n]+/g);
-    if(x==null)
-        return [this];
-    return x;
+    return this.split(/\r?\n/);
 };
 "use strict";
 "use strict";

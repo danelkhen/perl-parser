@@ -113,6 +113,8 @@ class PerlParserTool {
         let report2 = new ExpressionTesterReport();
         report2.filename = this.expressionsFilename;
         report2.loadSync();
+        console.log(report2);
+        
         console.log("success: ", report2.items.where(t=> t.success).length, "/", report2.items.length);
     }
 
