@@ -124,6 +124,10 @@ export class AstWriter {
 
                 if (list.some(t=> t == null))
                     console.warn("node generated array with nulls", node, list, func.toString());
+
+                if (this.deparseFriendly && node instanceof NonParenthesizedList && node.items.length==node.itemsSeparators.length && node.itemsSeparators.length>0) {
+                    list = [this.zip(node.items, node.itemsSeparators.take(node.itemsSeparators.length-1)).exceptNulls()];
+                }
                 if (this.addParentheses && node instanceof PrefixUnaryExpression) {
                     if (this.deparseFriendly && node.operator != null && node.operator.token != null && node.operator.token.is(TokenTypes.sigil)) {
                     }
@@ -134,14 +138,14 @@ export class AstWriter {
                 }
                 if (this.addParentheses && node instanceof InvocationExpression && !(node.arguments instanceof ParenthesizedList)) {
                     let target = node.target;
-                    if (this.deparseFriendly && target instanceof NamedMemberExpression && target.name == "return") {
-                        let t = node;
-                        list = [t.target, [t.memberSeparatorToken || " "], [t.arguments]]
-                    }
-                    else {
-                        list.insert(3, "(");
-                        list.add(")");
-                    }
+                    //if (this.deparseFriendly && target instanceof NamedMemberExpression && target.name == "return") {
+                    //    let t = node;
+                    //    list = [t.target, [t.memberSeparatorToken || " "], [t.arguments]]
+                    //}
+                    //else {
+                    list.insert(3, "(");
+                    list.add(")");
+                    //}
                 }
                 if (this.addParentheses && node instanceof BinaryExpression) {
                     //if (this.deparseFriendly && node.operator.token.isAny([TokenTypes.regexEquals, TokenTypes.regexNotEquals])) {
@@ -154,7 +158,7 @@ export class AstWriter {
                     //    }
                     //}
                     //else {
-                        list = ["(", node.left, " ", node.operator, " ", node.right, ")"];
+                    list = ["(", node.left, " ", node.operator, " ", node.right, ")"];
                     //}
                 }
                 if (this.deparseFriendly && node instanceof InvocationExpression && node.target != null && node.target.token.isIdentifier("eval") && node.arguments instanceof Block) {
@@ -176,13 +180,17 @@ export class AstWriter {
                         list[index] = "{'" + name + "'}";
                     }
                 }
-                if (this.deparseFriendly && node instanceof NamedMemberExpression && node.name == "shift") {
+                if (this.deparseFriendly && node instanceof NamedMemberExpression && ["shift", "undef"].contains(node.name)) {
                     let parentNode = node.parentNode;
                     if (parentNode != null && parentNode instanceof InvocationExpression && node.parentNodeProp == "target" && parentNode.arguments != null) {
                         //skip in case shift is already an invocation with prms
                     }
-                    else
-                        list = ["shift(@ARGV)"];
+                    else {
+                        if (node.name == "shift")
+                            list = ["shift(@ARGV)"];
+                        else if (node.name == "undef")
+                            list = ["(undef)"];
+                    }
                 }
                 if (this.deparseFriendly && node instanceof NamedMemberExpression && node.token.isAny([TokenTypes.identifier, TokenTypes.keyword]) && !node.arrow) {
                     let parent = node.parentNode;

@@ -23,8 +23,8 @@ export class Deparse {
         //return new Promise((resolve, reject) => {
         this.index++;
         let filename = opts.filename || "C:\\temp\\perl\\" + (this.index++) + ".tmp.pm";
-        let cmd = "perl -MO=Deparse,-p " + JSON.stringify(filename);//-E " + JSON.stringify(code);
-        //console.log("CODE", code);
+        let cmd = "perl -IC:\\Users\\Dan-el\\github\\perl-parser\\lib\\ -w -MO=Deparse,-p " + JSON.stringify(filename);//-E " + JSON.stringify(code); //TODO: detect warnings
+        //console.log("cmd", cmd);
         return fs2.writeFile(filename, code)
             .then(e=> cp2.exec(cmd))
             .then(e2 => {
@@ -62,6 +62,7 @@ export class Deparse {
     }
     deparse(code: string, opts?: DeparseOptions): Promise<DeparseResult> {
         opts = opts || {};
+        //console.log("assumeSubs", opts.assumeSubs);
         if (opts.tryAsAssignment) {
             return this._deparse(code, opts).then(depRes=> {
                 if (depRes.success)

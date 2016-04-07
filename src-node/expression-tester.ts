@@ -190,6 +190,10 @@ export class ExpressionTester extends Refactor {
         if (subs.length > 0) {
             console.log("subs", subs);
         }
+        //let subs = [];
+        //for (let i = 0; i < 20; i++) {
+        //    subs.push("func_"+i);
+        //}
 
         return new Deparse().deparse(item.code, { filename: item.filename, tryAsAssignment: true, assumeSubs: subs })
             .then(deparsedRes=> item.dprs = deparsedRes.deparsed).then(() => this.testDeparsedItem(item)).then(() => item);
