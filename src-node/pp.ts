@@ -139,10 +139,12 @@ class PerlParserTool {
     }
     parseExpression(code: string) {
         let unit = this.parseUnit("", code);
+        new AstNodeFixator().process(unit);
         let st = unit.statements[0];
         if (st instanceof ExpressionStatement) {
             return st.expression;
         }
+
         throw new Error();
     }
     run2(): Promise<ExpressionTesterReport> {

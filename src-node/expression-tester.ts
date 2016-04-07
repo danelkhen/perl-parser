@@ -149,10 +149,18 @@ export class ExpressionTester extends Refactor {
                 return t.value;
             });
             writer.register(NamedMemberExpression, node=> {
-                //let parent = node.parentNode;
+                //
                 //if (node.isBareword() && node.target != null) //== null && parent instanceof InvocationExpression && node.parentNodeProp == "target")
                 //    return [[node.target, node.memberSeparatorToken], this.redactVariableOrFunction(node.name)];
-                //return [[node.target, node.memberSeparatorToken], this.redactVariableOrFunction(node.name), "()"];
+
+                if (node.isBareword() && node.target == null) {
+                    let parent = node.parentNode;
+                    if (parent!=null && parent instanceof InvocationExpression && node.parentNodeProp == "target") {
+                    }
+                    else {
+                        return [[node.target, node.memberSeparatorToken], this.redactVariableOrFunction(node.name), "()"];
+                    }
+                }
                 return [[node.target, node.memberSeparatorToken], this.redactVariableOrFunction(node.name)];
             });
             writer.register(HashMemberAccessExpression, t=> {

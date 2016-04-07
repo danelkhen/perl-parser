@@ -337,7 +337,7 @@ export class PrecedenceResolver {
             return node;
         //if (left == null || !(left instanceof Expression) || this.isBareword(left)){
         if (left instanceof Expression) {// || (left instanceof Operator && left.token.is(TokenTypes.arrow)))) {
-            if (left instanceof NamedMemberExpression && left.token.is(TokenTypes.identifier))  //ggg {hello}
+            if (left instanceof NamedMemberExpression && left.token.isAny([TokenTypes.identifier, TokenTypes.keyword]))  //ggg {hello}
                 return node;
             let list = node.list;
             //if (list instanceof NonParenthesizedList && list.items.length == 1 && list.itemsSeparators.length==0) {
