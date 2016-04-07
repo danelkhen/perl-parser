@@ -141,7 +141,7 @@ export class ExpressionTester extends Refactor {
                 if (t.token == null)
                     return t.value;
                 if (t.token.is(TokenTypes.bareString))
-                    return "b";
+                    return "'b'";
                 if (t.token.is(TokenTypes.string))
                     return "'c'";
                 if (t.token.is(TokenTypes.interpolatedString))

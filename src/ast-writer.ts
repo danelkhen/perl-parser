@@ -29,7 +29,7 @@ export class AstWriter {
         this.register(BlockExpression, t=> [t.block]);
         this.register(ExpressionStatement, t=> [t.expression, [t.expressionPost], [t.semicolonToken]]);
         this.register(BlockStatement, t=> [t.block, [t.blockPost], [t.semicolonToken]]);
-        this.register(ValueExpression, t=> [t.value]);
+        this.register(ValueExpression, t=> [t.token]);//.value]);
         this.register(BinaryExpression, t=> [t.left, t.operator, t.right]);
         this.register(BeginStatement, t=> [t.beginToken, [t.beginTokenPost], t.block, [t.semicolonToken]]);
         this.register(ParenthesizedList, t=> [[t.parenOpenToken, [t.parenOpenTokenPost]], [t.list], [t.parenCloseToken]]);
@@ -125,8 +125,8 @@ export class AstWriter {
                 if (list.some(t=> t == null))
                     console.warn("node generated array with nulls", node, list, func.toString());
 
-                if (this.deparseFriendly && node instanceof NonParenthesizedList && node.items.length==node.itemsSeparators.length && node.itemsSeparators.length>0) {
-                    list = [this.zip(node.items, node.itemsSeparators.take(node.itemsSeparators.length-1)).exceptNulls()];
+                if (this.deparseFriendly && node instanceof NonParenthesizedList && node.items.length == node.itemsSeparators.length && node.itemsSeparators.length > 0) {
+                    list = [this.zip(node.items, node.itemsSeparators.take(node.itemsSeparators.length - 1)).exceptNulls()];
                 }
                 if (this.addParentheses && node instanceof PrefixUnaryExpression) {
                     if (this.deparseFriendly && node.operator != null && node.operator.token != null && node.operator.token.is(TokenTypes.sigil)) {
@@ -229,7 +229,10 @@ export class AstWriter {
         }
         else if (obj instanceof Token) {
             let token = <Token>obj;
-            if ((this.collapseWhitespace || this.deparseFriendly) && token.is(TokenTypes.whitespace)) {
+            if (this.deparseFriendly && token.is(TokenTypes.bareString)) {
+                this.sb.push("'"+token.value+"'");
+            }
+            else if ((this.collapseWhitespace || this.deparseFriendly) && token.is(TokenTypes.whitespace)) {
                 let s = token.value;
                 if (s == "")
                     s = "";
