@@ -82,10 +82,11 @@ class PerlParserTool {
             //console.log(report.items);
             let promises = report.items.select(t => tester.deparseAndTestExp(t.exp));
             return Promise.all(promises).then(items2=> {
-                console.log("NULLS", items2.select((t, i) => t == null ? report.items[i].exp.toCode() : null).where(t=> t != null));
-                let successAfter = items2.where(t=> t.success).length;
+                let items = <EtItem[]><any>items2; //tsc bug
+                console.log("NULLS", items.select((t, i) => t == null ? report.items[i].exp.toCode() : null).where(t=> t != null));
+                let successAfter = items.where(t=> t.success).length;
                 console.log("before", successBefore, "after", successAfter, "total", items2.length);
-                report.items = items2;
+                report.items = items;
                 if (this.save) {
                     console.log("saving");
                     report.saveSync(fs);

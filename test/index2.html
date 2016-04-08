@@ -1,0 +1,25 @@
+﻿<!DOCTYPE html>
+<html>
+<head>
+    <title></title>
+    <meta charset="utf-8" />
+    <link href="/res/test/index.css" rel="stylesheet" />
+    <script src="//cdnjs.cloudflare.com/ajax/libs/systemjs/0.19.24/system.src.js"></script>
+    <script>
+        System.config({
+            baseURL: '/res/built/test/',
+            defaultJSExtensions: true,
+        });
+        System.import('test/index2.js');
+    </script>
+    <script src="//code.jquery.com/jquery-2.2.2.js"></script>
+    <script src="/res/libs/corex.js"></script>
+    <script src="/res/libs/corex-jquery.js"></script>
+</head>
+<body>
+    <div class="code-container">
+        <div class="line-numbers"></div>
+        <div class="code"></div>
+    </div>
+</body>
+</html>
