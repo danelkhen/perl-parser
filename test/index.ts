@@ -21,6 +21,7 @@ import {Tokenizer} from "../src/tokenizer";
 import {safeTry, TokenReader, Logger, AstNodeFixator} from "../src/utils";
 import "../src/extensions";
 import {RefArrayToRefUtil} from "../src/refactor";
+import {ExpressionTester, EtReport, EtItem} from "../src/expression-tester";
 
 export class IndexPage {
 
@@ -35,6 +36,8 @@ export class IndexPage {
         this.urlKey = "perl-parser\turl";
         this.tbRegex = $("#tbRegex");
         $("#btnRefactor").click(e=> this.refactor());
+        $("#btnTestExpressions").click(e=> this.testExpressions());
+        
         this.tbRegex.keyup(e=> {
             let s = this.tbRegex.val();
             try {
@@ -113,6 +116,7 @@ export class IndexPage {
             let unit = new Unit();
             unit.statements = statements;
             this.unit = unit;
+            console.log(unit);
 
             this.renderTree();
 
@@ -124,6 +128,40 @@ export class IndexPage {
         });
         //$.create("pre").text(stringifyNodes(statements)).appendTo("body")
     }
+
+    testExpressions(): Promise<EtReport> {
+        let tester = new ExpressionTester();
+        //let expressions: string[] = [];
+        //tester.onExpressionFound = e => {
+        //    expressions.push(e.code);
+        //    //console.log("onExpressionFound", expressions.length);
+        //    //fs.writeFileSync(expressionsFilename, expressions.select(t=> t.trim()).distinct().orderBy([t=> t.contains("\n"), t=> t.length, t=> t]).join("\n------------------------------------------------------------------------\n"));
+        //};
+        return tester.testUnit(this.unit).then(list=> {
+            console.log("Finished", list);
+            console.log("Finished: ", list.where(t=> t.success).length, "/", list.length);
+            let report = new EtReport();
+            report.items = list;
+            return report;
+            //report.filename = expressionsFilename;
+            //report.loadSync(fs);
+            //report.items.addRange(list);
+            //report.cleanup();
+            //if (this.save) {
+            //    console.log("merging and saving results");
+            //    report.saveSync(fs);
+            //}
+            //return report;
+            
+            //let expressions = list.select(t=> t.code).distinct().orderBy([t=> t.contains("\n"), t=> t.length, t=> t]);
+            //let reports = expressions.select(s=> list.first(x=> x.code == s));
+            //console.log("SAVING");
+            //return fs.writeFileSync(expressionsFilename, reports.select(t=> [JSON.stringify({success:t.success}), t.code, t.dprs, t.mine].join("\n")).join("\n------------------------------------------------------------------------\n"));
+        });
+        //console.log("DONE");//, unit);
+
+    }
+
 
     generateCode() {
         new AstNodeFixator().process(this.unit);

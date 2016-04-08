@@ -22,7 +22,7 @@ import {safeTry, TokenReader, Logger, AstNodeFixator} from "../src/utils";
 import "../src/extensions";
 import {Deparse} from "./deparse";
 import {Refactor} from "../src/refactor";
-import {ExpressionTester, ExpressionTesterReport} from "./expression-tester";
+import {ExpressionTester, EtReport, EtItem} from "../src/expression-tester";
 
 class PerlParserTool {
     filename: string;
@@ -39,26 +39,29 @@ class PerlParserTool {
             });
         });
     }
-    args2: PerlParserArgs;
+    args: PerlParserArgs;
     save: boolean;
+    quiet: boolean;
     run(): Promise<any> {
-        this.args2 = <PerlParserArgs>this.argsToObject(["-e", "-t", "-r", "-s", "-d"]);
-        console.log("ARGS", this.args2);
-        this.save = this.args2["-s"] != null;
-        if (this.args2["-e"] != null) {
+        this.args = new PerlParserArgs();
+        this.argsToObject(this.args, this.rawArgs);
+        console.log("ARGS", this.args);
+        this.save = this.args.s != null;
+        this.quiet = this.args.q != null;
+        if (this.args.e != null) {
             this.filename = "";
-            this.code = this.args2["-e"];
+            this.code = this.args.e;
             return this.run2();
         }
-        else if (this.args2["-t"]) {
+        else if (this.args.t) {
             return this.test();
         }
-        else if (this.args2["-r"]) {
+        else if (this.args.r) {
             this.report();
             return Promise.resolve();
         }
-        else if (this.args2.rest.length > 0) {
-            this.filename = this.args2.rest[0];//this.args[2]; //0=node 1=pp.js 2=real_arg
+        else if (this.args.rest.length > 0) {
+            this.filename = this.args.rest[0];//this.args[2]; //0=node 1=pp.js 2=real_arg
             return fs2.readFile(this.filename, "utf8").then(t=> this.code = t.data).then(t=> this.run2());
         }
         else
@@ -68,16 +71,16 @@ class PerlParserTool {
 
     test() {
         console.log("testing ", this.expressionsFilename);
-        let report = new ExpressionTesterReport();
+        let report = new EtReport();
         report.filename = this.expressionsFilename;
-        report.loadSync();
+        report.loadSync(fs);
         let successBefore = report.items.where(t=> t.success).length;
         report.items.forEach(item=> item.exp = this.parseExpression(item.code));
 
-        if (this.args2["-d"]) { //re-deparse
-            let tester = new ExpressionTester();
+        if (this.args.d) { //re-deparse
+            let tester = this.createTester();
             //console.log(report.items);
-            let promises = report.items.select(t => tester.testExp(t.exp));
+            let promises = report.items.select(t => tester.deparseAndTestExp(t.exp));
             return Promise.all(promises).then(items2=> {
                 console.log("NULLS", items2.select((t, i) => t == null ? report.items[i].exp.toCode() : null).where(t=> t != null));
                 let successAfter = items2.where(t=> t.success).length;
@@ -85,18 +88,18 @@ class PerlParserTool {
                 report.items = items2;
                 if (this.save) {
                     console.log("saving");
-                    report.saveSync();
+                    report.saveSync(fs);
                 }
             });
         }
         else {
-            let tester = new ExpressionTester();
+            let tester = this.createTester();
             report.items.forEach(t => tester.testDeparsedItem(t));
             let successAfter = report.items.where(t=> t.success).length;
             console.log("before", successBefore, "after", successAfter, "total", report.items.length);
             if (this.save) {
                 console.log("saving");
-                report.saveSync();
+                report.saveSync(fs);
             }
         }
         //console.log("parsing", item.code);
@@ -110,11 +113,11 @@ class PerlParserTool {
 
     report() {
         console.log("testing ", this.expressionsFilename);
-        let report2 = new ExpressionTesterReport();
+        let report2 = new EtReport();
         report2.filename = this.expressionsFilename;
-        report2.loadSync();
+        report2.loadSync(fs);
         console.log(report2);
-        
+
         console.log("success: ", report2.items.where(t=> t.success).length, "/", report2.items.length);
     }
 
@@ -147,12 +150,33 @@ class PerlParserTool {
 
         throw new Error();
     }
-    run2(): Promise<ExpressionTesterReport> {
+    createTester(): ExpressionTester {
+        let tester = new ExpressionTester();
+        tester.quiet = this.quiet;
+        tester.deparseItem = t=> this.deparseItem(t, tester);
+
+        return tester;
+
+    }
+    deparseItem(item: EtItem, tester:ExpressionTester): Promise<EtItem> {
+        let subs = [];
+        for (let i = 0; i < 20; i++) {
+            subs.push("func_" + i);
+        }
+        item.filename = tester.generateFilename(item.exp);
+        if (item.filename != null)
+            item.filename = "C:\\temp\\perl\\" + item.filename + "_" + (tester.filenameIndex++) + ".pm";
+        return new Deparse().deparse(item.code, { filename: item.filename, tryAsAssignment: true, assumeSubs: subs })
+            .then(deparsedRes=> item.dprs = tester.replaceNewLinesWithSpaces(deparsedRes.deparsed))
+            .then(() => item);
+    }
+
+    run2(): Promise<EtReport> {
         let expressionsFilename = this.expressionsFilename;// "c:\\temp\\perl\\expressions.pm";
 
         this.unit = this.parseUnit(this.filename, this.code);
 
-        let tester = new ExpressionTester();
+        let tester = this.createTester();
         //let expressions: string[] = [];
         //tester.onExpressionFound = e => {
         //    expressions.push(e.code);
@@ -160,14 +184,15 @@ class PerlParserTool {
         //    //fs.writeFileSync(expressionsFilename, expressions.select(t=> t.trim()).distinct().orderBy([t=> t.contains("\n"), t=> t.length, t=> t]).join("\n------------------------------------------------------------------------\n"));
         //};
         return tester.testUnit(this.unit).then(list=> {
-            let report = new ExpressionTesterReport();
+            console.log("Finished: ", list.where(t=> t.success).length, "/", list.length);
+            let report = new EtReport();
             report.filename = expressionsFilename;
-            report.loadSync();
+            report.loadSync(fs);
             report.items.addRange(list);
             report.cleanup();
             if (this.save) {
                 console.log("merging and saving results");
-                report.saveSync();
+                report.saveSync(fs);
             }
             return report;
             
@@ -180,41 +205,52 @@ class PerlParserTool {
 
     }
 
-    args: string[];
-    argsToObject(flags: string[]) {
+    rawArgs: string[];
+    argsToObject<T>(obj2: T, args:string[]) {
+        let obj: any = obj2 || {};
         let index = -1;
-        let args = this.args;
-        let obj = { rest: <string[]>[] };
         while (index < args.length) {
             index++;
             let arg = args[index];
-            if (flags.contains(arg)) {
-                index++;
-                let arg2 = args[index];
-                console.log(arg, arg2);
-                if (arg2 == null || flags.contains(arg2)) {
-                    obj[arg] = true;
-                    index--;
-                    continue;
+            if (arg == null)
+                break;
+            let name = "rest";;
+            let value = null;
+            let dashLength = arg[0] == "-" ? 1 : 0;
+            if (dashLength && arg[1] == "-")
+                dashLength = 2;
+            if (dashLength > 0) {
+                let eqIndex = arg.indexOf("=");
+                if (eqIndex > 1) {
+                    name = arg.substring(dashLength, eqIndex);
+                    value = arg.substring(eqIndex + 1);
                 }
-                obj[arg] = arg2;
+                else {
+                    name = arg.substring(dashLength);
+                    value = true;
+                }
             }
             else {
-                obj.rest.push(arg);
+                value = arg;
             }
+            if (obj[name] != null && obj[name] instanceof Array)
+                obj[name].push(value);
+            else
+                obj[name] = value;
         }
         return obj;
     }
 
 }
 
-interface PerlParserArgs {
-    "-e": string;
-    "-t": string; //test
-    "-d": string; //re-deparse
-    "-r": string; 
-    "-s": string; //save
-    rest: string[];
+class PerlParserArgs {
+    e: string;
+    t: string | boolean; //test
+    d: string | boolean; //re-deparse
+    r: string | boolean;
+    s: string | boolean; //save
+    q: boolean; //quiet
+    rest: string[] = [];
 }
 
 
@@ -227,6 +263,6 @@ process.on('unhandledRejection', (reason, p) => {
 });
 
 let tool = new PerlParserTool();
-tool.args = process.argv.skip(2);
-console.log(tool.args);
+tool.rawArgs = process.argv.skip(2);
+console.log(tool.rawArgs);
 tool.run();

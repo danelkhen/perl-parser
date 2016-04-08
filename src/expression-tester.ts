@@ -1,5 +1,4 @@
-﻿import * as fs from "fs";
-import "../../../libs/corex";
+﻿import "../../../libs/corex";
 import {Token, TokenType, File2, } from "../src/token";
 import {AstWriter} from "../src/ast-writer";
 import {ParserBase} from "../src/parser-base";
@@ -13,17 +12,17 @@ NamedMemberExpression, NativeFunctionInvocation, NativeInvocation_BlockAndListOr
 Operator, PackageDeclaration, ParenthesizedList, PostfixUnaryExpression, PrefixUnaryExpression, QwExpression, RawExpression, RawStatement, RegexExpression,
 ReturnExpression, TrinaryExpression, Unit, UnlessStatement, UseOrNoStatement, UseStatement, ValueExpression, VariableDeclarationExpression, VariableDeclarationStatement, WhileStatement,
 HasArrow, HasLabel,
+AstQuery,
 } from "../src/ast";
 import {PrecedenceResolver} from "../src/precedence-resolver";
 import {TokenTypes} from "../src/token-types";
 import {Tokenizer} from "../src/tokenizer";
 import {safeTry, TokenReader, Logger, AstNodeFixator} from "../src/utils";
 import "../src/extensions";
-import {Deparse} from "./deparse";
 import {Refactor} from "../src/refactor";
 
 
-export class ExpressionTester extends Refactor {
+export class ExpressionTester {
     unit: Unit;
     shouldCheck(node: Expression): boolean {
         let parent = node.parentNode;
@@ -48,18 +47,32 @@ export class ExpressionTester extends Refactor {
             return true;
         return false;
     }
-    testUnit(unit: Unit): Promise<ExpressionTesterReportItem[]> {
-        new AstNodeFixator().process(unit);
-        let exps = this.getDescendants(unit).ofType(Expression).where(t=> this.shouldCheck(t));
 
-        let promises = exps.select(exp => this.testExp(exp));
-        let x = <Promise<ExpressionTesterReportItem[]>><any>Promise.all(promises); //tsc bug
+    testUnit(unit: Unit): Promise<EtItem[]> {
+        new AstNodeFixator().process(unit);
+        let exps = new AstQuery(unit).getDescendants().ofType(Expression).where(t=> this.shouldCheck(t));
+
+        let promises = exps.select(exp => this.deparseAndTestExp(exp));
+        let x = <Promise<EtItem[]>><any>Promise.all(promises); //tsc bug
         return x.then(list=> {
-            list = list.exceptNulls();
+            //list = list.exceptNulls();
             console.log("FINISHED TESTING", { success: list.where(t=> t.success).length, fail: list.where(t=> !t.success).length });
             return list;
-        }).catch(e=> console.log("FINISHED CATCH", e));
+        }).catch(e=> console.log("FINISHED CATCH", e, e.stack));
     }
+
+    //testUnit2(unit: Unit): Promise<EtItem[]> {
+    //    new AstNodeFixator().process(unit);
+    //    let exps = new AstQuery(unit).getDescendants().ofType(Expression).where(t=> this.shouldCheck(t));
+
+    //    let promises = exps.select(exp => this.testExp(exp));
+    //    let x = <Promise<EtItem[]>><any>Promise.all(promises); //tsc bug
+    //    return x.then(list=> {
+    //        list = list.exceptNulls();
+    //        console.log("FINISHED TESTING", { success: list.where(t=> t.success).length, fail: list.where(t=> !t.success).length });
+    //        return list;
+    //    }).catch(e=> console.log("FINISHED CATCH", e, e.stack));
+    //}
 
     generateFilename(node: Expression) {
         let token = node.token
@@ -179,7 +192,7 @@ export class ExpressionTester extends Refactor {
         let code = writer.sb.join("");
         return code;
     }
-    testExpCode(code: string): Promise<ExpressionTesterReportItem> {
+    testExpCode(code: string): Promise<EtItem> {
         return null;
     }
 
@@ -193,24 +206,33 @@ export class ExpressionTester extends Refactor {
             code = "(" + code + ")";
         return code;
     }
-    testExp(exp: Expression): Promise<ExpressionTesterReportItem> {
-        let item: ExpressionTesterReportItem = { exp: exp };
+    deparseAndTestExp(exp: Expression): Promise<EtItem> {
+        let item: EtItem = { exp: exp };
         item.code = this.toCode(exp, { collapseWhitespace: true, redact: true, ignoreComments: true });//writer.sb.join("");
+        return this.deparseItem(item)
+            .then(() => this.testDeparsedItem(item))
+            .then(() => item);
+    }
+    testExp(exp: Expression): EtItem {
+        let item: EtItem = { exp: exp };
+        item.code = this.toCode(exp, { collapseWhitespace: true, redact: true, ignoreComments: true });//writer.sb.join("");
+        this.testDeparsedItem(item);
+        return item;
+    }
 
-        item.filename = this.generateFilename(exp);
-        if (item.filename != null)
-            item.filename = "C:\\temp\\perl\\" + item.filename + "_" + (this.filenameIndex++) + ".pm";
-        //let subs = this.extractImplicitInvocationSubs(exp);
-        //if (subs.length > 0) {
-        //    console.log("subs", subs);
+    deparseItem(item: EtItem): Promise<EtItem> {
+        console.log("deparseItem not available");
+        return Promise.resolve(item);
+        //let subs = [];
+        //for (let i = 0; i < 20; i++) {
+        //    subs.push("func_" + i);
         //}
-        let subs = [];
-        for (let i = 0; i < 20; i++) {
-            subs.push("func_" + i);
-        }
-
-        return new Deparse().deparse(item.code, { filename: item.filename, tryAsAssignment: true, assumeSubs: subs })
-            .then(deparsedRes=> item.dprs = this.replaceNewLinesWithSpaces(deparsedRes.deparsed)).then(() => this.testDeparsedItem(item)).then(() => item);
+        //item.filename = this.generateFilename(item.exp);
+        //if (item.filename != null)
+        //    item.filename = "C:\\temp\\perl\\" + item.filename + "_" + (this.filenameIndex++) + ".pm";
+        //return new Deparse().deparse(item.code, { filename: item.filename, tryAsAssignment: true, assumeSubs: subs })
+        //    .then(deparsedRes=> item.dprs = this.replaceNewLinesWithSpaces(deparsedRes.deparsed))
+        //    .then(() => item);
     }
 
     replaceNewLinesWithSpaces(s: string): string {
@@ -219,7 +241,7 @@ export class ExpressionTester extends Refactor {
         return s.replaceAll("\n", " ");
     }
 
-    testDeparsedItem(item: ExpressionTesterReportItem) {
+    testDeparsedItem(item: EtItem) {
         item.mine = this.toCode(item.exp, { addParentheses: true, deparseFriendly: true, redact: true });
         let success;
         let mine, dprs;
@@ -254,25 +276,28 @@ export class ExpressionTester extends Refactor {
         item.success = success;
 
         //if (!item.success) {
-        console.log("");
-        console.log(item.filename || "");
-        console.log("ORIG : ", item.code);
-        console.log("DPRS : ", item.dprs);
-        console.log("MINE : ", item.mine);
-        //console.log("DPRS2: ", dprs);
-        //console.log("MINE2: ", mine);
-        //console.log("EQ   : ", dprs == mine);
-        console.log(item.success ? "SUCCESS" : "FAIL");
-        //console.log(report.exp);
-        console.log("");
+        if (!this.quiet) {
+            console.log("");
+            console.log(item.filename || "");
+            console.log("ORIG : ", item.code);
+            console.log("DPRS : ", item.dprs);
+            console.log("MINE : ", item.mine);
+            //console.log("DPRS2: ", dprs);
+            //console.log("MINE2: ", mine);
+            //console.log("EQ   : ", dprs == mine);
+            console.log(item.success ? "SUCCESS" : "FAIL");
+            //console.log(report.exp);
+            console.log("");
+        }
         //}
         return item;
 
     }
-
+    quiet: boolean;
 }
 
-export interface ExpressionTesterReportItem {
+
+export interface EtItem {
     filename?: string;
     success?: boolean;
     code?: string;
@@ -284,19 +309,22 @@ export interface ExpressionTesterReportItem {
 
 
 
-export class ExpressionTesterReport {
-    items: ExpressionTesterReportItem[] = [];
+export class EtReport {
+    items: EtItem[] = [];
     filename: string;
     sepText = "#######################################################################";
     sep = /\r?\n#######################################################################\r?\n/;
-    loadSync() {
+    loadSync(fs: any) {
         if (!fs.existsSync(this.filename))
             return;
         let s = fs.readFileSync(this.filename, "utf8");
+        this.parse(s);
+    }
+    parse(s: string) {
         let groups = s.split(this.sep);
         let list = groups.select(group=> {
             let lines = group.lines();
-            let item: ExpressionTesterReportItem = JSON.parse(lines[0]);
+            let item: EtItem = JSON.parse(lines[0]);
             item.code = lines[1];
             item.dprs = lines[2];
             item.mine = lines[3];
@@ -324,7 +352,7 @@ export class ExpressionTesterReport {
         this.removeDoubles();
         this.sort();
     }
-    saveSync() {
+    saveSync(fs: any) {
         fs.writeFileSync(this.filename, this.items.select(t=> [JSON.stringify({ success: t.success }), t.code, t.dprs, t.mine, this.sepText].join("\n")).join("\n"));
     }
 }
