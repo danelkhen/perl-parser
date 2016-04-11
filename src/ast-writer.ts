@@ -42,7 +42,7 @@ export class AstWriter {
 
         this.register(HashMemberAccessExpression, t=> [t.target, [t.memberSeparatorToken], t.member]);
         this.register(ArrayMemberAccessExpression, t=> [t.target, [t.memberSeparatorToken], t.member]);
-        this.register(NamedMemberExpression, t=> [[t.target, t.memberSeparatorToken], t.name]);
+        this.register(NamedMemberExpression, t=> [[t.target, t.memberSeparatorToken], t.token]);
 
         this.register(ReturnExpression, t=> [t.returnToken, [t.returnTokenPost], t.expression]);
         this.register(ArrayRefDeclaration, t=> [t.bracketOpenToken, [t.bracketOpenTokenPost], this.zip(t.items, t.itemsSeparators).exceptNulls(), t.bracketCloseToken]);

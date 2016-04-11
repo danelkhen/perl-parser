@@ -14,6 +14,7 @@ NamedMemberExpression, NativeFunctionInvocation, NativeInvocation_BlockAndListOr
 Operator, PackageDeclaration, ParenthesizedList, PostfixUnaryExpression, PrefixUnaryExpression, QwExpression, RawExpression, RawStatement, RegexExpression,
 ReturnExpression, TrinaryExpression, Unit, UnlessStatement, UseOrNoStatement, UseStatement, ValueExpression, VariableDeclarationExpression, VariableDeclarationStatement, WhileStatement,
 HasArrow, HasLabel,
+AstQuery
 } from "../src/ast";
 import {PrecedenceResolver} from "../src/precedence-resolver";
 import {TokenTypes} from "../src/token-types";
@@ -37,24 +38,58 @@ export class IndexPage {
     urlKey: string;
     code: string;
     firstTime: boolean = true;
-    baseUrl = "http://localhost/";//"https://raw.githubusercontent.com/";
+    rawFilesBaseUrl = "http://localhost/";//"https://raw.githubusercontent.com/";
+    cvBaseUrl = "/";
     lines: CvLine[];
     selection: IndexSelection;
     includes = [
-        "http://localhost/git_tree/main/lib/",
+        "/git_tree/main/lib/",
     ];
 
     httpGet(url: string): Promise<string> {
         return new Promise<string>((resolve, reject) => $.get(url).done(resolve).fail(reject));
     }
-    resolvePackageWithInclude(name: string, include: string): Promise<string> {
-        let url = include + name.split("::").join("/") + ".pm";
-        return this.httpGet(url);
+
+    flattenArray<T>(list: Array<T | Array<T>>): T[] {
+        let list2: T[] = [];
+        list.forEach(t=> {
+            if (t instanceof Array)
+                list2.addRange(this.flattenArray(t));
+            else
+                list2.add(<T>t);
+        });
+        return list2;
+    }
+    urlJoin(parts: Array<string | string[]>): string {
+        let parts2 = this.flattenArray(parts);
+        let final = parts2[0];
+        let prev = parts2[0];
+        parts2.skip(1).forEach(part=> {
+            if (prev.endsWith("/") && part.startsWith("/")) {
+                final += part.substr(1);
+            }
+            else if (!prev.endsWith("/") && !part.startsWith("/")) {
+                final += "/" + part;
+            }
+            else {
+                final += part;
+            }
+            prev = part;
+        });
+        return final;
+    }
+    getCvUrlForIncludeAndPacakge(include: string, packageName: string) {
+        let url = this.urlJoin([this.cvBaseUrl, include, packageName.split("::")])+".pm";
+        return url;
+    }
+    resolvePackageWithInclude(packageName: string, include: string): Promise<string> {
+        let url = this.urlJoin([this.rawFilesBaseUrl, include, packageName.split("::")])+".pm";
+        return this.httpGet(url).then(t=> include);
     }
 
-    resolvePackage(name: string): Promise<string> {
-        let funcs = this.selectAsyncFuncs(this.includes, t=> this.resolvePackageWithInclude(name, t));
-        return this.firstSuccess(funcs);
+    resolvePackage(pkg: PackageResolution): Promise<string> {
+        let funcs = this.selectAsyncFuncs(this.includes, t=> this.resolvePackageWithInclude(pkg.name, t));
+        return this.firstSuccess(funcs).catch(t=> null).then(t=> pkg.resolvedIncludePath = t);
     }
 
     selectAsyncFuncs<T, R>(list: T[], selector: (item: T) => Promise<R>): Array<AsyncFunc<R>> {
@@ -189,7 +224,7 @@ export class IndexPage {
 
     getUrl() {
         let url = window.location.pathname;
-        url = this.baseUrl + url.substr(1);
+        url = this.rawFilesBaseUrl + url.substr(1);
         return url;
     }
     update() {
@@ -234,32 +269,31 @@ export class IndexPage {
         let tok = new Tokenizer();
         tok.file = file;
         localStorage.setItem("pause", "1");
-        safeTry(() => tok.main()).catch(e=> console.error(e)).then(() => {
-            let parser = new Parser();
-            parser.logger = new Logger();
-            parser.reader = new TokenReader();
-            parser.reader.logger = parser.logger;
-            parser.reader.tokens = tok.tokens;
-            parser.init();
+        tok.main();
+        let parser = new Parser();
+        parser.logger = new Logger();
+        parser.reader = new TokenReader();
+        parser.reader.logger = parser.logger;
+        parser.reader.tokens = tok.tokens;
+        parser.init();
 
-            this.tokens = tok.tokens;
-            this.renderTokens();
+        this.tokens = tok.tokens;
+        this.renderTokens();
 
-            //var statements = parser.parse();
-            //console.log(statements);
-            //let unit = new Unit();
-            //unit.statements = statements;
-            //this.unit = unit;
-            //console.log(unit);
+        var statements = parser.parse();
+        //console.log(statements);
+        let unit = new Unit();
+        unit.statements = statements;
+        this.unit = unit;
+        console.log(unit);
+        new AstNodeFixator().process(this.unit);
+        this.resolveAndHighlightUsedPackages();
 
-            //this.renderTree();
 
-            //this.generateCode();
-            //localStorage.removeItem("pause");
-
-            //this.renderGeneratedCode();
-
-        });
+        //this.renderTree();
+        //this.generateCode();
+        //localStorage.removeItem("pause");
+        //this.renderGeneratedCode();
         //$.create("pre").text(stringifyNodes(statements)).appendTo("body")
     }
 
@@ -502,6 +536,69 @@ export class IndexPage {
         return null;
     }
 
+    resolveAndHighlightUsedPackages() {
+        let resolutions = this.findUsedPackages(this.unit).select(node => <PackageResolution>{ node: node });
+        resolutions.forEach(pkg => {
+            pkg.name = pkg.node.toCode();
+            this.resolvePackage(pkg).then(t=> {
+                if (pkg.resolvedIncludePath == null)
+                    return;
+                console.log(pkg);
+                this.hyperlinkNode(pkg.node, this.getCvUrlForIncludeAndPacakge(pkg.resolvedIncludePath, pkg.name));
+            });
+        });
+    }
+
+
+    hyperlinkNode(node: AstNode, href: string) {
+        let tokens = this.collectTokens(node);
+        let els = tokens.select(token => this.tokenToElement.get(token));
+        let a = $.create("a").insertBefore(els[0]);
+        a.append(els);
+        a.attr("href", href);
+    }
+
+    highlightNode(node: AstNode) {
+        let tokens = this.collectTokens(node);
+        tokens.forEach(token => {
+            let el = this.tokenToElement.get(token);
+            el.classList.add("highlight");
+        });
+    }
+
+
+    findUsedPackages(node): Expression[] {
+        //return new AstQuery(this.unit).getDescendants().ofType(NamedMemberExpression).where(t=> !t.arrow && t.token!=null && !t.token.is(TokenTypes.sigiledIdentifier));
+        return new AstQuery(this.unit).getDescendants().ofType(InvocationExpression).where(t=> t.target instanceof NamedMemberExpression && (<NamedMemberExpression>t.target).name == "use").select(t=> t.arguments);
+    }
+
+
+    collectTokens(obj: any): Token[] {
+        let tokens: Token[] = [];
+        this._collectTokens(obj, tokens);
+        return tokens;
+    }
+    _collectTokens(obj: any, tokens: Token[]) {
+        if (obj instanceof Token) {
+            tokens.add(obj);
+        }
+        else if (obj instanceof Array) {
+            obj.forEach(t=> this._collectTokens(t, tokens));
+        }
+        else if (obj instanceof AstNode) {
+            let writer = new AstWriter();
+            writer.main();
+            let func = writer.map.get(obj.constructor);
+            if (func == null) {
+                console.warn("no ast writer handler for node", obj);
+                return;
+            }
+            let res = func(obj);
+            this._collectTokens(res, tokens);
+        }
+    }
+
+
 
 }
 function stringifyNodes(node) {
@@ -737,6 +834,13 @@ export class IndexRange {
 
 interface AsyncFunc<T> {
     (): Promise<T>;
+}
+
+
+interface PackageResolution {
+    node?: AstNode;
+    name?: string;
+    resolvedIncludePath?: string;
 }
 
 $(main);
