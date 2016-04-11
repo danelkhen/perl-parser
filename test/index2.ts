@@ -23,10 +23,13 @@ import "../src/extensions";
 import {RefArrayToRefUtil} from "../src/refactor";
 import {ExpressionTester, EtReport, EtItem} from "../src/expression-tester";
 
+
 export class IndexPage {
     constructor() {
         this.lines = [];
         this.selection = new IndexSelection();
+        let win: any = window;
+        win._page = this;
     }
     tokenToElement: Map<Token, HTMLElement> = new Map<Token, HTMLElement>();
     tbUrl: JQuery;
@@ -34,9 +37,55 @@ export class IndexPage {
     urlKey: string;
     code: string;
     firstTime: boolean = true;
-    baseUrl = "https://raw.githubusercontent.com/";
+    baseUrl = "http://localhost/";//"https://raw.githubusercontent.com/";
     lines: CvLine[];
     selection: IndexSelection;
+    includes = [
+        "http://localhost/git_tree/main/lib/",
+    ];
+
+    httpGet(url: string): Promise<string> {
+        return new Promise<string>((resolve, reject) => $.get(url).done(resolve).fail(reject));
+    }
+    resolvePackageWithInclude(name: string, include: string): Promise<string> {
+        let url = include + name.split("::").join("/") + ".pm";
+        return this.httpGet(url);
+    }
+
+    resolvePackage(name: string): Promise<string> {
+        let funcs = this.selectAsyncFuncs(this.includes, t=> this.resolvePackageWithInclude(name, t));
+        return this.firstSuccess(funcs);
+    }
+
+    selectAsyncFuncs<T, R>(list: T[], selector: (item: T) => Promise<R>): Array<AsyncFunc<R>> {
+        return list.map(t=> () => selector(t));
+    }
+    firstSuccess<T>(funcs: Array<AsyncFunc<T>>): Promise<T> {
+        return new Promise((resolve, reject) => {
+            let index = -1;
+            let tryNext = () => {
+                index++;
+                let func = funcs[index];
+                if (func == null) {
+                    reject();
+                    return;
+                }
+                func()
+                    .then(t=> {
+                        resolve(t);
+                    })
+                    .catch(t=> {
+                        tryNext();
+                    });
+            };
+            tryNext();
+        });
+
+
+    }
+
+
+
     main() {
         console.log(window.location.pathname);
         this.tbUrl = $("#tbUrl");
@@ -137,6 +186,7 @@ export class IndexPage {
     }
 
 
+
     getUrl() {
         let url = window.location.pathname;
         url = this.baseUrl + url.substr(1);
@@ -150,8 +200,8 @@ export class IndexPage {
             return;
 
 
-        //if (filename.startsWith("http") || filename.startsWith("./") || filename.startsWith("/")) {
-        filename = this.baseUrl + filename.substr(1);
+        ////if (filename.startsWith("http") || filename.startsWith("./") || filename.startsWith("/")) {
+        //filename = this.baseUrl + filename.substr(1);
         $.get(filename).then(data => {
             this.parse(filename, data);
         });
@@ -678,5 +728,15 @@ export class IndexRange {
     to: number;
 }
 
+
+//class PromiseRef<T> {
+//    run(): Promise<T> {
+//        return Promise.resolve(null);
+//    }
+//}
+
+interface AsyncFunc<T> {
+    (): Promise<T>;
+}
 
 $(main);
