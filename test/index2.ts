@@ -69,13 +69,22 @@ export class IndexPage {
         $(".line-numbers").mousedown(e => this.onLineNumberMouseDown(e));
         $(".line-numbers").mousemove(e => this.onLineNumberMouseMove(e));
         $(".line-numbers").mouseup(e => this.onLineNumberMouseUp(e));
+        this.selection.fromParam(location.hash.substr(1));
+
         this.update();
     }
 
-    onLineNumberMouseDown(e: JQueryMouseEventObject) {
-        let div = $(e.target);
-        let line = parseInt(div.text());
+    getLineFromLineNumberEl(el: HTMLElement) {
+        if (el == null)
+            return null;
+        let line = parseInt(el.innerText);
         if (isNaN(line))
+            return null;
+        return line;
+    }
+    onLineNumberMouseDown(e: JQueryMouseEventObject) {
+        let line = this.getLineFromLineNumberEl(<HTMLElement>e.target);
+        if (line == null)
             return;
         e.preventDefault();
         this.isMouseDown = true;
@@ -88,8 +97,16 @@ export class IndexPage {
     onLineNumberMouseMove(e: JQueryMouseEventObject) {
         if (!this.isMouseDown)
             return;
+        let line = this.getLineFromLineNumberEl(<HTMLElement>e.target);
+        if (line == null)
+            return;
+        let range = this.selection.lastRange;
+        if (range == null)
+            return;
         e.preventDefault();
-
+        range.to = line;
+        this.renderSelection();
+        this.saveSelection();
     }
     onLineNumberMouseUp(e: JQueryMouseEventObject) {
         this.isMouseDown = false;
@@ -97,7 +114,10 @@ export class IndexPage {
     clickLine(line: number, ctrl: boolean, shift: boolean) {
         this.selection.click(line, ctrl, shift);
         this.renderSelection();
-        location.hash = this.selectionToParam(this.selection);
+        this.saveSelection();
+    }
+    saveSelection() {
+        location.hash = this.selection.toParam();
     }
 
     renderSelection() {
@@ -321,6 +341,8 @@ export class IndexPage {
             }
         });
         this.renderLineNumbers();
+        this.renderSelection();
+
     }
 
 
@@ -430,14 +452,6 @@ export class IndexPage {
         return null;
     }
 
-    selectionToParam(sel: IndexSelection): string {
-        return sel.getCompactRanges().select(t=>this.rangeToParam(t)).join(",");
-    }
-    rangeToParam(range: IndexRange): string {
-        if (range.from == range.to)
-            return `L${range.from}`;
-        return `L${range.from}-L${range.to}`;
-    }
 
 }
 function stringifyNodes(node) {
@@ -546,6 +560,33 @@ export class IndexSelection {
             return null;
         return range.from;
     }
+    fromParam(s: string) {
+        if (s == null || s.length == 0)
+            return;
+        let tokens = s.split(',');
+        this.ranges.clear();
+        tokens.forEach(token=> {
+            let subTokens = token.split("-");
+            if (subTokens.length == 1) {
+                let x = parseInt(subTokens[0].substr(1));
+                this.ranges.add(new IndexRange(x));
+            }
+            else {
+                let x = parseInt(subTokens[0].substr(1));
+                let y = parseInt(subTokens[1].substr(1));
+                this.ranges.add(new IndexRange(x, y));
+            }
+        });
+    }
+    toParam(): string {
+        return this.getCompactRanges().select(t=> this.rangeToParam(t)).join(",");
+    }
+    rangeToParam(range: IndexRange): string {
+        if (range.from == range.to)
+            return `L${range.from}`;
+        return `L${range.from}-L${range.to}`;
+    }
+
 
     getCompactRanges(): IndexRange[] {
         let ranges: IndexRange[] = [];

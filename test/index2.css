@@ -1,8 +1,8 @@
-﻿html{
-    padding:0;
-    margin:0;
-    height:100%;
-    font-family:Arial;
+﻿html {
+    padding: 0;
+    margin: 0;
+    height: 100%;
+    font-family: Arial;
 }
 /*html,input,textarea,select{
     background-color:#1E1E1E;
@@ -11,160 +11,241 @@
 textarea,input,select{
     border:1px solid #777;
 }*/
-body{
-    padding:0;
-    margin:0;
-    height:100%;
-    overflow:hidden;
+body {
+    padding: 0;
+    margin: 0;
+    /*height: 100%;*/
+    /*overflow: hidden;*/
 }
 
 .selected {
-    background-color:pink;
+    background-color: pink;
 }
-.layout{
-    width:100%;
-    height:100%;
-    table-layout:fixed;
-}
-#layout1 > tbody > tr:nth-child(2) {
-    height:100%;
-}
-.layout > tbody > tr > td{
-    vertical-align:top;
-}
-.layout > tbody > tr > td > *{
-    height:100%;
-
-}
-.bar textarea{
-    width:100%;
-    height:100px;
+.code-container {
+    box-sizing: border-box;
+    width: 100%;
 }
 
-.col{
-    width:33%;
-    vertical-align:top;
+table.code-container > tbody > tr > td:first-child {
+    width: 50px;
 }
 
-.generated-code{
-    overflow:auto;
-    width:100%;
-    height:100%;
-    box-sizing:border-box;
-        word-wrap: normal;
-}
-.tree{
-    box-sizing:border-box;
-    height:100%;
-    overflow:scroll;
-    font-family:Tahoma; 
-    font-size:11px;
+.line-numbers {
+    /*float:left;
+    width:50px;*/
+    box-sizing: border-box;
+    text-align: right;
+    padding-right: 10px;
+    color: #939393;
     cursor:default;
 }
-.tree ul{
-    margin:0;
-    padding:0;
-}
-.tree li{
-    list-style:none;
-}
-.tree ul ul{
-    padding-left:20px;
-}
-.tree .node > .self:before{
-    content:" ";
-    width:15px;
-    display:inline-block;
-}
-.tree .node.expanded > .self:before{
-    content:"-";
-}
-.tree .node.collapsed > .self:before{
-    content:"+";
-}
 
-.code-container {    
-    box-sizing:border-box;
-    height:100%;
-    overflow:scroll;
-}
-.code-container > .line-numbers{
-    float:left;
-    width:50px;
-    box-sizing:border-box;
-    text-align:right;
-    padding-right:10px;
-    color:#939393;
-}
 .line-numbers > div:hover {
-    color:black;
-}
-.code-container > .line-numbers,
-.code-container > .code,
-.generated-code{
-    white-space:pre;    
-    font-family:'Courier New'; 
-    font-size:11px;
-}
-.code{
-    float:left;
+    color: black;
 }
 
-.selected{
-    background-color:rgb(248, 238, 199);
+.line-numbers, .code, .generated-code {
+    white-space: pre;
+    font-family: 'Courier New';
+    font-size: 11px;
 }
 
-.tree .node.collapsed > .children{
-    display:none;
+/*.code {
+    float: left;
+}*/
+
+.selected {
+    background-color: rgb(248, 238, 199);
 }
 
-.height100{
-    height:100%;
+.tree .node.collapsed > .children {
+    display: none;
 }
 
-.code .qq{color:red;}
-.code .pod{color:darkgreen;}
-.code .keyword{color:blue;}
-.code .end{color:blue;}
-.code .whitespace{color:inherit;}
-.code .packageSeparator{color:inherit;}
-.code .semicolon{color:inherit;}
-.code .sigiledIdentifier{color:orange;}
-.code .comment{color:green;}
-.code .regExpEquals{color:inherit;}
-.code .equals{color:inherit;}
-.code .concatAssign{color:inherit;}
-.code .addAssign{color:inherit;}
-.code .subtractAssign{color:inherit;}
-.code .multiplyAssign{color:inherit;}
-.code .divideAssign{color:inherit;}
-.code .comma{color:inherit;}
-.code .integer{color:red;}
-.code .parenOpen{color:inherit;}
-.code .parenClose{color:inherit;}
-.code .braceOpen{color:inherit;}
-.code .braceClose{color:inherit;}
-.code .bracketOpen{color:inherit;}
-.code .bracketClose{color:inherit;}
-.code .smallerOrEqualsThan{color:inherit;}
-.code .greaterOrEqualsThan{color:inherit;}
-.code .smallerThan{color:inherit;}
-.code .greaterThan{color:inherit;}
-.code .arrow{color:inherit;}
-.code .fatComma{color:inherit;}
-.code .assignment{color:inherit;}
-.code .concat{color:inherit;}
-.code .interpolatedString{color:brown;}
-.code .bareString{color:brown;}
-.code .string{color:brown;}
-.code .divDiv{color:inherit;}
-.code .tilda{color:inherit;}
-.code .regex{color:red;}
-.code .regexSubstitute{color:red;}
-.code .or{color:inherit;}
-.code .and{color:inherit;}
-.code .minus{color:inherit;}
-.code .multiply{color:inherit;}
-.code .plus{color:inherit;}
-.code .multiplyString{color:inherit;}
-.code .identifier{color:inherit;}
+.height100 {
+    height: 100%;
+}
+
+.code .qq {
+    color: red;
+}
+
+.code .pod {
+    color: darkgreen;
+}
+
+.code .keyword {
+    color: blue;
+}
+
+.code .end {
+    color: blue;
+}
+
+.code .whitespace {
+    color: inherit;
+}
+
+.code .packageSeparator {
+    color: inherit;
+}
+
+.code .semicolon {
+    color: inherit;
+}
+
+.code .sigiledIdentifier {
+    color: orange;
+}
+
+.code .comment {
+    color: green;
+}
+
+.code .regExpEquals {
+    color: inherit;
+}
+
+.code .equals {
+    color: inherit;
+}
+
+.code .concatAssign {
+    color: inherit;
+}
+
+.code .addAssign {
+    color: inherit;
+}
+
+.code .subtractAssign {
+    color: inherit;
+}
+
+.code .multiplyAssign {
+    color: inherit;
+}
+
+.code .divideAssign {
+    color: inherit;
+}
+
+.code .comma {
+    color: inherit;
+}
+
+.code .integer {
+    color: red;
+}
+
+.code .parenOpen {
+    color: inherit;
+}
+
+.code .parenClose {
+    color: inherit;
+}
+
+.code .braceOpen {
+    color: inherit;
+}
+
+.code .braceClose {
+    color: inherit;
+}
+
+.code .bracketOpen {
+    color: inherit;
+}
+
+.code .bracketClose {
+    color: inherit;
+}
+
+.code .smallerOrEqualsThan {
+    color: inherit;
+}
+
+.code .greaterOrEqualsThan {
+    color: inherit;
+}
+
+.code .smallerThan {
+    color: inherit;
+}
+
+.code .greaterThan {
+    color: inherit;
+}
+
+.code .arrow {
+    color: inherit;
+}
+
+.code .fatComma {
+    color: inherit;
+}
+
+.code .assignment {
+    color: inherit;
+}
+
+.code .concat {
+    color: inherit;
+}
+
+.code .interpolatedString {
+    color: brown;
+}
+
+.code .bareString {
+    color: brown;
+}
+
+.code .string {
+    color: brown;
+}
+
+.code .divDiv {
+    color: inherit;
+}
+
+.code .tilda {
+    color: inherit;
+}
+
+.code .regex {
+    color: red;
+}
+
+.code .regexSubstitute {
+    color: red;
+}
+
+.code .or {
+    color: inherit;
+}
+
+.code .and {
+    color: inherit;
+}
+
+.code .minus {
+    color: inherit;
+}
+
+.code .multiply {
+    color: inherit;
+}
+
+.code .plus {
+    color: inherit;
+}
+
+.code .multiplyString {
+    color: inherit;
+}
+
+.code .identifier {
+    color: inherit;
+}
