@@ -284,7 +284,7 @@ interface String {
     lines(): string[];
 }
 interface NumberConstructor {
-    generate(min: any, max: any, step: any): any;
+    generate(min: any, max: any, step?: any): any;
     roundUsing(mathOp: any, x: any, precision: any): any;
 }
 interface Number {

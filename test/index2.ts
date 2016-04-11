@@ -24,7 +24,10 @@ import {RefArrayToRefUtil} from "../src/refactor";
 import {ExpressionTester, EtReport, EtItem} from "../src/expression-tester";
 
 export class IndexPage {
-
+    constructor() {
+        this.lines = [];
+        this.selection = new IndexSelection();
+    }
     tokenToElement: Map<Token, HTMLElement> = new Map<Token, HTMLElement>();
     tbUrl: JQuery;
     tbRegex: JQuery;
@@ -32,6 +35,8 @@ export class IndexPage {
     code: string;
     firstTime: boolean = true;
     baseUrl = "https://raw.githubusercontent.com/";
+    lines: CvLine[];
+    selection: IndexSelection;
     main() {
         console.log(window.location.pathname);
         this.tbUrl = $("#tbUrl");
@@ -61,8 +66,56 @@ export class IndexPage {
         this.tbUrl.change(e=> this.update());
         $("#cbAddParentheses").change(e=> this.update());
         $("#cbDeparseFriendly").change(e=> this.update());
+        $(".line-numbers").mousedown(e => this.onLineNumberMouseDown(e));
+        $(".line-numbers").mousemove(e => this.onLineNumberMouseMove(e));
+        $(".line-numbers").mouseup(e => this.onLineNumberMouseUp(e));
         this.update();
     }
+
+    onLineNumberMouseDown(e: JQueryMouseEventObject) {
+        let div = $(e.target);
+        let line = parseInt(div.text());
+        if (isNaN(line))
+            return;
+        e.preventDefault();
+        this.isMouseDown = true;
+        let shift = e.shiftKey;
+        let ctrl = e.ctrlKey;
+        this.clickLine(line, ctrl, shift);
+    }
+
+    isMouseDown = false;
+    onLineNumberMouseMove(e: JQueryMouseEventObject) {
+        if (!this.isMouseDown)
+            return;
+        e.preventDefault();
+
+    }
+    onLineNumberMouseUp(e: JQueryMouseEventObject) {
+        this.isMouseDown = false;
+    }
+    clickLine(line: number, ctrl: boolean, shift: boolean) {
+        this.selection.click(line, ctrl, shift);
+        this.renderSelection();
+        location.hash = this.selectionToParam(this.selection);
+    }
+
+    renderSelection() {
+        let obj: { [key: string]: boolean } = {};
+        this.selection.getSelectedIndexes().forEach(t=> obj[t] = true);
+        //let node = <HTMLElement>$(".line-numbers")[0].firstChild;
+        let node2 = <HTMLElement>$(".code")[0].firstChild;
+        let index = 1;
+        //let listIndex = 1;
+        while (node2 != null) {
+            //node.className = obj[index] ? "selected" : "";
+            node2.className = obj[index] ? "selected" : "";
+            //node = <HTMLElement>node.nextSibling;
+            node2 = <HTMLElement>node2.nextSibling;
+            index++;
+        }
+    }
+
 
     getUrl() {
         let url = window.location.pathname;
@@ -87,7 +140,8 @@ export class IndexPage {
         //this.parse("noname.pm", filename);
     }
 
-    renderLineNumbers(count: number) {
+    renderLineNumbers() {
+        let count = this.lines.length;
         let lineNumbers = $(".line-numbers").empty();
         for (let i = 0; i < count; i++) {
             lineNumbers.append($.create("div").text(i + 1));
@@ -185,6 +239,9 @@ export class IndexPage {
         this.generatedCode = writer.sb.join("");
     }
 
+    getLine(line: number): CvLine {
+        return this.lines[line - 1];
+    }
     render() {
         $(".code").empty().text(this.code);
         this.renderTokens();
@@ -196,7 +253,7 @@ export class IndexPage {
     }
 
     splitNewLineTokens() {
-        let list = [];
+        let list: Token[] = [];
         this.tokens.forEach(token=> {
             if (token.is(TokenTypes.whitespace) && token.value.contains("\n") && token.value != "\n") {
                 let s = token.value;
@@ -204,16 +261,22 @@ export class IndexPage {
                     if (s[0] == "\n") {
                         let newLineToken = TokenTypes.whitespace.create2("\n");
                         list.push(newLineToken);
+                        s = s.substring(1);
                     }
                     else {
                         let index = s.indexOf("\n");
                         if (index > 0) {
-                            let whitespaceToken = TokenTypes.whitespace.create2(line);
+                            let part = s.substring(0, index - 1);
+                            let whitespaceToken = TokenTypes.whitespace.create2(part);
                             list.push(whitespaceToken);
+                            let whitespaceToken2 = TokenTypes.whitespace.create2("\n");
+                            list.push(whitespaceToken2);
+                            s = s.substring(index + 1);
                         }
                         else {
-                            let whitespaceToken = TokenTypes.whitespace.create2(line);
+                            let whitespaceToken = TokenTypes.whitespace.create2(s);
                             list.push(whitespaceToken);
+                            s = "";
                         }
                     }
                 }
@@ -228,31 +291,36 @@ export class IndexPage {
     renderTokens() {
         let codeEl = $(".code")[0];
         codeEl.innerHTML = "";
+        this.lines.clear();
         if (this.tokens == null || this.tokens.length == 0)
             return;
         this.splitNewLineTokens();
 
-        let div = document.createElement("div");
-        codeEl.appendChild(div);
+        let line = new CvLine();
+        line.lineCodeEl = document.createElement("div");
+        codeEl.appendChild(line.lineCodeEl);
+        this.lines.add(line);
         this.tokens.forEach(token=> {
             if (token.is(TokenTypes.whitespace) && token.value == "\n") {
-                if (div.firstChild == null)
-                    div.textContent = "\n";
-                div = document.createElement("div");
-                div.className = "line";
+                if (line.lineCodeEl.firstChild == null)
+                    line.lineCodeEl.textContent = "\n";
+                line = new CvLine();
+                line.lineCodeEl = document.createElement("div");
+                line.lineCodeEl.className = "line";
                 //div.textContent = token.value;
-                codeEl.appendChild(div);
-                this.tokenToElement.set(token, div);
+                codeEl.appendChild(line.lineCodeEl);
+                this.lines.add(line);
+                this.tokenToElement.set(token, line.lineCodeEl);
             }
             else {
                 let span = document.createElement("span");
                 span.className = token.type.name;
                 span.textContent = token.value;
-                div.appendChild(span);
+                line.lineCodeEl.appendChild(span);
                 this.tokenToElement.set(token, span);
             }
         });
-        this.renderLineNumbers(this.tokens.last().range.end.line);
+        this.renderLineNumbers();
     }
 
 
@@ -362,6 +430,15 @@ export class IndexPage {
         return null;
     }
 
+    selectionToParam(sel: IndexSelection): string {
+        return sel.getCompactRanges().select(t=>this.rangeToParam(t)).join(",");
+    }
+    rangeToParam(range: IndexRange): string {
+        if (range.from == range.to)
+            return `L${range.from}`;
+        return `L${range.from}-L${range.to}`;
+    }
+
 }
 function stringifyNodes(node) {
     let sb = [];
@@ -404,7 +481,161 @@ interface TreeNodeData {
 
 
 
-$(main);
 export function main() {
     new IndexPage().main();
 }
+
+
+class CvLine {
+    lineCodeEl: HTMLElement;
+    lineNumberEl: HTMLElement;
+}
+
+//class ItemSelection<T> {
+//    all: T[];
+//    selected: T[] = [];
+//    get lastSelected(): T {
+//        return this.selected.last();
+//    }
+//    click(item: T, ctrl: boolean, shift: boolean) {
+//        if (ctrl && !shift) {
+//            this.selected.add(item);
+//        }
+//        else if (this.lastSelected == null) {
+//            this.selected.add(item);
+//        }
+//        else if (!ctrl && !shift) {
+//            this.selected.clear();
+//            this.selected.add(item);
+//        }
+//        else if (!ctrl && shift) {
+//            let last = this.lastSelected;
+//            this.selected.clear();
+//            let startIndex = this.all.indexOf(last);
+//            let endIndex = this.all.indexOf(item);
+//            this.selected.addRange(this.all.slice(startIndex, endIndex));
+//        }
+//        else if (ctrl && shift) {
+//            let last = this.lastSelected;
+//            let startIndex = this.all.indexOf(last);
+//            let endIndex = this.all.indexOf(item);
+//            this.selected.addRange(this.all.slice(startIndex, endIndex));
+//            this.selected.distinct();
+//            this.selected.remove(item);
+//            this.selected.add(item);
+//        }
+//        else
+//            console.error("Not Implemented", { item, ctrl, shift });
+//    }
+
+//}
+
+//class ItemRange<T>{
+//}
+
+
+
+export class IndexSelection {
+    ranges: IndexRange[] = [];
+    get lastRange(): IndexRange {
+        return this.ranges.last();
+    }
+    get lastAnchor(): number {
+        let range = this.lastRange;
+        if (range == null)
+            return null;
+        return range.from;
+    }
+
+    getCompactRanges(): IndexRange[] {
+        let ranges: IndexRange[] = [];
+        let list = this.getSelectedIndexes();
+        let range: IndexRange;
+        list.forEach(t => {
+            if (range == null) {
+                range = new IndexRange(t);
+                ranges.add(range);
+            }
+            else if (range.to == t - 1) {
+                range.to++;
+            }
+            else {
+                range = new IndexRange(t);
+                ranges.add(range);
+            }
+        });
+        return ranges;
+
+    }
+
+    normalize() {
+        let anchor = this.lastAnchor;
+        let list = [];
+        this.getSelectedIndexes().forEach(t=> {
+            if (t == anchor)
+                return;
+            list.add(new IndexRange(t));
+        });
+        list.add(new IndexRange(anchor));
+        this.ranges = list;
+    }
+    generateNumbers = function (from: number, to: number) {
+        let min = Math.min(from, to);
+        let max = Math.max(from, to);
+        return Number.generate(min, max, 1);
+    };
+
+    getSelectedIndexes(): number[] {
+        let list = this.ranges.selectMany(t=> this.generateNumbers(t.from, t.to));
+        let res = list.distinct().orderBy(t=> t);
+        return res;
+    }
+    click(index: number, ctrl: boolean, shift: boolean) {
+        if (this.lastRange == null) {
+            this.ranges.add(new IndexRange(index));
+        }
+        else if (ctrl && !shift) {
+            this.normalize();
+            let index2 = this.ranges.findIndex(t=> t.from == index);
+            if (index2 == null || index2 < 0) {
+                this.ranges.add(new IndexRange(index));
+            }
+            else {
+                this.ranges.removeAt(index2);
+            }
+        }
+        else if (!ctrl && !shift) {
+            this.ranges.clear();
+            this.ranges.add(new IndexRange(index));
+        }
+        else if (!ctrl && shift) {
+            let last = this.lastRange;
+            this.ranges.clear();
+            last.to = index;
+            this.ranges.add(last);
+        }
+        else if (ctrl && shift) {
+            let last = this.lastRange;
+            last.to = index;
+        }
+        else
+            console.error("Not Implemented", { index, ctrl, shift });
+    }
+
+}
+
+export class IndexRange {
+    constructor(from?: number, to?: number) {
+        if (from == null)
+            return;
+        if (to == null)
+            to = from;
+        this.from = from;
+        this.to = to;
+    }
+    from: number;
+    to: number;
+}
+
+
+$(main);
