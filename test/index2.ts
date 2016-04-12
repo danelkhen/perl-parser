@@ -669,49 +669,6 @@ class CvLine {
     lineNumberEl: HTMLElement;
 }
 
-//class ItemSelection<T> {
-//    all: T[];
-//    selected: T[] = [];
-//    get lastSelected(): T {
-//        return this.selected.last();
-//    }
-//    click(item: T, ctrl: boolean, shift: boolean) {
-//        if (ctrl && !shift) {
-//            this.selected.add(item);
-//        }
-//        else if (this.lastSelected == null) {
-//            this.selected.add(item);
-//        }
-//        else if (!ctrl && !shift) {
-//            this.selected.clear();
-//            this.selected.add(item);
-//        }
-//        else if (!ctrl && shift) {
-//            let last = this.lastSelected;
-//            this.selected.clear();
-//            let startIndex = this.all.indexOf(last);
-//            let endIndex = this.all.indexOf(item);
-//            this.selected.addRange(this.all.slice(startIndex, endIndex));
-//        }
-//        else if (ctrl && shift) {
-//            let last = this.lastSelected;
-//            let startIndex = this.all.indexOf(last);
-//            let endIndex = this.all.indexOf(item);
-//            this.selected.addRange(this.all.slice(startIndex, endIndex));
-//            this.selected.distinct();
-//            this.selected.remove(item);
-//            this.selected.add(item);
-//        }
-//        else
-//            console.error("Not Implemented", { item, ctrl, shift });
-//    }
-
-//}
-
-//class ItemRange<T>{
-//}
-
-
 
 export class IndexSelection {
     ranges: IndexRange[] = [];
@@ -840,6 +797,11 @@ export class IndexRange {
     }
     from: number;
     to: number;
+    contains(x: number): boolean {
+        let min = Math.min(this.from, this.to);
+        let max = Math.max(this.from, this.to);
+        return x>=min && x<=max;
+    }
 }
 
 
@@ -866,9 +828,19 @@ $(main);
 /*
 TODO:
 
+integrate real web server
+builtin functions - send to perldoc.perl.org/...
+perl operators - send to perlop
+unresolved packages send to metacpan
+
+
+
+
 optimize IndexRange to use math instead of arrays
 variable hyperlinking
-integrate real web server
 use web service to resolve packages
+keyboard support
+code collapsing
+
 
 */
