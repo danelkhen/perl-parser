@@ -215,7 +215,7 @@ Array.prototype.remove = function (item) {
     return false;
 };
 Array.prototype.removeRange = function (items) {
-    return this.removeAll(t=>items.contains(t));
+    return this.removeAll(function (t) { return items.contains(t); });
 };
 Array.prototype.contains = function (s) {
     return this.indexOf(s) >= 0;

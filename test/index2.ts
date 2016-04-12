@@ -709,6 +709,11 @@ export class IndexSelection {
     }
 
 
+    toCompact(): IndexSelection {
+        let sel = new IndexSelection();
+        sel.ranges = this.getCompactRanges();
+        return sel;
+    }
     getCompactRanges(): IndexRange[] {
         let ranges: IndexRange[] = [];
         let list = this.getSelectedIndexes();
@@ -727,7 +732,6 @@ export class IndexSelection {
             }
         });
         return ranges;
-
     }
 
     normalize() {
@@ -800,7 +804,7 @@ export class IndexRange {
     contains(x: number): boolean {
         let min = Math.min(this.from, this.to);
         let max = Math.max(this.from, this.to);
-        return x>=min && x<=max;
+        return x >= min && x <= max;
     }
 }
 
