@@ -4,7 +4,7 @@ Perl parser written in TypeScript
 ## Installation
 ```
 npm install -g typescript typings
-git clone perl-parser
+git clone git@github.com:danelkhen/perl-parser.git
 cd perl-parser
 npm install
 ```
