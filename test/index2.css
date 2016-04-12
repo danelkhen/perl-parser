@@ -23,12 +23,31 @@ body {
 }
 
 
-.selected:after {
+/*.selected:after {
     content: " ";
     position: absolute;
     width: 100%;
-    background: rgba(248, 238, 199, 0.3);
+    background-color: rgb(248, 238, 199);
     left: 0;
+    z-index: -1;
+}*/
+
+a:target {
+    outline: 1px solid red;
+}
+.line .line-overlay{
+    display:none;
+}
+.line.selected .line-overlay{
+    display:block;
+    position: absolute;
+    width: 100%;
+    background-color: rgb(248, 238, 199);
+    left: 0;
+    z-index: -1;
+    height:14px;
+    border-left:solid 50px white;
+    box-sizing:border-box;
 }
 
 .code-container {
@@ -54,8 +73,12 @@ table.code-container > tbody > tr > td {
     box-sizing: border-box;
     text-align: right;
     padding-right: 10px;
-    color: #939393;
+    color: #bbb;
     cursor: default;
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
 }
 
 .line-numbers > div:hover {
@@ -114,7 +137,7 @@ table.code-container > tbody > tr > td {
 }
 
 .code .sigiledIdentifier {
-    color: orange;
+    color: #FF8700;
 }
 
 .code .comment {
@@ -224,9 +247,11 @@ table.code-container > tbody > tr > td {
 .code .string {
     color: brown;
 }
+
 .code .heredoc {
     color: brown;
 }
+
 .code .heredocValue {
     color: brown;
 }
@@ -274,4 +299,3 @@ table.code-container > tbody > tr > td {
 .code .identifier {
     color: inherit;
 }
-

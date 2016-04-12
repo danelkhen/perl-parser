@@ -167,6 +167,10 @@ export class IndexPage {
         return line;
     }
     onLineNumberMouseDown(e: JQueryMouseEventObject) {
+        if (e.which != 1)
+            return;
+        if (!$(e.target).hasClass("line-number"))
+            return;
         let line = this.getLineFromLineNumberEl(<HTMLElement>e.target);
         if (line == null)
             return;
@@ -210,26 +214,22 @@ export class IndexPage {
         let node = <HTMLElement>$(".line-numbers")[0].firstChild;
         let index = 1;
         while (node != null) {
-            node.className = obj[index] ? "selected" : "";
+            $(node).toggleClass("selected", obj[index] == true);
             node = <HTMLElement>node.nextSibling;
             index++;
         }
     }
-
-
 
     getUrl() {
         let url = window.location.pathname;
         url = this.rawFilesBaseUrl + url.substr(1);
         return url;
     }
+
     update() {
         let url = this.getUrl();
-        // this.tbUrl.val();
-        //localStorage[this.urlKey] = filename;
         if (url == null || url.length == 0)
             return;
-
 
         if (url.endsWith("/")) {
             $.get(url).then(data => {
@@ -237,24 +237,28 @@ export class IndexPage {
             });
             return;
         }
-        ////if (filename.startsWith("http") || filename.startsWith("./") || filename.startsWith("/")) {
-        //filename = this.baseUrl + filename.substr(1);
         $.get(url).then(data => {
             this.parse(url, data);
         });
-        //    return;
-        //}
-        //this.parse("noname.pm", filename);
     }
 
     renderLineNumbers() {
-
-        let count = this.code.lines().length;//this.lines.length;
-        let lineNumbers = $(".line-numbers").empty();
+        let lineNumbers = $(".line-numbers").empty()[0];
+        let count = this.code.lines().length;
         for (let i = 0; i < count; i++) {
-            lineNumbers.append($.create("div").text(i + 1));
+            let div = document.createElement("div");
+            div.className = "line";
+            let div3 = document.createElement("div");
+            div3.className = "line-overlay";
+            let div2 = document.createElement("div");
+            div2.className = "line-number";
+            div.appendChild(div3);
+            div.appendChild(div2);
+            div2.textContent = (i + 1).toString();
+            lineNumbers.appendChild(div);//$.create("div").text(i + 1));
         }
     }
+
     unit: Unit;
     tokens: Token[];
     generatedCode: string;
@@ -352,11 +356,6 @@ export class IndexPage {
     render() {
         $(".code").empty().text(this.code);
         this.renderTokens();
-        this.renderGeneratedCode();
-        this.renderTree();
-    }
-    renderTree() {
-        $(".tree").empty().getAppend("ul").append(this.createTree(this.createInstanceNode(this.unit)));
     }
 
     splitNewLineTokens() {
@@ -433,11 +432,6 @@ export class IndexPage {
 
     }
 
-
-    renderGeneratedCode() {
-        $(".generated-code").val(this.generatedCode);
-    }
-
     refactor() {
         new AstNodeFixator().process(this.unit);
         //new FindEvalsWithout1AtTheEnd().process(this.unit);
@@ -504,19 +498,6 @@ export class IndexPage {
 
     }
 
-    createTree(node: TreeNodeData): HTMLElement {
-        let li = $.create("li.node");
-        let ul = $.create("ul.children");
-        let span = li.getAppend("span.self").text(node.text);
-        span.mouseover(e=> this.onMouseOverNode(e, node));
-        if (node.children.length > 0) {
-            li.addClass("collapsed");
-            ul.append(node.children.select(t=> this.createTree(t)));
-            li.append(ul);
-            span.mousedown(e=> { li.toggleClass("collapsed"); li.toggleClass("expanded"); });
-        }
-        return li[0];
-    }
 
     getTokens(obj: any, deep: boolean): Token[] {
         if (obj == null)
@@ -880,3 +861,14 @@ interface PackageResolution {
 }
 
 $(main);
+
+
+/*
+TODO:
+
+optimize IndexRange to use math instead of arrays
+variable hyperlinking
+integrate real web server
+use web service to resolve packages
+
+*/
