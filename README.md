@@ -1,12 +1,14 @@
 # perl-parser
-Perl parser written in TypeScript
+Perl parser written in TypeScript, can run on nodejs or a browser
 
 ## Installation
+* Install nodejs
 ```
 npm install -g typescript typings
 git clone git@github.com:danelkhen/perl-parser.git
 cd perl-parser
 npm install
+typings install
 ```
 
 ## Compilation
