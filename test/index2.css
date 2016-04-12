@@ -18,13 +18,20 @@ body {
     /*overflow: hidden;*/
 }
 
-.selected {
-    background-color: pink;
+.selected:after {
+    content: " ";
+    position: absolute;
+    width: 100%;
+    background: rgba(248, 238, 199, 0.3);
+    left:0;
 }
 
 .code-container {
     box-sizing: border-box;
     width: 100%;
+    table-layout:fixed;
+    border-collapse:collapse;
+    border-spacing:0;
 }
 
 table.code-container > tbody > tr > td:first-child {
@@ -33,6 +40,7 @@ table.code-container > tbody > tr > td:first-child {
 
 table.code-container > tbody > tr > td {
     vertical-align: top;
+    padding:0;
 }
 
 .line-numbers {
@@ -63,9 +71,6 @@ table.code-container > tbody > tr > td {
     float: left;
 }*/
 
-.selected {
-    background-color: rgb(248, 238, 199);
-}
 
 .tree .node.collapsed > .children {
     display: none;

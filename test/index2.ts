@@ -207,15 +207,15 @@ export class IndexPage {
     renderSelection() {
         let obj: { [key: string]: boolean } = {};
         this.selection.getSelectedIndexes().forEach(t=> obj[t] = true);
-        //let node = <HTMLElement>$(".line-numbers")[0].firstChild;
-        let node2 = <HTMLElement>$(".code")[0].firstChild;
+        let node = <HTMLElement>$(".line-numbers")[0].firstChild;
+        //let node2 = <HTMLElement>$(".code")[0].firstChild;
         let index = 1;
         //let listIndex = 1;
-        while (node2 != null) {
-            //node.className = obj[index] ? "selected" : "";
-            node2.className = obj[index] ? "selected" : "";
+        while (node != null) {
+            node.className = obj[index] ? "selected" : "";
+            //node2.className = obj[index] ? "selected" : "";
             //node = <HTMLElement>node.nextSibling;
-            node2 = <HTMLElement>node2.nextSibling;
+            node = <HTMLElement>node.nextSibling;
             index++;
         }
     }
@@ -246,7 +246,8 @@ export class IndexPage {
     }
 
     renderLineNumbers() {
-        let count = this.lines.length;
+        
+        let count = this.code.lines().length;//this.lines.length;
         let lineNumbers = $(".line-numbers").empty();
         for (let i = 0; i < count; i++) {
             lineNumbers.append($.create("div").text(i + 1));
@@ -402,27 +403,28 @@ export class IndexPage {
 
         let line = new CvLine();
         line.lineCodeEl = document.createElement("div");
-        codeEl.appendChild(line.lineCodeEl);
+        //codeEl.appendChild(line.lineCodeEl);
         this.lines.add(line);
         this.tokens.forEach(token=> {
-            if (token.is(TokenTypes.whitespace) && token.value == "\n") {
-                if (line.lineCodeEl.firstChild == null)
-                    line.lineCodeEl.textContent = "\n";
-                line = new CvLine();
-                line.lineCodeEl = document.createElement("div");
-                line.lineCodeEl.className = "line";
-                //div.textContent = token.value;
-                codeEl.appendChild(line.lineCodeEl);
-                this.lines.add(line);
-                this.tokenToElement.set(token, line.lineCodeEl);
-            }
-            else {
+            //if (token.is(TokenTypes.whitespace) && token.value == "\n") {
+            //    if (line.lineCodeEl.firstChild == null)
+            //        line.lineCodeEl.textContent = "\n";
+            //    line = new CvLine();
+            //    line.lineCodeEl = document.createElement("div");
+            //    line.lineCodeEl.className = "line";
+            //    //div.textContent = token.value;
+            //    codeEl.appendChild(line.lineCodeEl);
+            //    this.lines.add(line);
+            //    this.tokenToElement.set(token, line.lineCodeEl);
+            //}
+            //else {
                 let span = document.createElement("span");
                 span.className = token.type.name;
                 span.textContent = token.value;
                 line.lineCodeEl.appendChild(span);
+                codeEl.appendChild(span);
                 this.tokenToElement.set(token, span);
-            }
+            //}
         });
         this.renderLineNumbers();
         this.renderSelection();
