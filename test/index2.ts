@@ -79,11 +79,11 @@ export class IndexPage {
         return final;
     }
     getCvUrlForIncludeAndPacakge(include: string, packageName: string) {
-        let url = this.urlJoin([this.cvBaseUrl, include, packageName.split("::")])+".pm";
+        let url = this.urlJoin([this.cvBaseUrl, include, packageName.split("::")]) + ".pm";
         return url;
     }
     resolvePackageWithInclude(packageName: string, include: string): Promise<string> {
-        let url = this.urlJoin([this.rawFilesBaseUrl, include, packageName.split("::")])+".pm";
+        let url = this.urlJoin([this.rawFilesBaseUrl, include, packageName.split("::")]) + ".pm";
         return this.httpGet(url).then(t=> include);
     }
 
@@ -161,7 +161,7 @@ export class IndexPage {
     getLineFromLineNumberEl(el: HTMLElement) {
         if (el == null)
             return null;
-        let line = parseInt(el.innerText);
+        let line = parseInt(el.textContent);
         if (isNaN(line))
             return null;
         return line;
@@ -208,13 +208,9 @@ export class IndexPage {
         let obj: { [key: string]: boolean } = {};
         this.selection.getSelectedIndexes().forEach(t=> obj[t] = true);
         let node = <HTMLElement>$(".line-numbers")[0].firstChild;
-        //let node2 = <HTMLElement>$(".code")[0].firstChild;
         let index = 1;
-        //let listIndex = 1;
         while (node != null) {
             node.className = obj[index] ? "selected" : "";
-            //node2.className = obj[index] ? "selected" : "";
-            //node = <HTMLElement>node.nextSibling;
             node = <HTMLElement>node.nextSibling;
             index++;
         }
@@ -228,17 +224,23 @@ export class IndexPage {
         return url;
     }
     update() {
-        let filename = this.getUrl();
+        let url = this.getUrl();
         // this.tbUrl.val();
         //localStorage[this.urlKey] = filename;
-        if (filename == null || filename.length == 0)
+        if (url == null || url.length == 0)
             return;
 
 
+        if (url.endsWith("/")) {
+            $.get(url).then(data => {
+                $(document.body).html(data);
+            });
+            return;
+        }
         ////if (filename.startsWith("http") || filename.startsWith("./") || filename.startsWith("/")) {
         //filename = this.baseUrl + filename.substr(1);
-        $.get(filename).then(data => {
-            this.parse(filename, data);
+        $.get(url).then(data => {
+            this.parse(url, data);
         });
         //    return;
         //}
@@ -246,7 +248,7 @@ export class IndexPage {
     }
 
     renderLineNumbers() {
-        
+
         let count = this.code.lines().length;//this.lines.length;
         let lineNumbers = $(".line-numbers").empty();
         for (let i = 0; i < count; i++) {
@@ -418,12 +420,12 @@ export class IndexPage {
             //    this.tokenToElement.set(token, line.lineCodeEl);
             //}
             //else {
-                let span = document.createElement("span");
-                span.className = token.type.name;
-                span.textContent = token.value;
-                line.lineCodeEl.appendChild(span);
-                codeEl.appendChild(span);
-                this.tokenToElement.set(token, span);
+            let span = document.createElement("span");
+            span.className = token.type.name;
+            span.textContent = token.value;
+            line.lineCodeEl.appendChild(span);
+            codeEl.appendChild(span);
+            this.tokenToElement.set(token, span);
             //}
         });
         this.renderLineNumbers();
@@ -539,25 +541,44 @@ export class IndexPage {
     }
 
     resolveAndHighlightUsedPackages() {
-        let resolutions = this.findUsedPackages(this.unit).select(node => <PackageResolution>{ node: node });
+        let pkgRefs = this.findPackageRefs(this.unit);
+        let inUse: NamedMemberExpression[] = [];
+        let refs: NamedMemberExpression[] = [];
+        pkgRefs.forEach(t=> this.isInsideUse(t) ? inUse.push(t) : refs.push(t));
+
+        //let resolutions = this.findUsedPackages(this.unit).select(node => <PackageResolution>{ node: node });
+        let resolutions = inUse.select(node => <PackageResolution>{ node: node });
         resolutions.forEach(pkg => {
             pkg.name = pkg.node.toCode();
             this.resolvePackage(pkg).then(t=> {
-                if (pkg.resolvedIncludePath == null)
-                    return;
-                console.log(pkg);
-                this.hyperlinkNode(pkg.node, this.getCvUrlForIncludeAndPacakge(pkg.resolvedIncludePath, pkg.name));
+                //console.log(pkg);
+                let href = null;//"#"+pkg.name;//null;
+                if (pkg.resolvedIncludePath != null)
+                    href = this.getCvUrlForIncludeAndPacakge(pkg.resolvedIncludePath, pkg.name);
+                this.hyperlinkNode(pkg.node, href, pkg.name);
             });
+        });
+        let packages = resolutions.select(t=> t.name);
+        refs.forEach(node => {
+            let pkg = node.toCode();
+            let pkg2 = resolutions.first(t=> t.name == pkg);
+            if (pkg2 != null) {
+                this.hyperlinkNode(node, "#" + pkg);
+            }
         });
     }
 
 
-    hyperlinkNode(node: AstNode, href: string) {
+    hyperlinkNode(node: AstNode, href: string, name?: string) {
         let tokens = this.collectTokens(node);
         let els = tokens.select(token => this.tokenToElement.get(token));
+        if ($(els).closest("a").length > 0) {
+            console.warn("already hyperlinked");
+        }
         let a = $.create("a").insertBefore(els[0]);
+        a.data("AstNode", node);
         a.append(els);
-        a.attr("href", href);
+        a.attr({ href, name });
     }
 
     highlightNode(node: AstNode) {
@@ -569,9 +590,21 @@ export class IndexPage {
     }
 
 
-    findUsedPackages(node): Expression[] {
-        //return new AstQuery(this.unit).getDescendants().ofType(NamedMemberExpression).where(t=> !t.arrow && t.token!=null && !t.token.is(TokenTypes.sigiledIdentifier));
-        return new AstQuery(this.unit).getDescendants().ofType(InvocationExpression).where(t=> t.target instanceof NamedMemberExpression && (<NamedMemberExpression>t.target).name == "use").select(t=> t.arguments);
+    findUsedPackages(node: AstNode): Expression[] {
+        return new AstQuery(node).getDescendants().ofType(InvocationExpression).where(t=> t.target instanceof NamedMemberExpression && (<NamedMemberExpression>t.target).name == "use").select(t=> t.arguments);
+    }
+    findPackageRefs(node: AstNode): NamedMemberExpression[] {
+        return new AstQuery(node).getDescendants().ofType(NamedMemberExpression).where(t=> !t.arrow && t.token != null && !t.token.is(TokenTypes.sigiledIdentifier));
+    }
+
+    isInsideUse(node: Expression): boolean {
+        let parent = node.parentNode;
+        if (parent instanceof InvocationExpression && node.parentNodeProp == "arguments") {
+            let target = parent.target;
+            if (target instanceof NamedMemberExpression && target.name == "use")
+                return true;
+        }
+        return false;
     }
 
 
@@ -646,6 +679,7 @@ interface TreeNodeData {
 
 export function main() {
     new IndexPage().main();
+    $(".loading").css({ display: "none" });
 }
 
 

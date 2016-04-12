@@ -18,20 +18,25 @@ body {
     /*overflow: hidden;*/
 }
 
+.loading {
+    position: absolute;
+}
+
+
 .selected:after {
     content: " ";
     position: absolute;
     width: 100%;
     background: rgba(248, 238, 199, 0.3);
-    left:0;
+    left: 0;
 }
 
 .code-container {
     box-sizing: border-box;
     width: 100%;
-    table-layout:fixed;
-    border-collapse:collapse;
-    border-spacing:0;
+    table-layout: fixed;
+    border-collapse: collapse;
+    border-spacing: 0;
 }
 
 table.code-container > tbody > tr > td:first-child {
@@ -40,7 +45,7 @@ table.code-container > tbody > tr > td:first-child {
 
 table.code-container > tbody > tr > td {
     vertical-align: top;
-    padding:0;
+    padding: 0;
 }
 
 .line-numbers {
@@ -219,6 +224,12 @@ table.code-container > tbody > tr > td {
 .code .string {
     color: brown;
 }
+.code .heredoc {
+    color: brown;
+}
+.code .heredocValue {
+    color: brown;
+}
 
 .code .divDiv {
     color: inherit;
@@ -263,3 +274,4 @@ table.code-container > tbody > tr > td {
 .code .identifier {
     color: inherit;
 }
+

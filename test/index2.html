@@ -4,6 +4,9 @@
     <title></title>
     <meta charset="utf-8" />
     <link href="/res/test/index2.css" rel="stylesheet" />
+    <script src="//code.jquery.com/jquery-2.2.2.js"></script>
+    <script src="/res/libs/corex.js"></script>
+    <script src="/res/libs/corex-jquery.js"></script>
     <script src="//cdnjs.cloudflare.com/ajax/libs/systemjs/0.19.24/system.src.js"></script>
     <script>
         System.config({
@@ -12,11 +15,9 @@
         });
         System.import('test/index2.js');
     </script>
-    <script src="//code.jquery.com/jquery-2.2.2.js"></script>
-    <script src="/res/libs/corex.js"></script>
-    <script src="/res/libs/corex-jquery.js"></script>
 </head>
 <body>
+    <div class="loading">Loading...</div>
     <table class="code-container">
         <tr>
             <td><div class="line-numbers"></div></td>
