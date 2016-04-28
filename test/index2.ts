@@ -7,14 +7,14 @@ import {ParserBase} from "../src/parser-base";
 import {ExpressionParser} from "../src/expression-parser";
 import {Parser} from "../src/parser";
 import {
-AstNode, Expression, Statement, UnresolvedExpression, SimpleName, SubroutineDeclaration, SubroutineExpression, ArrayMemberAccessExpression, ArrayRefDeclaration,
-BarewordExpression, BeginStatement, BinaryExpression, Block, BlockExpression, BlockStatement, ElseStatement, ElsifStatement, EmptyStatement, EndStatement,
-ExpressionStatement, ForEachStatement, ForStatement, HashMemberAccessExpression, HashRefCreationExpression, IfStatement, InvocationExpression, MemberExpression,
-NamedMemberExpression, NativeFunctionInvocation, NativeInvocation_BlockAndListOrExprCommaList, NativeInvocation_BlockOrExpr, NonParenthesizedList, NoStatement,
-Operator, PackageDeclaration, ParenthesizedList, PostfixUnaryExpression, PrefixUnaryExpression, QwExpression, RawExpression, RawStatement, RegexExpression,
-ReturnExpression, TrinaryExpression, Unit, UnlessStatement, UseOrNoStatement, UseStatement, ValueExpression, VariableDeclarationExpression, VariableDeclarationStatement, WhileStatement,
-HasArrow, HasLabel,
-AstQuery
+    AstNode, Expression, Statement, UnresolvedExpression, SimpleName, SubroutineDeclaration, SubroutineExpression, ArrayMemberAccessExpression, ArrayRefDeclaration,
+    BarewordExpression, BeginStatement, BinaryExpression, Block, BlockExpression, BlockStatement, ElseStatement, ElsifStatement, EmptyStatement, EndStatement,
+    ExpressionStatement, ForEachStatement, ForStatement, HashMemberAccessExpression, HashRefCreationExpression, IfStatement, InvocationExpression, MemberExpression,
+    NamedMemberExpression, NativeFunctionInvocation, NativeInvocation_BlockAndListOrExprCommaList, NativeInvocation_BlockOrExpr, NonParenthesizedList, NoStatement,
+    Operator, PackageDeclaration, ParenthesizedList, PostfixUnaryExpression, PrefixUnaryExpression, QwExpression, RawExpression, RawStatement, RegexExpression,
+    ReturnExpression, TrinaryExpression, Unit, UnlessStatement, UseOrNoStatement, UseStatement, ValueExpression, VariableDeclarationExpression, VariableDeclarationStatement, WhileStatement,
+    HasArrow, HasLabel,
+    AstQuery
 } from "../src/ast";
 import {PrecedenceResolver} from "../src/precedence-resolver";
 import {TokenTypes} from "../src/token-types";
@@ -23,7 +23,7 @@ import {safeTry, TokenReader, Logger, AstNodeFixator} from "../src/utils";
 import "../src/extensions";
 import {RefArrayToRefUtil} from "../src/refactor";
 import {ExpressionTester, EtReport, EtItem} from "../src/expression-tester";
-
+import {P5Service} from "./p5-service";
 
 export class IndexPage {
     constructor() {
@@ -31,6 +31,8 @@ export class IndexPage {
         this.selection = new IndexSelection();
         let win: any = window;
         win._page = this;
+        this.service = new P5Service();
+        //this.service.src("README.md").then(e=>console.log(e));
     }
     tokenToElement: Map<Token, HTMLElement> = new Map<Token, HTMLElement>();
     tbUrl: JQuery;
@@ -38,7 +40,7 @@ export class IndexPage {
     urlKey: string;
     code: string;
     firstTime: boolean = true;
-    rawFilesBaseUrl = "http://localhost/";//"https://raw.githubusercontent.com/";
+    //rawFilesBaseUrl = "http://localhost/";//"https://raw.githubusercontent.com/";
     cvBaseUrl = "/";
     lines: CvLine[];
     selection: IndexSelection;
@@ -46,13 +48,15 @@ export class IndexPage {
         "/git_tree/main/lib/",
     ];
 
-    httpGet(url: string): Promise<string> {
-        return new Promise<string>((resolve, reject) => $.get(url).done(resolve).fail(reject));
-    }
+    service: P5Service;
+    //httpGet(url: string): Promise<string> {
+    //    return this.service.src(url);
+    //    //return new Promise<string>((resolve, reject) => $.get(url).done(resolve).fail(reject));
+    //}
 
     flattenArray<T>(list: Array<T | Array<T>>): T[] {
         let list2: T[] = [];
-        list.forEach(t=> {
+        list.forEach(t => {
             if (t instanceof Array)
                 list2.addRange(this.flattenArray(t));
             else
@@ -64,7 +68,7 @@ export class IndexPage {
         let parts2 = this.flattenArray(parts);
         let final = parts2[0];
         let prev = parts2[0];
-        parts2.skip(1).forEach(part=> {
+        parts2.skip(1).forEach(part => {
             if (prev.endsWith("/") && part.startsWith("/")) {
                 final += part.substr(1);
             }
@@ -83,17 +87,17 @@ export class IndexPage {
         return url;
     }
     resolvePackageWithInclude(packageName: string, include: string): Promise<string> {
-        let url = this.urlJoin([this.rawFilesBaseUrl, include, packageName.split("::")]) + ".pm";
-        return this.httpGet(url).then(t=> include);
+        let url = this.urlJoin([include, packageName.split("::")]) + ".pm";
+        return this.service.fs(url).then(t => include);
     }
 
     resolvePackage(pkg: PackageResolution): Promise<string> {
-        let funcs = this.selectAsyncFuncs(this.includes, t=> this.resolvePackageWithInclude(pkg.name, t));
-        return this.firstSuccess(funcs).catch(t=> null).then(t=> pkg.resolvedIncludePath = t);
+        let funcs = this.selectAsyncFuncs(this.includes, t => this.resolvePackageWithInclude(pkg.name, t));
+        return this.firstSuccess(funcs).catch(t => null).then(t => pkg.resolvedIncludePath = t);
     }
 
     selectAsyncFuncs<T, R>(list: T[], selector: (item: T) => Promise<R>): Array<AsyncFunc<R>> {
-        return list.map(t=> () => selector(t));
+        return list.map(t => () => selector(t));
     }
     firstSuccess<T>(funcs: Array<AsyncFunc<T>>): Promise<T> {
         return new Promise((resolve, reject) => {
@@ -106,10 +110,10 @@ export class IndexPage {
                     return;
                 }
                 func()
-                    .then(t=> {
+                    .then(t => {
                         resolve(t);
                     })
-                    .catch(t=> {
+                    .catch(t => {
                         tryNext();
                     });
             };
@@ -127,10 +131,10 @@ export class IndexPage {
         this.tbUrl.val(window.location.pathname);
         this.urlKey = "perl-parser\turl";
         this.tbRegex = $("#tbRegex");
-        $("#btnRefactor").click(e=> this.refactor());
-        $("#btnTestExpressions").click(e=> this.testExpressions());
+        $("#btnRefactor").click(e => this.refactor());
+        $("#btnTestExpressions").click(e => this.testExpressions());
 
-        this.tbRegex.keyup(e=> {
+        this.tbRegex.keyup(e => {
             let s = this.tbRegex.val();
             try {
                 let regex = new Function("return " + s + ";")();
@@ -147,9 +151,9 @@ export class IndexPage {
         //let lastUrl = localStorage[this.urlKey];
         //if (lastUrl != null && lastUrl != "")
         //    this.tbUrl.val(lastUrl);
-        this.tbUrl.change(e=> this.update());
-        $("#cbAddParentheses").change(e=> this.update());
-        $("#cbDeparseFriendly").change(e=> this.update());
+        this.tbUrl.change(e => this.update());
+        $("#cbAddParentheses").change(e => this.update());
+        $("#cbDeparseFriendly").change(e => this.update());
         $(".line-numbers").mousedown(e => this.onLineNumberMouseDown(e));
         $(".line-numbers").mousemove(e => this.onLineNumberMouseMove(e));
         $(".line-numbers").mouseup(e => this.onLineNumberMouseUp(e));
@@ -210,7 +214,7 @@ export class IndexPage {
 
     renderSelection() {
         let obj: { [key: string]: boolean } = {};
-        this.selection.getSelectedIndexes().forEach(t=> obj[t] = true);
+        this.selection.getSelectedIndexes().forEach(t => obj[t] = true);
         let node = <HTMLElement>$(".line-numbers")[0].firstChild;
         let index = 1;
         while (node != null) {
@@ -221,25 +225,76 @@ export class IndexPage {
     }
 
     getUrl() {
-        let url = window.location.pathname;
-        url = this.rawFilesBaseUrl + url.substr(1);
-        return url;
+        let path = window.location.pathname;
+        if (path.startsWith("/root/"))
+            path = path.substr(6);
+        //url = this.rawFilesBaseUrl + url.substr(1);
+        return path;
     }
 
+    compileTempalteString(s: string) {
+        if (s.startsWith("{{") && s.endsWith("}}")) {
+            let code = s.substring(2, s.length - 2);
+            let func = new Function("___", "return ___." + code);
+            return func;
+        }
+        return null;
+    }
+    dataBind(node: Node, obj: any) {
+        if (node.nodeType == 3) {
+            let func = this.compileTempalteString(node.nodeValue);
+            if (func != null)
+                node.nodeValue = func(obj);
+        }
+        else {
+            let atts = Array.from(node.attributes);
+            atts.forEach(att => {
+                let func = this.compileTempalteString(att.value);
+                if (func != null) {
+                    let res = func(obj);
+                    node[att.name] = res;
+                }
+            });
+            Array.from(node.childNodes).forEach(t => this.dataBind(t, obj));
+        }
+    }
+    repeat(el: any, list: any[]) {
+        let el2 = $(el);
+        el2.parent().children().not(el2).remove();
+        el2.parent().append(list.select(obj => {
+            let el3 = el2.clone().removeClass("template").addClass("template-instance");
+            let el4 = el3[0];
+            this.dataBind(el4, obj);
+            return el4;
+        }));
+    }
     update() {
         let url = this.getUrl();
-        if (url == null || url.length == 0)
-            return;
-
-        if (url.endsWith("/")) {
-            $.get(url).then(data => {
-                $(document.body).html(data);
-            });
-            return;
-        }
-        $.get(url).then(data => {
-            this.parse(url, data);
+        //if (url == null || url.length == 0)
+        //    return;
+        this.service.fs(url).then(res => {
+            if (res.children != null) {
+                res.children.forEach(t=>t.name=t.path);
+                res.children.forEach(t=>t.path = url+t.path);
+                this.repeat(".child", res.children);
+                console.log("TODO: implement directory browser", res);
+            }
+            else {
+                this.service.src(url).then(data => {
+                    this.parse(url, data);
+                });
+            }
         });
+
+        //if (url.endsWith("/")) {
+        //    $.get(url).then(data => {
+        //        $(document.body).html(data);
+        //    });
+        //    return;
+        //}
+        //$.get(url).then(data => {
+        //    this.parse(url, data);
+        //});
     }
 
     renderLineNumbers() {
@@ -312,9 +367,9 @@ export class IndexPage {
         //    //console.log("onExpressionFound", expressions.length);
         //    //fs.writeFileSync(expressionsFilename, expressions.select(t=> t.trim()).distinct().orderBy([t=> t.contains("\n"), t=> t.length, t=> t]).join("\n------------------------------------------------------------------------\n"));
         //};
-        return tester.testUnit(this.unit).then(list=> {
+        return tester.testUnit(this.unit).then(list => {
             console.log("Finished", list);
-            console.log("Finished: ", list.where(t=> t.success).length, "/", list.length);
+            console.log("Finished: ", list.where(t => t.success).length, "/", list.length);
             let report = new EtReport();
             report.items = list;
             return report;
@@ -327,7 +382,7 @@ export class IndexPage {
             //    report.saveSync(fs);
             //}
             //return report;
-            
+
             //let expressions = list.select(t=> t.code).distinct().orderBy([t=> t.contains("\n"), t=> t.length, t=> t]);
             //let reports = expressions.select(s=> list.first(x=> x.code == s));
             //console.log("SAVING");
@@ -360,7 +415,7 @@ export class IndexPage {
 
     splitNewLineTokens() {
         let list: Token[] = [];
-        this.tokens.forEach(token=> {
+        this.tokens.forEach(token => {
             if (token.is(TokenTypes.whitespace) && token.value.contains("\n") && token.value != "\n") {
                 let s = token.value;
                 while (s.length > 0) {
@@ -406,7 +461,7 @@ export class IndexPage {
         line.lineCodeEl = document.createElement("div");
         //codeEl.appendChild(line.lineCodeEl);
         this.lines.add(line);
-        this.tokens.forEach(token=> {
+        this.tokens.forEach(token => {
             //if (token.is(TokenTypes.whitespace) && token.value == "\n") {
             //    if (line.lineCodeEl.firstChild == null)
             //        line.lineCodeEl.textContent = "\n";
@@ -478,7 +533,7 @@ export class IndexPage {
             anp.text = obj.type.name + " { Token }";
             return anp;
         }
-        anp.children = Object.keys(obj).select(prop=> this.createPropertyNode(obj, prop)).exceptNulls();
+        anp.children = Object.keys(obj).select(prop => this.createPropertyNode(obj, prop)).exceptNulls();
         return anp;
     }
 
@@ -490,7 +545,7 @@ export class IndexPage {
             return anp;
         if (typeof (anp.value) == "object") {
             if (anp.value instanceof Array)
-                anp.children = anp.value.select(t=> this.createInstanceNode(t));
+                anp.children = anp.value.select(t => this.createInstanceNode(t));
             else
                 anp.children = [this.createInstanceNode(anp.value)];
         }
@@ -509,29 +564,29 @@ export class IndexPage {
         }
         else if (obj instanceof Array) {
             if (deep)
-                return obj.select(t=> this.getTokens(t, false));
-            return obj.where(t=> t instanceof Token);
+                return obj.select(t => this.getTokens(t, false));
+            return obj.where(t => t instanceof Token);
         }
         else { // if (obj instanceof AstNode)
             if (deep)
-                return Object.keys(obj).selectMany(value=> this.getTokens(obj[value], false));
+                return Object.keys(obj).selectMany(value => this.getTokens(obj[value], false));
             return [];
         }
-        console.log("can't getTokens for", obj);
-        return null;
+        //console.log("can't getTokens for", obj);
+        //return null;
     }
 
     resolveAndHighlightUsedPackages() {
         let pkgRefs = this.findPackageRefs(this.unit);
         let inUse: NamedMemberExpression[] = [];
         let refs: NamedMemberExpression[] = [];
-        pkgRefs.forEach(t=> this.isInsideUse(t) ? inUse.push(t) : refs.push(t));
+        pkgRefs.forEach(t => this.isInsideUse(t) ? inUse.push(t) : refs.push(t));
 
         //let resolutions = this.findUsedPackages(this.unit).select(node => <PackageResolution>{ node: node });
         let resolutions = inUse.select(node => <PackageResolution>{ node: node });
         resolutions.forEach(pkg => {
             pkg.name = pkg.node.toCode();
-            this.resolvePackage(pkg).then(t=> {
+            this.resolvePackage(pkg).then(t => {
                 //console.log(pkg);
                 let href = null;//"#"+pkg.name;//null;
                 if (pkg.resolvedIncludePath != null)
@@ -539,10 +594,10 @@ export class IndexPage {
                 this.hyperlinkNode(pkg.node, href, pkg.name);
             });
         });
-        let packages = resolutions.select(t=> t.name);
+        let packages = resolutions.select(t => t.name);
         refs.forEach(node => {
             let pkg = node.toCode();
-            let pkg2 = resolutions.first(t=> t.name == pkg);
+            let pkg2 = resolutions.first(t => t.name == pkg);
             if (pkg2 != null) {
                 this.hyperlinkNode(node, "#" + pkg);
             }
@@ -572,10 +627,10 @@ export class IndexPage {
 
 
     findUsedPackages(node: AstNode): Expression[] {
-        return new AstQuery(node).getDescendants().ofType(InvocationExpression).where(t=> t.target instanceof NamedMemberExpression && (<NamedMemberExpression>t.target).name == "use").select(t=> t.arguments);
+        return new AstQuery(node).getDescendants().ofType(InvocationExpression).where(t => t.target instanceof NamedMemberExpression && (<NamedMemberExpression>t.target).name == "use").select(t => t.arguments);
     }
     findPackageRefs(node: AstNode): NamedMemberExpression[] {
-        return new AstQuery(node).getDescendants().ofType(NamedMemberExpression).where(t=> !t.arrow && t.token != null && !t.token.is(TokenTypes.sigiledIdentifier));
+        return new AstQuery(node).getDescendants().ofType(NamedMemberExpression).where(t => !t.arrow && t.token != null && !t.token.is(TokenTypes.sigiledIdentifier));
     }
 
     isInsideUse(node: Expression): boolean {
@@ -599,7 +654,7 @@ export class IndexPage {
             tokens.add(obj);
         }
         else if (obj instanceof Array) {
-            obj.forEach(t=> this._collectTokens(t, tokens));
+            obj.forEach(t => this._collectTokens(t, tokens));
         }
         else if (obj instanceof AstNode) {
             let writer = new AstWriter();
@@ -628,7 +683,7 @@ function stringifyNodes(node) {
             }
             if (obj instanceof AstNode) {
                 sb.push(obj.constructor.name);
-                Object.keys(obj).forEach(key=> {
+                Object.keys(obj).forEach(key => {
                     let value = obj[key];
                     if (key != "token")
                         sb.push(key);
@@ -659,6 +714,22 @@ interface TreeNodeData {
 
 
 export function main() {
+    window.onpopstate = e => {
+        e.preventDefault();
+        console.log(e);
+        if (e.state) {
+            document.getElementById("content").innerHTML = e.state.html;
+            document.title = e.state.pageTitle;
+        }
+    };
+
+    $(document.body).click(e => {
+        if (e.target.nodeName == "A") {
+            e.preventDefault();
+            window.history.pushState("", "", e.target.getAttribute("href"));
+        }
+    });
+
     new IndexPage().main();
     $(".loading").css({ display: "none" });
 }
@@ -686,7 +757,7 @@ export class IndexSelection {
             return;
         let tokens = s.split(',');
         this.ranges.clear();
-        tokens.forEach(token=> {
+        tokens.forEach(token => {
             let subTokens = token.split("-");
             if (subTokens.length == 1) {
                 let x = parseInt(subTokens[0].substr(1));
@@ -700,7 +771,7 @@ export class IndexSelection {
         });
     }
     toParam(): string {
-        return this.getCompactRanges().select(t=> this.rangeToParam(t)).join(",");
+        return this.getCompactRanges().select(t => this.rangeToParam(t)).join(",");
     }
     rangeToParam(range: IndexRange): string {
         if (range.from == range.to)
@@ -737,7 +808,7 @@ export class IndexSelection {
     normalize() {
         let anchor = this.lastAnchor;
         let list = [];
-        this.getSelectedIndexes().forEach(t=> {
+        this.getSelectedIndexes().forEach(t => {
             if (t == anchor)
                 return;
             list.add(new IndexRange(t));
@@ -752,8 +823,8 @@ export class IndexSelection {
     };
 
     getSelectedIndexes(): number[] {
-        let list = this.ranges.selectMany(t=> this.generateNumbers(t.from, t.to));
-        let res = list.distinct().orderBy(t=> t);
+        let list = this.ranges.selectMany(t => this.generateNumbers(t.from, t.to));
+        let res = list.distinct().orderBy(t => t);
         return res;
     }
     click(index: number, ctrl: boolean, shift: boolean) {
@@ -762,7 +833,7 @@ export class IndexSelection {
         }
         else if (ctrl && !shift) {
             this.normalize();
-            let index2 = this.ranges.findIndex(t=> t.from == index);
+            let index2 = this.ranges.findIndex(t => t.from == index);
             if (index2 == null || index2 < 0) {
                 this.ranges.add(new IndexRange(index));
             }

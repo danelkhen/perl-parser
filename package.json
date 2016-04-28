@@ -10,6 +10,6 @@
   "license": "ISC",
   "dependencies": {
     "express": "^4.13.4",
-    "systemjs": "^0.19.24"
+    "systemjs": "^0.19.26"
   }
 }

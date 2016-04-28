@@ -297,8 +297,8 @@ export class IndexPage {
                 return Object.keys(obj).selectMany(value=> this.getTokens(obj[value], false));
             return [];
         }
-        console.log("can't getTokens for", obj);
-        return null;
+        //console.log("can't getTokens for", obj);
+        //return null;
     }
 
 }

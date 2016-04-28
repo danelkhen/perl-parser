@@ -6,9 +6,9 @@ var app = express();
 let rootDir = path.join(__dirname, "../../..")
 app.use("/res", express.static(rootDir));
 
-app.get("/:base/*", function (req, res) {
-    if (req.params.base == "res")
-        throw new Error();
+app.get("/root/*", function (req, res) {
+    //if (req.params.base == "res")
+    //    throw new Error();
 
     let file = path.join(path.join(rootDir, "test/index2.html"));
     console.log({ base: req.params.base, url: req.url });
