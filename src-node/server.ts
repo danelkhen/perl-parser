@@ -6,7 +6,7 @@ var app = express();
 let rootDir = path.join(__dirname, "../../..")
 app.use("/res", express.static(rootDir));
 
-app.get("/root/*", function (req, res) {
+app.get("*", function (req, res) {
     //if (req.params.base == "res")
     //    throw new Error();
 

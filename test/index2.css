@@ -111,6 +111,14 @@ table.code-container > tbody > tr > td {
     height: 100%;
 }
 
+.view {
+    display:none;
+}
+
+.view.active {
+    display:block;
+}
+
 .code .qq {
     color: red;
 }

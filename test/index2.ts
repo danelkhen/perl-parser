@@ -23,7 +23,7 @@ import {safeTry, TokenReader, Logger, AstNodeFixator} from "../src/utils";
 import "../src/extensions";
 import {RefArrayToRefUtil} from "../src/refactor";
 import {ExpressionTester, EtReport, EtItem} from "../src/expression-tester";
-import {P5Service} from "./p5-service";
+import {P5Service, P5File} from "./p5-service";
 
 export class IndexPage {
     constructor() {
@@ -160,6 +160,7 @@ export class IndexPage {
         this.selection.fromParam(location.hash.substr(1));
 
         this.update();
+        $(window).on("urlchange", e => this.update());
     }
 
     getLineFromLineNumberEl(el: HTMLElement) {
@@ -226,9 +227,6 @@ export class IndexPage {
 
     getUrl() {
         let path = window.location.pathname;
-        if (path.startsWith("/root/"))
-            path = path.substr(6);
-        //url = this.rawFilesBaseUrl + url.substr(1);
         return path;
     }
 
@@ -260,7 +258,7 @@ export class IndexPage {
     }
     repeat(el: any, list: any[]) {
         let el2 = $(el);
-        el2.parent().children().not(el2).remove();
+        el2.parent().children(".template-instance").remove();
         el2.parent().append(list.select(obj => {
             let el3 = el2.clone().removeClass("template").addClass("template-instance");
             let el4 = el3[0];
@@ -268,34 +266,31 @@ export class IndexPage {
             return el4;
         }));
     }
+    file: P5File;
     update() {
         let url = this.getUrl();
         //if (url == null || url.length == 0)
         //    return;
-        this.service.fs(url).then(res => {
-            if (res.children != null) {
-                res.children.forEach(t=>t.name=t.path);
-                res.children.forEach(t=>t.path = url+t.path);
-                this.repeat(".child", res.children);
-                console.log("TODO: implement directory browser", res);
+        console.log("fs started");
+        this.service.fs(url).then(t => this.file = t).then(() => {
+            console.log("fs finished", this.file);
+            if (this.file.children != null) {
+                this.file.children.forEach(t => t.name = t.path);
+                this.file.children.forEach(t => t.path = this.urlJoin([url, t.path]));
+                this.repeat(".child", this.file.children);
+                console.log("TODO: implement directory browser", this.file);
             }
             else {
                 this.service.src(url).then(data => {
+                    this.file.src = data;
                     this.parse(url, data);
                 });
             }
+            $(".dir-view").toggleClass("active", this.file.children != null);
+            $(".code-view").toggleClass("active", this.file.children == null);
         });
-
-        //if (url.endsWith("/")) {
-        //    $.get(url).then(data => {
-        //        $(document.body).html(data);
-        //    });
-        //    return;
-        //}
-        //$.get(url).then(data => {
-        //    this.parse(url, data);
-        //});
     }
+
 
     renderLineNumbers() {
         let lineNumbers = $(".line-numbers").empty()[0];
@@ -714,19 +709,24 @@ interface TreeNodeData {
 
 
 export function main() {
+    $(window).on("urlchange", e => console.log("onurlchange", e));
+
     window.onpopstate = e => {
         e.preventDefault();
         console.log(e);
-        if (e.state) {
-            document.getElementById("content").innerHTML = e.state.html;
-            document.title = e.state.pageTitle;
-        }
+        $(window).trigger("urlchange");
+        //if (e.state) {
+        //    document.getElementById("content").innerHTML = e.state.html;
+        //    document.title = e.state.pageTitle;
+        //}
     };
 
     $(document.body).click(e => {
         if (e.target.nodeName == "A") {
             e.preventDefault();
-            window.history.pushState("", "", e.target.getAttribute("href"));
+            let href = e.target.getAttribute("href");
+            window.history.pushState("", "", href);
+            $(window).trigger("urlchange");
         }
     });
 

@@ -3,7 +3,7 @@
 
 
 export class P5Service {
-    baseUrl = localStorage.getItem("p5-service-url");
+    baseUrl = localStorage.getItem("p5-service-url") || "";
     fs(path: string): Promise<P5File> {
         return this.ajax({ url: "fs/:path", query: { path } });
     }
@@ -20,17 +20,18 @@ export class P5Service {
 
 
         return new Promise((resolve, reject) => {
-            $.ajax({ method: opts.method, url: url2, })
+            $.ajax({ method: opts.method || "GET", url: url2, })
                 .done(resolve)
                 .fail(reject);
         });
     }
 }
 
-interface P5File {
+export interface P5File {
     name?:string;
     path?:string;
     is_dir?:string;
     children?:P5File[];
+    src?:string;
 
 }
