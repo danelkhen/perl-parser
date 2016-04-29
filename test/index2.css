@@ -121,12 +121,13 @@ table.code-container > tbody > tr > td {
     display: block;
 }
 
-.td-code {
+/*.td-code {
     position: relative;
-}
+}*/
 
 .ta-code {
-    position: absolute;
+    display:none;
+    /*position: absolute;
     left: 0;
     top: 0;
     height: 100%;
@@ -136,8 +137,8 @@ table.code-container > tbody > tr > td {
     padding: 0;
     margin: 0;
     -webkit-text-fill-color: transparent;
-    outline:none;
+    outline:none;*/
 }
-.ta-code::selection{
+/*.ta-code::selection{
     background-color:rgba(107, 166, 255, 0.2);
-}
+}*/

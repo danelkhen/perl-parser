@@ -176,7 +176,6 @@ export class IndexPage {
         return line;
     }
     onLineNumberMouseDown(e: JQueryMouseEventObject) {
-        console.log("onLineNumberMouseDown");
         if (e.which != 1)
             return;
         if (!$(e.target).hasClass("line-number"))
@@ -195,7 +194,6 @@ export class IndexPage {
     onLineNumberMouseOver(e: JQueryMouseEventObject) {
         if (!this.isMouseDown)
             return;
-        console.log("onLineNumberMouseOver");
         let line = this.getLineFromLineNumberEl(<HTMLElement>e.target);
         if (line == null)
             return;
@@ -220,7 +218,6 @@ export class IndexPage {
 
 
     onLineNumberMouseUp(e: JQueryMouseEventObject) {
-        console.log("onLineNumberMouseUp");
         this.isMouseDown = false;
     }
     clickLine(line: number, ctrl: boolean, shift: boolean) {
@@ -229,7 +226,9 @@ export class IndexPage {
         this.saveSelection();
     }
     saveSelection() {
-        location.hash = this.selection.toParam();
+        history.replaceState(undefined, undefined, "#"+this.selection.toParam());
+        $(window).trigger("urlchange");
+        //location.hash = this.selection.toParam();
         //console.log(this.selection.toParam());
     }
 
@@ -709,7 +708,6 @@ export class IndexPage {
             return false;
         if (node.parentNode instanceof NamedMemberExpression && node.parentNodeProp == "target")
             return false;
-        console.log("package name detected:", node.toCode());
         return true;
     }
 
@@ -816,7 +814,7 @@ export function main() {
             e.preventDefault();
             let href = e.target.getAttribute("href");
             window.history.pushState("", "", href);
-            //$(window).trigger("urlchange");
+            $(window).trigger("urlchange");
         }
     });
 
