@@ -168,7 +168,7 @@ export class IndexPage {
     }
 
     getLineFromLineNumberEl(el: HTMLElement) {
-        if (el == null)
+        if (el == null || !$(el).is(".line-number"))
             return null;
         let line = parseInt(el.textContent);
         if (isNaN(line))
@@ -176,6 +176,7 @@ export class IndexPage {
         return line;
     }
     onLineNumberMouseDown(e: JQueryMouseEventObject) {
+        console.log("onLineNumberMouseDown");
         if (e.which != 1)
             return;
         if (!$(e.target).hasClass("line-number"))
@@ -194,20 +195,32 @@ export class IndexPage {
     onLineNumberMouseOver(e: JQueryMouseEventObject) {
         if (!this.isMouseDown)
             return;
+        console.log("onLineNumberMouseOver");
         let line = this.getLineFromLineNumberEl(<HTMLElement>e.target);
         if (line == null)
             return;
         let range = this.selection.lastRange;
         if (range == null)
             return;
-        e.preventDefault();
         if (range.to == line)
             return;
+        e.preventDefault();
         range.to = line;
         this.renderSelection();
         this.saveSelection();
+
+
+        //if (this.renderSelectionTimeout != null) {
+        //    window.clearTimeout(this.renderSelectionTimeout);
+        //    this.renderSelectionTimeout = null;
+        //}
+        //this.renderSelectionTimeout = window.setTimeout(t => { this.renderSelectionTimeout = null; this.renderSelection(); }, 0);
     }
+    renderSelectionTimeout: number;
+
+
     onLineNumberMouseUp(e: JQueryMouseEventObject) {
+        console.log("onLineNumberMouseUp");
         this.isMouseDown = false;
     }
     clickLine(line: number, ctrl: boolean, shift: boolean) {
@@ -217,6 +230,7 @@ export class IndexPage {
     }
     saveSelection() {
         location.hash = this.selection.toParam();
+        //console.log(this.selection.toParam());
     }
 
     renderSelection() {
@@ -282,9 +296,7 @@ export class IndexPage {
         this.lastUrl = url;
         //if (url == null || url.length == 0)
         //    return;
-        console.log("fs started");
         this.service.fs(url).then(t => this.file = t).then(() => {
-            console.log("fs finished", this.file);
             if (this.file.children != null) {
                 this.file.children.forEach(t => t.name = t.path);
                 this.file.children.forEach(t => t.path = this.urlJoin([url, t.path]));
@@ -334,6 +346,7 @@ export class IndexPage {
         this.firstTime = false;
         this.code = data;
         let codeEl = $(".code").empty().text(data);
+        $(".ta-code").val(data);
         let file = new File2(filename, data);
         let tok = new Tokenizer();
         tok.file = file;
@@ -362,8 +375,13 @@ export class IndexPage {
         let hash = window.location.hash.substr(1);
         if (hash == "")
             return;
-        //if(this.selection.
-        $("a[name='" + hash + "']:visible").first().focus();
+        let el = $("a[name='" + hash + "']:visible").first();
+        if (el.length == 0) {
+            el = $(".line.selected");
+            el[0].scrollIntoView();
+            return;
+        }
+        el.focus();
     }
 
     testExpressions(): Promise<EtReport> {
@@ -608,7 +626,6 @@ export class IndexPage {
         let subs = this.findSubs();
         subs.forEach(node => {
             let name = node.name.toCode().trim();
-            console.log("sub detected", name, node);
             this.hyperlinkNode(node.name, "#sub:" + name, "sub:" + name);
         });
         builtins.forEach(node => {
@@ -828,7 +845,7 @@ export class IndexSelection {
     fromParam(s: string) {
         if (s == null || s.length == 0)
             return;
-        if (/^L[1-9]+/.test(s))
+        if (!/^L[1-9]+/.test(s))
             return;
         let tokens = s.split(',');
         this.ranges.clear();
@@ -846,7 +863,13 @@ export class IndexSelection {
         });
     }
     toParam(): string {
-        return this.getCompactRanges().select(t => this.rangeToParam(t)).join(",");
+        try {
+            return this.getCompactRanges().select(t => this.rangeToParam(t)).join(",");
+        }
+        catch (e) {
+            console.error(e);
+            return "";
+        }
     }
     rangeToParam(range: IndexRange): string {
         if (range.from == range.to)

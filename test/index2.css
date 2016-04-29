@@ -31,26 +31,28 @@ body {
     left: 0;
     z-index: -1;
 }*/
-.template{
-    display:none;
+.template {
+    display: none;
 }
 
 a:target {
     outline: 1px solid red;
 }
-.line .line-overlay{
-    display:none;
+
+.line .line-overlay {
+    display: none;
 }
-.line.selected .line-overlay{
-    display:block;
+
+.line.selected .line-overlay {
+    display: block;
     position: absolute;
     width: 100%;
     background-color: rgb(248, 238, 199);
     left: 0;
     z-index: -1;
-    height:14px;
-    border-left:solid 50px white;
-    box-sizing:border-box;
+    height: 14px;
+    border-left: solid 50px white;
+    box-sizing: border-box;
 }
 
 .code-container {
@@ -88,7 +90,7 @@ table.code-container > tbody > tr > td {
     color: black;
 }
 
-.line-numbers, .code, .generated-code {
+.line-numbers, .code, .generated-code, .ta-code {
     white-space: pre;
     font-family: 'Courier New';
     font-size: 11px;
@@ -112,9 +114,30 @@ table.code-container > tbody > tr > td {
 }
 
 .view {
-    display:none;
+    display: none;
 }
 
 .view.active {
-    display:block;
+    display: block;
+}
+
+.td-code {
+    position: relative;
+}
+
+.ta-code {
+    position: absolute;
+    left: 0;
+    top: 0;
+    height: 100%;
+    width: 100%;
+    background-color: transparent;
+    border: none;
+    padding: 0;
+    margin: 0;
+    -webkit-text-fill-color: transparent;
+    outline:none;
+}
+.ta-code::selection{
+    background-color:rgba(107, 166, 255, 0.2);
 }
