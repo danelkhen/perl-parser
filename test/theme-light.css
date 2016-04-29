@@ -1,0 +1,55 @@
+﻿.code a { color:blue; text-decoration:none; }
+.code a:hover { text-decoration:underline;}
+
+.code .qq { color: red;}
+.code .pod { color: darkgreen;}
+.code .keyword { color: blue;}
+.code .end { color: blue;}
+.code .sigiledIdentifier { color: #FF8700;}
+.code .integer { color: red;}
+.code .interpolatedString { color: brown;}
+.code .bareString { color: brown;}
+.code .string { color: brown;}
+.code .heredoc { color: brown;}
+.code .heredocValue { color: brown;}
+.code .regex { color: red;}
+.code .regexSubstitute { color: red;}
+.code .package-name { color:red;}
+
+
+
+.code .whitespace { color: inherit;}
+.code .packageSeparator { color: inherit;}
+.code .semicolon { color: inherit;}
+.code .comment { color: green;}
+.code .regExpEquals { color: inherit;}
+.code .equals { color: inherit;}
+.code .concatAssign { color: inherit;}
+.code .addAssign { color: inherit;}
+.code .subtractAssign { color: inherit;}
+.code .multiplyAssign { color: inherit;}
+.code .divideAssign { color: inherit;}
+.code .comma { color: inherit;}
+.code .parenOpen { color: inherit;}
+.code .parenClose { color: inherit;}
+.code .braceOpen { color: inherit;}
+.code .braceClose { color: inherit;}
+.code .bracketOpen { color: inherit;}
+.code .bracketClose { color: inherit;}
+.code .smallerOrEqualsThan { color: inherit;}
+.code .greaterOrEqualsThan { color: inherit;}
+.code .smallerThan { color: inherit;}
+.code .greaterThan { color: inherit;}
+.code .arrow { color: inherit;}
+.code .fatComma { color: inherit;}
+.code .assignment { color: inherit;}
+.code .concat { color: inherit;}
+.code .divDiv { color: inherit;}
+.code .tilda { color: inherit;}
+.code .or { color: inherit;}
+.code .and { color: inherit;}
+.code .minus { color: inherit;}
+.code .multiply { color: inherit;}
+.code .plus { color: inherit;}
+.code .multiplyString { color: inherit;}
+.code .identifier { color: inherit;}

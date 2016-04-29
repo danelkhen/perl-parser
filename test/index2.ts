@@ -45,7 +45,7 @@ export class IndexPage {
     lines: CvLine[];
     selection: IndexSelection;
     includes = [
-        "/git_tree/main/lib/",
+        "lib/",
     ];
 
     service: P5Service;
@@ -155,7 +155,11 @@ export class IndexPage {
         $("#cbAddParentheses").change(e => this.update());
         $("#cbDeparseFriendly").change(e => this.update());
         $(".line-numbers").mousedown(e => this.onLineNumberMouseDown(e));
-        $(".line-numbers").mousemove(e => this.onLineNumberMouseMove(e));
+        //$(".line-numbers").mousemove(e => this.onLineNumberMouseMove(e));
+        //$(".line-numbers").mouseenter(e => console.log(e));
+        //$(".line-numbers").mouseleave(e => console.log(e));
+        $(".line-numbers").mouseover(e => this.onLineNumberMouseOver(e));
+        //$(".line-numbers").mouseout(e => console.log(e));
         $(".line-numbers").mouseup(e => this.onLineNumberMouseUp(e));
         this.selection.fromParam(location.hash.substr(1));
 
@@ -187,7 +191,7 @@ export class IndexPage {
     }
 
     isMouseDown = false;
-    onLineNumberMouseMove(e: JQueryMouseEventObject) {
+    onLineNumberMouseOver(e: JQueryMouseEventObject) {
         if (!this.isMouseDown)
             return;
         let line = this.getLineFromLineNumberEl(<HTMLElement>e.target);
@@ -197,6 +201,8 @@ export class IndexPage {
         if (range == null)
             return;
         e.preventDefault();
+        if (range.to == line)
+            return;
         range.to = line;
         this.renderSelection();
         this.saveSelection();
@@ -267,8 +273,13 @@ export class IndexPage {
         }));
     }
     file: P5File;
+    lastUrl: string;
     update() {
         let url = this.getUrl();
+        if (this.lastUrl == url)
+            return;
+        console.log("rendering", url);
+        this.lastUrl = url;
         //if (url == null || url.length == 0)
         //    return;
         console.log("fs started");
@@ -277,6 +288,7 @@ export class IndexPage {
             if (this.file.children != null) {
                 this.file.children.forEach(t => t.name = t.path);
                 this.file.children.forEach(t => t.path = this.urlJoin([url, t.path]));
+                this.file.children = this.file.children.orderBy([t => !t.is_dir, t => t.name]);
                 this.repeat(".child", this.file.children);
                 console.log("TODO: implement directory browser", this.file);
             }
@@ -338,20 +350,20 @@ export class IndexPage {
         this.renderTokens();
 
         var statements = parser.parse();
-        //console.log(statements);
         let unit = new Unit();
         unit.statements = statements;
         this.unit = unit;
         console.log(unit);
         new AstNodeFixator().process(this.unit);
         this.resolveAndHighlightUsedPackages();
-
-
-        //this.renderTree();
-        //this.generateCode();
-        //localStorage.removeItem("pause");
-        //this.renderGeneratedCode();
-        //$.create("pre").text(stringifyNodes(statements)).appendTo("body")
+        this.navigateToHash();
+    }
+    navigateToHash() {
+        let hash = window.location.hash.substr(1);
+        if (hash == "")
+            return;
+        //if(this.selection.
+        $("a[name='" + hash + "']:visible").first().focus();
     }
 
     testExpressions(): Promise<EtReport> {
@@ -573,21 +585,54 @@ export class IndexPage {
 
     resolveAndHighlightUsedPackages() {
         let pkgRefs = this.findPackageRefs(this.unit);
+        console.log(pkgRefs.select(t => t.toCode().trim()).distinct());
         let inUse: NamedMemberExpression[] = [];
         let refs: NamedMemberExpression[] = [];
-        pkgRefs.forEach(t => this.isInsideUse(t) ? inUse.push(t) : refs.push(t));
+        let builtins: NamedMemberExpression[] = [];
+        let pragmas: NamedMemberExpression[] = [];
+        pkgRefs.forEach(t => {
+            let name = t.toCode().trim();
+            if (this.isInsideUse(t)) {
+                if (TokenTypes.pragmas.contains(name))
+                    pragmas.push(t);
+                else
+                    inUse.push(t);
+            }
+            else if (TokenTypes.builtinFunctions.contains(name)) {
+                builtins.push(t);
+            }
+            else
+                refs.push(t);
+        });
+
+        let subs = this.findSubs();
+        subs.forEach(node => {
+            let name = node.name.toCode().trim();
+            console.log("sub detected", name, node);
+            this.hyperlinkNode(node.name, "#sub:" + name, "sub:" + name);
+        });
+        builtins.forEach(node => {
+            let name = node.toCode().trim();
+            this.hyperlinkNode(node, "http://perldoc.perl.org/functions/" + name + ".html", name, "(builtin function) " + name);
+        });
+        pragmas.forEach(node => {
+            let name = node.toCode().trim();
+            this.hyperlinkNode(node, "http://perldoc.perl.org/" + name + ".html", name, "(pragma) " + name);
+        });
 
         //let resolutions = this.findUsedPackages(this.unit).select(node => <PackageResolution>{ node: node });
-        let resolutions = inUse.select(node => <PackageResolution>{ node: node });
+        let resolutions: PackageResolution[] = inUse.select(node => ({ node: node, name: node.toCode().trim() }));
         resolutions.forEach(pkg => {
-            pkg.name = pkg.node.toCode();
-            this.resolvePackage(pkg).then(t => {
-                //console.log(pkg);
-                let href = null;//"#"+pkg.name;//null;
-                if (pkg.resolvedIncludePath != null)
-                    href = this.getCvUrlForIncludeAndPacakge(pkg.resolvedIncludePath, pkg.name);
-                this.hyperlinkNode(pkg.node, href, pkg.name);
-            });
+            this.resolvePackage(pkg)
+                .then(t => {
+                    //console.log(pkg);
+                    let href = null;//"#"+pkg.name;//null;
+                    if (pkg.resolvedIncludePath != null)
+                        href = this.getCvUrlForIncludeAndPacakge(pkg.resolvedIncludePath, pkg.name);
+                    else
+                        href = "https://metacpan.org/pod/" + pkg.name;
+                    this.hyperlinkNode(pkg.node, href, pkg.name, "(package) " + pkg.name, "package-name");
+                });
         });
         let packages = resolutions.select(t => t.name);
         refs.forEach(node => {
@@ -600,13 +645,23 @@ export class IndexPage {
     }
 
 
-    hyperlinkNode(node: AstNode, href: string, name?: string) {
+    hyperlinkNode(node: AstNode, href: string, name?: string, title?: string, css?: string) {
         let tokens = this.collectTokens(node);
         let els = tokens.select(token => this.tokenToElement.get(token));
         if ($(els).closest("a").length > 0) {
             console.warn("already hyperlinked");
+            return;
         }
+        if ($(els[0]).closest("a").length > 0) {
+            console.warn("already hyperlinked 2");
+            return;
+        }
+        //console.log("hyperlinkNode", els);
         let a = $.create("a").insertBefore(els[0]);
+        if (title != null)
+            a.attr("title", title);
+        if (css != null)
+            a.addClass(css);
         a.data("AstNode", node);
         a.append(els);
         a.attr({ href, name });
@@ -625,12 +680,30 @@ export class IndexPage {
         return new AstQuery(node).getDescendants().ofType(InvocationExpression).where(t => t.target instanceof NamedMemberExpression && (<NamedMemberExpression>t.target).name == "use").select(t => t.arguments);
     }
     findPackageRefs(node: AstNode): NamedMemberExpression[] {
-        return new AstQuery(node).getDescendants().ofType(NamedMemberExpression).where(t => !t.arrow && t.token != null && !t.token.is(TokenTypes.sigiledIdentifier));
+        return new AstQuery(node).getDescendants().ofType(NamedMemberExpression).where(t => this.isPackageName(t));
+    }
+    findSubs(): SubroutineExpression[] {
+        return new AstQuery(this.unit).getDescendants().ofType(SubroutineExpression);
+    }
+    isPackageName(node: NamedMemberExpression): boolean {
+        if (node.arrow)
+            return false;
+        if (node.token.is(TokenTypes.sigiledIdentifier))
+            return false;
+        if (node.parentNode instanceof NamedMemberExpression && node.parentNodeProp == "target")
+            return false;
+        console.log("package name detected:", node.toCode());
+        return true;
     }
 
     isInsideUse(node: Expression): boolean {
         let parent = node.parentNode;
-        if (parent instanceof InvocationExpression && node.parentNodeProp == "arguments") {
+        let parentProp = node.parentNodeProp;
+        if (parent instanceof InvocationExpression && node.parentNodeProp == "target") {
+            parentProp = parent.parentNodeProp;
+            parent = parent.parentNode;
+        }
+        if (parent instanceof InvocationExpression && parentProp == "arguments") {
             let target = parent.target;
             if (target instanceof NamedMemberExpression && target.name == "use")
                 return true;
@@ -709,11 +782,11 @@ interface TreeNodeData {
 
 
 export function main() {
-    $(window).on("urlchange", e => console.log("onurlchange", e));
+    //$(window).on("urlchange", e => console.log("onurlchange", e));
 
     window.onpopstate = e => {
         e.preventDefault();
-        console.log(e);
+        //console.log(e);
         $(window).trigger("urlchange");
         //if (e.state) {
         //    document.getElementById("content").innerHTML = e.state.html;
@@ -726,7 +799,7 @@ export function main() {
             e.preventDefault();
             let href = e.target.getAttribute("href");
             window.history.pushState("", "", href);
-            $(window).trigger("urlchange");
+            //$(window).trigger("urlchange");
         }
     });
 
@@ -754,6 +827,8 @@ export class IndexSelection {
     }
     fromParam(s: string) {
         if (s == null || s.length == 0)
+            return;
+        if (/^L[1-9]+/.test(s))
             return;
         let tokens = s.split(',');
         this.ranges.clear();
@@ -908,7 +983,7 @@ builtin functions - send to perldoc.perl.org/...
 perl operators - send to perlop
 unresolved packages send to metacpan
 
-
+anchor sub routines and support deep linking
 
 
 optimize IndexRange to use math instead of arrays
@@ -917,5 +992,8 @@ use web service to resolve packages
 keyboard support
 code collapsing
 
+
+Stevan:
+implmement perldoc api: perldoc -T -o html -f return
 
 */

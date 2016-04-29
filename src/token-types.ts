@@ -72,7 +72,7 @@ export class TokenTypes {
     // <<EOF                 here-doc            yes*
     // * unless the delimiter is ''.
     static heredoc = new HereDocTokenType();// TokenTypes._custom(TokenTypes.match(/<<"([a-zA-Z0-9]+)"[\s\S]*$/m);
-    static heredocValue = TokenType._custom(t=> null);// TokenTypes._custom(TokenTypes.match(/<<"([a-zA-Z0-9]+)"[\s\S]*$/m);
+    static heredocValue = TokenType._custom(t => null);// TokenTypes._custom(TokenTypes.match(/<<"([a-zA-Z0-9]+)"[\s\S]*$/m);
     static bareString = TokenType._custom(t => {
         let lastToken = TokenTypes._findLastNonWhitespaceOrCommentToken(t.tokens);
         if (lastToken != null && lastToken.isAny([TokenTypes.arrow, TokenTypes.packageSeparator]))
@@ -88,7 +88,7 @@ export class TokenTypes {
     static q = TokenType._rs([/q\{[^\}]*\}/]);
     static pod = TokenType._custom(TokenTypes._matchPod);
     //static pod = TokenType._r(/=pod.*=cut/m);
-    
+
     static statementModifiers = ["if", "unless", "while", "until", "for", "foreach", "when"];
     static namedUnaryOperators = [
         "gethostbyname", "localtime",
@@ -424,6 +424,48 @@ export class TokenTypes {
         "xor"
     ];
 
+    static pragmas = [
+        "attributes",
+        "autodie",
+        "autouse",
+        "base",
+        "bigint",
+        "bignum",
+        "bigrat",
+        "blib",
+        "bytes",
+        "charnames",
+        "constant",
+        "diagnostics",
+        "encoding",
+        "feature",
+        "fields",
+        "filetest",
+        "if",
+        "integer",
+        "less",
+        "lib",
+        "locale",
+        "mro",
+        "open",
+        "ops",
+        "overload",
+        "overloading",
+        "parent",
+        "re",
+        "sigtrap",
+        "sort",
+        "strict",
+        "subs",
+        "threads",
+        "threads::shared",
+        "utf8",
+        "vars",
+        "vmsish",
+        "warnings",
+        "warnings::register",
+    ];
+
     static specialNamedUnaryOperators = [
         "do", "eval",   //Also parsed as terms are the do {} and eval {} constructs, as well as subroutine and method calls, and the anonymous constructors [] and {} .
         "return", //Unlike most named operators, this is also exempt from the looks-like-a-function rule, so return ("foo")."bar" will cause "bar" to be part of the argument to return.
@@ -481,14 +523,14 @@ export class TokenTypes {
 
     static colon = TokenType._r(/\:/);
     static question = TokenType._r(/\?/);
-    
+
     //unary:
     static inc = TokenType._r(/\+\+/);
     static dec = TokenType._r(/\-\-/);
     //static codeRef = TokenType._r(/\\\&/);
     static lastIndexVar = TokenType._r(/\$#/);
 
-    
+
     //binary
     static numericCompare = TokenType._r(/\<=\>/);
     static smallerThanOrEquals = TokenType._r(/\<=/);
@@ -517,7 +559,7 @@ export class TokenTypes {
     static bitwiseAnd = TokenType._r(/\&/);
     static bitwiseXor = TokenType._r(/\^/);
 
-    
+
     //static label = TokenType._r(new RegExp(TokenTypes.identifierRegex.source+"[\t\r\n ]*\:"));
     static identifier = TokenType._r(TokenTypes.identifierRegex);
 

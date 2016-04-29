@@ -38,7 +38,7 @@ export class AstWriter {
         this.register(PostfixUnaryExpression, t=> [t.expression, t.operator, [t.operatorPost]]);
         this.register(SubroutineExpression, t=> [t.subToken, t.subTokenPost, [t.name], [t.namePost], [t.colonToken, [t.colonTokenPost], t.attribute], t.block]);
         this.register(SubroutineDeclaration, t=> [t.declaration, [t.semicolonToken]]);
-        this.register(SimpleName, t=> [t.name]);
+        this.register(SimpleName, t=> [t.token]);
 
         this.register(HashMemberAccessExpression, t=> [t.target, [t.memberSeparatorToken], t.member]);
         this.register(ArrayMemberAccessExpression, t=> [t.target, [t.memberSeparatorToken], t.member]);
