@@ -54,7 +54,7 @@ interface ArrayConstructor {
     generate(length: any, generator: any): any;
     wrapIfNeeded(obj: any): any;
     toArray(arrayLike: any): any;
-    generateNumbers(from: any, until: any): any;
+    generateNumbers(from: any, until: any): number[];
     slice(): any;
     concat(): any;
     fromIterator(iterator: any): any;

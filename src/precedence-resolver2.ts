@@ -24,17 +24,17 @@ class PrecedenceResolver2 {
 
     isRightAssociativeOperator(op: Operator) {
         return false;
-        return op.token.isAny([
-            TokenTypes.assignment,
-            TokenTypes.addAssign,
-            TokenTypes.subtractAssign,
-            TokenTypes.multiplyAssign,
-            TokenTypes.divideAssign,
+        //return op.token.isAny([
+        //    TokenTypes.assignment,
+        //    TokenTypes.addAssign,
+        //    TokenTypes.subtractAssign,
+        //    TokenTypes.multiplyAssign,
+        //    TokenTypes.divideAssign,
 
-            TokenTypes.orAssign,
-            TokenTypes.divDivAssign,
-            TokenTypes.concatAssign,
-        ]);
+        //    TokenTypes.orAssign,
+        //    TokenTypes.divDivAssign,
+        //    TokenTypes.concatAssign,
+        //]);
     }
 
     isBinaryOperator(op: Operator): boolean {

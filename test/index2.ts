@@ -226,7 +226,7 @@ export class IndexPage {
         this.saveSelection();
     }
     saveSelection() {
-        history.replaceState(undefined, undefined, "#"+this.selection.toParam());
+        history.replaceState(undefined, undefined, "#" + this.selection.toParam());
         $(window).trigger("urlchange");
         //location.hash = this.selection.toParam();
         //console.log(this.selection.toParam());
@@ -315,6 +315,9 @@ export class IndexPage {
     }
 
 
+    getLineEl(line: number): HTMLElement {
+        return <HTMLElement>$(".line-numbers")[0].childNodes.item(line - 1);
+    }
     renderLineNumbers() {
         let lineNumbers = $(".line-numbers").empty()[0];
         let count = this.code.lines().length;
@@ -327,6 +330,7 @@ export class IndexPage {
             div2.className = "line-number";
             div.appendChild(div3);
             div.appendChild(div2);
+            $.create(".expander-container").appendTo(div);
             div2.textContent = (i + 1).toString();
             lineNumbers.appendChild(div);//$.create("div").text(i + 1));
         }
@@ -377,7 +381,8 @@ export class IndexPage {
         let el = $("a[name='" + hash + "']:visible").first();
         if (el.length == 0) {
             el = $(".line.selected");
-            el[0].scrollIntoView();
+            if (el.length > 0)
+                el[0].scrollIntoView();
             return;
         }
         el.focus();
@@ -482,7 +487,7 @@ export class IndexPage {
         this.splitNewLineTokens();
 
         let line = new CvLine();
-        line.lineCodeEl = document.createElement("div");
+        //line.lineCodeEl = document.createElement("div");
         //codeEl.appendChild(line.lineCodeEl);
         this.lines.add(line);
         this.tokens.forEach(token => {
@@ -501,7 +506,7 @@ export class IndexPage {
             let span = document.createElement("span");
             span.className = token.type.name;
             span.textContent = token.value;
-            line.lineCodeEl.appendChild(span);
+            //line.lineCodeEl.appendChild(span);
             codeEl.appendChild(span);
             this.tokenToElement.set(token, span);
             //}
@@ -623,7 +628,7 @@ export class IndexPage {
         });
 
         let subs = this.findSubs();
-        subs.forEach(node => {
+        subs.where(t => t.name != null).forEach(node => {
             let name = node.name.toCode().trim();
             this.hyperlinkNode(node.name, "#sub:" + name, "sub:" + name);
         });
@@ -658,11 +663,15 @@ export class IndexPage {
                 this.hyperlinkNode(node, "#" + pkg);
             }
         });
+        subs.forEach(sub => {
+            let x = this.collectTokens2(sub.block);
+            this.collapsable(null, x);
+        });
     }
 
 
     hyperlinkNode(node: AstNode, href: string, name?: string, title?: string, css?: string) {
-        let tokens = this.collectTokens(node);
+        let tokens = this.collectTokens2(node);
         let els = tokens.select(token => this.tokenToElement.get(token));
         if ($(els).closest("a").length > 0) {
             console.warn("already hyperlinked");
@@ -684,7 +693,7 @@ export class IndexPage {
     }
 
     highlightNode(node: AstNode) {
-        let tokens = this.collectTokens(node);
+        let tokens = this.collectTokens2(node);
         tokens.forEach(token => {
             let el = this.tokenToElement.get(token);
             el.classList.add("highlight");
@@ -727,6 +736,14 @@ export class IndexPage {
     }
 
 
+    collectTokens2(obj: any): Token[] {
+        let list = this.collectTokens(obj);
+        if (list.length <= 1)
+            return list;
+        let list2 = this.getTokenRange(list.first(), list.last());
+        return list2;
+    }
+
     collectTokens(obj: any): Token[] {
         let tokens: Token[] = [];
         this._collectTokens(obj, tokens);
@@ -750,6 +767,45 @@ export class IndexPage {
             let res = func(obj);
             this._collectTokens(res, tokens);
         }
+    }
+
+    getTokenRange(from: Token, until: Token) {
+        let start = this.tokens.indexOf(from);
+        let end = this.tokens.indexOf(until);
+        if (start < 0 || end < 0)
+            return null;
+        return this.tokens.slice(start, end+1);
+    }
+
+
+    wrap(wrapper: HTMLElement, els: HTMLElement[]) {
+        $(els[0]).before(wrapper);
+        $(wrapper).append(els);
+    }
+
+    collapsable(anchorTokens: Token[], collapsibleTokens: Token[]) {
+        while(collapsibleTokens.last().is(TokenTypes.whitespace, "\n"))
+            collapsibleTokens.removeLast();
+        let lineStart = collapsibleTokens[0].range.start.line;
+        let lineEnd = collapsibleTokens.last().range.end.line;
+        //console.log(collapsibleTokens.where(t => t.value.contains("\n")).select(t => this.tokenToElement.get(t)));
+        let range = collapsibleTokens.select(t => this.tokenToElement.get(t)).exceptNulls();
+        let span = $.create("span.collapsable");
+        this.wrap(span[0], range);
+        let lineStartEl = $(this.getLineEl(lineStart));
+        let lineEndEl = $(this.getLineEl(lineEnd));
+
+        let btnExpander = lineStartEl.getAppend(".expander-container").getAppend("button.expander.expanded");
+        let toggle = () => {
+            span.toggleClass("collapsed");
+            let collapsed = span.hasClass("collapsed");
+            btnExpander.toggleClass("collapsed", collapsed);
+            //btnExpander.toggleClass("expanded", !collapsed);
+            Array.generateNumbers(lineStart + 1, lineEnd).forEach(line => $(this.getLineEl(line)).toggleClass("collapsed", collapsed)); //TODO: inner collapsing (subs within subs will not work correctly)
+        };
+
+        btnExpander.mousedown(e => toggle());
+        //toggle();
     }
 
 
@@ -824,7 +880,7 @@ export function main() {
 
 
 class CvLine {
-    lineCodeEl: HTMLElement;
+    //lineCodeEl: HTMLElement;
     lineNumberEl: HTMLElement;
 }
 
@@ -999,13 +1055,11 @@ $(main);
 /*
 TODO:
 
-integrate real web server
-builtin functions - send to perldoc.perl.org/...
-perl operators - send to perlop
-unresolved packages send to metacpan
-
-anchor sub routines and support deep linking
-
+-- integrate real web server
+-- builtin functions - send to perldoc.perl.org/...
+-- perl operators - send to perlop
+-- unresolved packages send to metacpan
+-- anchor sub routines and support deep linking
 
 optimize IndexRange to use math instead of arrays
 variable hyperlinking

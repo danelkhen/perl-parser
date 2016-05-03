@@ -12,7 +12,7 @@ textarea,input,select{
     border:1px solid #777;
 }*/
 body {
-    padding: 0;
+    padding: 0 0 1000px 0; /* 1000px to avoid y-scrollbar 'jumps' during collapsing of code */
     margin: 0;
     /*height: 100%;*/
     /*overflow: hidden;*/
@@ -37,6 +37,11 @@ body {
 
 a:target {
     outline: 1px solid red;
+}
+
+.line {
+    /*position: relative;*/
+    text-align: right;
 }
 
 .line .line-overlay {
@@ -64,7 +69,7 @@ a:target {
 }
 
 table.code-container > tbody > tr > td:first-child {
-    width: 50px;
+    width: 60px;
 }
 
 table.code-container > tbody > tr > td {
@@ -73,10 +78,8 @@ table.code-container > tbody > tr > td {
 }
 
 .line-numbers {
-    /*float:left;
-    width:50px;*/
     box-sizing: border-box;
-    text-align: right;
+    /*text-align: right;*/
     padding-right: 10px;
     color: #bbb;
     cursor: default;
@@ -86,7 +89,20 @@ table.code-container > tbody > tr > td {
     user-select: none;
 }
 
-.line-numbers > div:hover {
+.line-numbers > .line > .line-number {
+    display: inline-block;
+    /*padding-right:20px;*/
+    /*text-align: right;*/
+    width: 30px;
+    /*box-sizing:border-box;*/
+}
+
+.expander-container {
+    width: 20px;
+    display: inline-block;
+}
+
+.line-numbers > .line:hover {
     color: black;
 }
 
@@ -126,7 +142,7 @@ table.code-container > tbody > tr > td {
 }*/
 
 .ta-code {
-    display:none;
+    display: none;
     /*position: absolute;
     left: 0;
     top: 0;
@@ -142,3 +158,46 @@ table.code-container > tbody > tr > td {
 /*.ta-code::selection{
     background-color:rgba(107, 166, 255, 0.2);
 }*/
+
+
+.collapsable {
+    /*outline: 1px solid pink;*/
+}
+
+.collapsable.collapsed {
+    outline: 1px solid #ccc;
+    width: 30px;
+    height: 14px;
+    display: inline-block;
+    vertical-align: bottom;
+    text-overflow: clip;
+    overflow: hidden;
+}
+
+.collapsable.collapsed::before {
+    content: "...";
+    display: block;
+}
+
+.line.collapsed {
+    display: none;
+}
+
+.expander {
+    outline: 1px solid #ccc;
+    background: none;
+    height: 8px;
+    width: 8px;
+    line-height: 8px;
+    padding: 0;
+    border: none;
+    margin: 0;
+}
+
+.expander::before {
+    content: "-";
+}
+
+.expander.collapsed::before {
+    content: "+";
+}
