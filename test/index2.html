@@ -9,6 +9,12 @@
     <script src="/res/libs/corex.js"></script>
     <script src="/res/libs/corex-jquery.js"></script>
     <script src="//cdnjs.cloudflare.com/ajax/libs/systemjs/0.19.24/system.src.js"></script>
+    
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/tether-tooltip/1.2.0/css/tooltip-theme-arrows.css" />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tether/1.3.2/js/tether.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tether-drop/1.4.2/js/drop.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tether-tooltip/1.2.0/js/tooltip.min.js"></script>
+    
     <script>
         System.config({
             baseURL: '/res/built/test/',
@@ -18,6 +24,9 @@
     </script>
 </head>
 <body>
+    <div class="menu">
+        <button class="btnCritique">Critique</button>
+    </div>
     <div class="loading">Loading...</div>
     <div class="dir-view view">
         <div class="child template"><a href="{{path}}">{{name}}</a></div>

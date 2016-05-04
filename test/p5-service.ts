@@ -12,6 +12,10 @@ export class P5Service {
         return this.ajax({ url: "src/:path", query: { path } });
     }
 
+    critique(path: string): Promise<CritiqueResponse> {
+        return this.ajax({ url: "critique/:path", query: { path } });
+    }
+
     ajax<T>(opts: { method?: string, url: string, query?: any }): Promise<T> {
         let url2 = this.baseUrl + opts.url;
         Object.keys(opts.query).forEach(key => {
@@ -28,10 +32,57 @@ export class P5Service {
 }
 
 export interface P5File {
-    name?:string;
-    path?:string;
-    is_dir?:string;
-    children?:P5File[];
-    src?:string;
+    name?: string;
+    path?: string;
+    is_dir?: string;
+    children?: P5File[];
+    src?: string;
 
 }
+
+
+
+export interface CritiqueLines {
+    blank: number;
+    comments: number;
+    data: number;
+    perl: number;
+    pod: number;
+    total: number;
+}
+
+export interface CritiqueViolations {
+    total: number;
+}
+
+export interface CritiqueStatistics {
+    lines: CritiqueLines;
+    modules: number;
+    statements: number;
+    subs: number;
+    violations: CritiqueViolations;
+}
+
+export interface CritiqueLocation {
+    column: number;
+    line: number;
+}
+
+export interface CritiqueSource {
+    code: string;
+    location: CritiqueLocation;
+}
+
+export interface CritiqueViolation {
+    description: string;
+    policy: string;
+    severity: number;
+    source: CritiqueSource;
+}
+
+export interface CritiqueResponse {
+    statistics: CritiqueStatistics;
+    violations: CritiqueViolation[];
+}
+
+

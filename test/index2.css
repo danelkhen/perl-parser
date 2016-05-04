@@ -116,6 +116,27 @@ table.code-container > tbody > tr > td {
     background-color: pink;
 }
 
+.hl.hl-violation {
+    border-bottom: 1px dashed red;
+    box-sizing: border-box;
+}
+
+.tooltip.tt {
+    max-width: 30%;
+    font-size: 12px;
+    font-family: Arial;
+    border-radius:2px;
+    background-color: #fdfdfd;
+    color: black;
+    border:1px solid #ccc;
+    padding:6px;
+}
+
+.tooltip.tt.tt-violation {
+}
+
+
+
 /*.code {
     float: left;
 }*/
@@ -200,4 +221,10 @@ table.code-container > tbody > tr > td {
 
 .expander.collapsed::before {
     content: "+";
+}
+
+.menu {
+    position: fixed;
+    text-align: right;
+    width: 100%;
 }

@@ -80,7 +80,6 @@ interface Array<T> {
     addRange(items: T[]): any;
     distinct(): T[];
     forEachJoin(action: any, actionBetweenItems: any): any;
-    first(predicate: any): any;
     toArray(): any;
     insert(index: any, item: any): any;
     insertRange(index: any, items: any): any;
@@ -132,6 +131,7 @@ interface Array<T> {
     sum(): any;
     skip(count: any): any;
     take(count: any): any;
+    takeWhile(predicate?: (item: T, index?: number) => boolean): T[];
     toSelector(): any;
     removeNulls(): any;
     exceptNulls(): any;

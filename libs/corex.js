@@ -541,6 +541,16 @@ Array.prototype.skip = function (count) {
 Array.prototype.take = function (count) {
     return this.slice(0, count);
 };
+Array.prototype.takeWhile = function (pred) {
+    let took = [];
+    this.first(t=> {
+        let take = pred(t);
+        if (take)
+            took.push(t);
+        return !take;
+    });
+    return took;
+};
 Array.prototype.toSelector = function () {
     return Q.createSelectorFunction(this);
 };

@@ -1,7 +1,7 @@
 ﻿/// <reference path="../src/extensions.ts" />
 "use strict";
 
-import {Token, TokenType, File2, } from "../src/token";
+import {Token, TokenType, File2, File2Pos} from "../src/token";
 import {AstWriter} from "../src/ast-writer";
 import {ParserBase} from "../src/parser-base";
 import {ExpressionParser} from "../src/expression-parser";
@@ -127,6 +127,7 @@ export class IndexPage {
 
     main() {
         console.log(window.location.pathname);
+        $(".btnCritique").click(e => this.critique());
         this.tbUrl = $("#tbUrl");
         this.tbUrl.val(window.location.pathname);
         this.urlKey = "perl-parser\turl";
@@ -165,6 +166,50 @@ export class IndexPage {
 
         this.update();
         $(window).on("urlchange", e => this.update());
+    }
+    critique() {
+        this.service.critique(this.file.path).then(res => {
+            console.log(res);
+            res.violations.forEach(violation => {
+                let pos = new File2Pos();
+                pos.line = violation.source.location.line;
+                pos.column = violation.source.location.column;
+                let tokens = this.findTokens(pos, violation.source.code.length);
+                if (tokens == null)
+                    return;
+                tokens.forEach(token => {
+                    let el = this.tokenToElement.get(token);
+                    if (el == null)
+                        return;
+                    $(el).addClass("hl hl-violation");
+                    new Tooltip({
+                        target: el,
+                        position: 'bottom left',
+                        content: `${violation.description} ${violation.severity} ${violation.policy}`,
+                        classes: 'tt tt-violation'
+                    });
+                });
+            });
+        });
+    }
+
+    findTokens(pos: File2Pos, length: number): Token[] {
+        let token = this.findToken(pos);
+        if (token == null)
+            return [];
+        let index = this.tokens.indexOf(token);
+        let took = 0;
+        let list = this.tokens.skip(index).takeWhile(t => {
+            took += t.value.length;
+            if (took >= length)
+                return false;
+            return true;
+        });
+        return list;
+
+    }
+    findToken(pos: File2Pos): Token {
+        return this.tokens.first(t => t.range != null && t.range.start.line == pos.line && t.range.start.column == pos.column);
     }
 
     getLineFromLineNumberEl(el: HTMLElement) {
@@ -350,9 +395,9 @@ export class IndexPage {
         this.code = data;
         let codeEl = $(".code").empty().text(data);
         $(".ta-code").val(data);
-        let file = new File2(filename, data);
+        this.sourceFile = new File2(filename, data);
         let tok = new Tokenizer();
-        tok.file = file;
+        tok.file = this.sourceFile;
         localStorage.setItem("pause", "1");
         tok.main();
         let parser = new Parser();
@@ -374,6 +419,7 @@ export class IndexPage {
         this.resolveAndHighlightUsedPackages();
         this.navigateToHash();
     }
+    sourceFile: File2;
     navigateToHash() {
         let hash = window.location.hash.substr(1);
         if (hash == "")
@@ -774,7 +820,7 @@ export class IndexPage {
         let end = this.tokens.indexOf(until);
         if (start < 0 || end < 0)
             return null;
-        return this.tokens.slice(start, end+1);
+        return this.tokens.slice(start, end + 1);
     }
 
 
@@ -784,7 +830,7 @@ export class IndexPage {
     }
 
     collapsable(anchorTokens: Token[], collapsibleTokens: Token[]) {
-        while(collapsibleTokens.last().is(TokenTypes.whitespace, "\n"))
+        while (collapsibleTokens.last().is(TokenTypes.whitespace, "\n"))
             collapsibleTokens.removeLast();
         let lineStart = collapsibleTokens[0].range.start.line;
         let lineEnd = collapsibleTokens.last().range.end.line;
@@ -807,6 +853,7 @@ export class IndexPage {
         btnExpander.mousedown(e => toggle());
         //toggle();
     }
+
 
 
 
@@ -1065,10 +1112,21 @@ optimize IndexRange to use math instead of arrays
 variable hyperlinking
 use web service to resolve packages
 keyboard support
-code collapsing
+-- code collapsing
 
 
 Stevan:
 implmement perldoc api: perldoc -T -o html -f return
 
 */
+
+declare class Tooltip {
+    constructor(opts?: TooltipOptions);
+}
+
+declare interface TooltipOptions {
+    target:any;
+    position?:string;
+    content?:any;
+    classes?:string;
+}
