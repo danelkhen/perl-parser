@@ -1,25 +1,19 @@
 ﻿/// <reference path="../src/extensions.ts" />
 "use strict";
 
-import {Token, TokenType, File2, File2Pos} from "../src/token";
-import {AstWriter} from "../src/ast-writer";
-import {ParserBase} from "../src/parser-base";
-import {ExpressionParser} from "../src/expression-parser";
-import {Parser} from "../src/parser";
 import {
+    Token, TokenType, File2, File2Pos,
+    AstWriter, ParserBase, ExpressionParser, Parser,
     AstNode, Expression, Statement, UnresolvedExpression, SimpleName, SubroutineDeclaration, SubroutineExpression, ArrayMemberAccessExpression, ArrayRefDeclaration,
     BarewordExpression, BeginStatement, BinaryExpression, Block, BlockExpression, BlockStatement, ElseStatement, ElsifStatement, EmptyStatement, EndStatement,
     ExpressionStatement, ForEachStatement, ForStatement, HashMemberAccessExpression, HashRefCreationExpression, IfStatement, InvocationExpression, MemberExpression,
     NamedMemberExpression, NativeFunctionInvocation, NativeInvocation_BlockAndListOrExprCommaList, NativeInvocation_BlockOrExpr, NonParenthesizedList, NoStatement,
     Operator, PackageDeclaration, ParenthesizedList, PostfixUnaryExpression, PrefixUnaryExpression, QwExpression, RawExpression, RawStatement, RegexExpression,
     ReturnExpression, TrinaryExpression, Unit, UnlessStatement, UseOrNoStatement, UseStatement, ValueExpression, VariableDeclarationExpression, VariableDeclarationStatement, WhileStatement,
-    HasArrow, HasLabel,
-    AstQuery
-} from "../src/ast";
-import {PrecedenceResolver} from "../src/precedence-resolver";
-import {TokenTypes} from "../src/token-types";
-import {Tokenizer} from "../src/tokenizer";
-import {safeTry, TokenReader, Logger, AstNodeFixator} from "../src/utils";
+    AstQuery, PrecedenceResolver, TokenTypes, Tokenizer, safeTry, TokenReader, Logger, AstNodeFixator,
+} from "../src/index";
+
+
 import "../src/extensions";
 import {RefArrayToRefUtil} from "../src/refactor";
 import {ExpressionTester, EtReport, EtItem} from "../src/expression-tester";
@@ -169,10 +163,10 @@ export class IndexPage {
         $(window).on("urlchange", e => this.update());
     }
 
-    isAllCollapsed:boolean;
+    isAllCollapsed: boolean;
     expandOrCollapseAll() {
         this.isAllCollapsed = !this.isAllCollapsed;
-        this.getExpanders().forEach(t=>t.toggle(this.isAllCollapsed));
+        this.getExpanders().forEach(t => t.toggle(this.isAllCollapsed));
     }
     critique() {
         this.service.critique(this.file.path).then(res => {
@@ -367,7 +361,7 @@ export class IndexPage {
     }
 
 
-    lineNumbersEl:HTMLElement;
+    lineNumbersEl: HTMLElement;
     getLineEl(line: number): HTMLElement {
         return <HTMLElement>this.lineNumbersEl.childNodes.item(line - 1);
     }
