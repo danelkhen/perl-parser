@@ -6,7 +6,7 @@
         "noImplicitAny": false,
         "sourceMap": false,
         "removeComments": false,
-        "outDir": "../built/test"
+        "outDir": "../built/viewer"
     },
     "exclude": [
     ]
