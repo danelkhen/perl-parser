@@ -127,7 +127,8 @@ export class IndexPage {
 
     main() {
         console.log(window.location.pathname);
-        $(".btnCritique").click(e => this.critique());
+        $(".menu").getAppend("button.btnCritique").text("Critique").click(e => this.critique());
+        $(".menu").getAppend("button.btnExpandOrCollapseAll").text("Expand/Collapse").click(e => this.expandOrCollapseAll());
         this.tbUrl = $("#tbUrl");
         this.tbUrl.val(window.location.pathname);
         this.urlKey = "perl-parser\turl";
@@ -166,6 +167,12 @@ export class IndexPage {
 
         this.update();
         $(window).on("urlchange", e => this.update());
+    }
+
+    isAllCollapsed:boolean;
+    expandOrCollapseAll() {
+        this.isAllCollapsed = !this.isAllCollapsed;
+        this.getExpanders().forEach(t=>t.toggle(this.isAllCollapsed));
     }
     critique() {
         this.service.critique(this.file.path).then(res => {
@@ -360,11 +367,12 @@ export class IndexPage {
     }
 
 
+    lineNumbersEl:HTMLElement;
     getLineEl(line: number): HTMLElement {
-        return <HTMLElement>$(".line-numbers")[0].childNodes.item(line - 1);
+        return <HTMLElement>this.lineNumbersEl.childNodes.item(line - 1);
     }
     renderLineNumbers() {
-        let lineNumbers = $(".line-numbers").empty()[0];
+        this.lineNumbersEl = $(".line-numbers").empty()[0];
         let count = this.code.lines().length;
         for (let i = 0; i < count; i++) {
             let div = document.createElement("div");
@@ -377,7 +385,7 @@ export class IndexPage {
             div.appendChild(div2);
             $.create(".expander-container").appendTo(div);
             div2.textContent = (i + 1).toString();
-            lineNumbers.appendChild(div);//$.create("div").text(i + 1));
+            this.lineNumbersEl.appendChild(div);//$.create("div").text(i + 1));
         }
     }
 
@@ -842,17 +850,27 @@ export class IndexPage {
         let lineEndEl = $(this.getLineEl(lineEnd));
 
         let btnExpander = lineStartEl.getAppend(".expander-container").getAppend("button.expander.expanded");
-        let toggle = () => {
-            span.toggleClass("collapsed");
-            let collapsed = span.hasClass("collapsed");
-            btnExpander.toggleClass("collapsed", collapsed);
-            //btnExpander.toggleClass("expanded", !collapsed);
-            Array.generateNumbers(lineStart + 1, lineEnd).forEach(line => $(this.getLineEl(line)).toggleClass("collapsed", collapsed)); //TODO: inner collapsing (subs within subs will not work correctly)
-        };
+        let exp: Expander = {
+            toggle: (collapsed?: boolean) => {
+                if (collapsed == null)
+                    collapsed = !exp.isCollapsed();
+                span.toggleClass("collapsed", collapsed);
+                btnExpander.toggleClass("collapsed", collapsed);
+                Array.generateNumbers(lineStart + 1, lineEnd).forEach(line => $(this.getLineEl(line)).toggleClass("collapsed", collapsed)); //TODO: inner collapsing (subs within subs will not work correctly)
+            },
+            isCollapsed: () => span.hasClass("collapsed"),
+        }
 
-        btnExpander.mousedown(e => toggle());
+        btnExpander.dataItem(exp);
+        btnExpander.mousedown(e => exp.toggle());
         //toggle();
     }
+
+    getExpanders(): Expander[] {
+        return $(".expander").toArray$().select(t => t.dataItem());
+    }
+
+
 
 
 
@@ -1125,8 +1143,13 @@ declare class Tooltip {
 }
 
 declare interface TooltipOptions {
-    target:any;
-    position?:string;
-    content?:any;
-    classes?:string;
+    target: any;
+    position?: string;
+    content?: any;
+    classes?: string;
+}
+
+interface Expander {
+    toggle(collapsed?: boolean);
+    isCollapsed(): boolean;
 }
