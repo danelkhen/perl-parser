@@ -10,31 +10,126 @@
     AstQuery, PrecedenceResolver, TokenTypes, Tokenizer, safeTry, TokenReader, Logger, AstNodeFixator,
 } from "../src/index";
 
-export function stringifyNodes(node) {
-    let sb = [];
-    function stringify(obj) {
-        if (obj instanceof Array)
-            return obj.forEach(stringify);
-        if (typeof (obj) == "object") {
-            if (obj instanceof Token) {
-                stringify((<Token>obj).value);
-            }
-            if (obj instanceof AstNode) {
-                sb.push(obj.constructor.name);
-                Object.keys(obj).forEach(key => {
-                    let value = obj[key];
-                    if (key != "token")
-                        sb.push(key);
-                    stringify(value);
-                    sb.push("\n");
-                });
-            }
-            return;
-        }
-        sb.push(JSON.stringify(obj));
+export class Helper {
+    static flattenArray<T>(list: Array<T | Array<T>>): T[] {
+        let list2: T[] = [];
+        list.forEach(t => {
+            if (t instanceof Array)
+                list2.addRange(this.flattenArray(t));
+            else
+                list2.add(<T>t);
+        });
+        return list2;
     }
-    stringify(node);
-    return sb.join(" ");
+    static urlJoin(parts: Array<string | string[]>): string {
+        let parts2 = this.flattenArray(parts);
+        let final = parts2[0];
+        let prev = parts2[0];
+        parts2.skip(1).forEach(part => {
+            if (prev.endsWith("/") && part.startsWith("/")) {
+                final += part.substr(1);
+            }
+            else if (!prev.endsWith("/") && !part.startsWith("/")) {
+                final += "/" + part;
+            }
+            else {
+                final += part;
+            }
+            prev = part;
+        });
+        return final;
+    }
+    stringifyNodes(node): string {
+        let sb = [];
+        function stringify(obj) {
+            if (obj instanceof Array)
+                return obj.forEach(stringify);
+            if (typeof (obj) == "object") {
+                if (obj instanceof Token) {
+                    stringify((<Token>obj).value);
+                }
+                if (obj instanceof AstNode) {
+                    sb.push(obj.constructor.name);
+                    Object.keys(obj).forEach(key => {
+                        let value = obj[key];
+                        if (key != "token")
+                            sb.push(key);
+                        stringify(value);
+                        sb.push("\n");
+                    });
+                }
+                return;
+            }
+            sb.push(JSON.stringify(obj));
+        }
+        stringify(node);
+        return sb.join(" ");
+    }
+
+    
+    static selectAsyncFuncs<T, R>(list: T[], selector: (item: T) => Promise<R>): Array<AsyncFunc<R>> {
+        return list.map(t => () => selector(t));
+    }
+    
+    static firstSuccess<T>(funcs: Array<AsyncFunc<T>>): Promise<T> {
+        return new Promise((resolve, reject) => {
+            let index = -1;
+            let tryNext = () => {
+                index++;
+                let func = funcs[index];
+                if (func == null) {
+                    reject();
+                    return;
+                }
+                func()
+                    .then(t => {
+                        resolve(t);
+                    })
+                    .catch(t => {
+                        tryNext();
+                    });
+            };
+            tryNext();
+        });
+    }
+    static compileTempalteString(s: string) {
+        if (s.startsWith("{{") && s.endsWith("}}")) {
+            let code = s.substring(2, s.length - 2);
+            let func = new Function("___", "return ___." + code);
+            return func;
+        }
+        return null;
+    }
+    static dataBind(node: Node, obj: any) {
+        if (node.nodeType == 3) {
+            let func = this.compileTempalteString(node.nodeValue);
+            if (func != null)
+                node.nodeValue = func(obj);
+        }
+        else {
+            let atts = Array.from(node.attributes);
+            atts.forEach(att => {
+                let func = this.compileTempalteString(att.value);
+                if (func != null) {
+                    let res = func(obj);
+                    node[att.name] = res;
+                }
+            });
+            Array.from(node.childNodes).forEach(t => this.dataBind(t, obj));
+        }
+    }
+    static repeat(el: any, list: any[]) {
+        let el2 = $(el);
+        el2.parent().children(".template-instance").remove();
+        el2.parent().append(list.select(obj => {
+            let el3 = el2.clone().removeClass("template").addClass("template-instance");
+            let el4 = el3[0];
+            this.dataBind(el4, obj);
+            return el4;
+        }));
+    }
+
+
 
 }
 

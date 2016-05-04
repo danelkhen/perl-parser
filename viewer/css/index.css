@@ -55,7 +55,7 @@ a:target {
     background-color: rgb(248, 238, 199);
     left: 0;
     z-index: -1;
-    height: 14px;
+    height: 15px;
     border-left: solid 50px white;
     box-sizing: border-box;
 }
@@ -110,7 +110,6 @@ table.code-container > tbody > tr > td {
     white-space: pre;
     font-family: 'Source Code Pro';
     font-size: 12px;
-    line-height:12px;
 }
 
 .highlight {

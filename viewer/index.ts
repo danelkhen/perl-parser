@@ -12,7 +12,7 @@ import {
     ReturnExpression, TrinaryExpression, Unit, UnlessStatement, UseOrNoStatement, UseStatement, ValueExpression, VariableDeclarationExpression, VariableDeclarationStatement, WhileStatement,
     AstQuery, PrecedenceResolver, TokenTypes, Tokenizer, safeTry, TokenReader, Logger, AstNodeFixator,
 } from "../src/index";
-import {CvLine, IndexSelection, PackageResolution, AsyncFunc, Tooltip, TreeNodeData, Expander} from "./common";
+import {CvLine, IndexSelection, PackageResolution, AsyncFunc, Tooltip, TreeNodeData, Expander, Helper} from "./common";
 
 import "../src/extensions";
 import {RefArrayToRefUtil} from "../src/refactor";
@@ -42,80 +42,20 @@ export class IndexPage {
     ];
 
     service: P5Service;
-    //httpGet(url: string): Promise<string> {
-    //    return this.service.src(url);
-    //    //return new Promise<string>((resolve, reject) => $.get(url).done(resolve).fail(reject));
-    //}
 
-    flattenArray<T>(list: Array<T | Array<T>>): T[] {
-        let list2: T[] = [];
-        list.forEach(t => {
-            if (t instanceof Array)
-                list2.addRange(this.flattenArray(t));
-            else
-                list2.add(<T>t);
-        });
-        return list2;
-    }
-    urlJoin(parts: Array<string | string[]>): string {
-        let parts2 = this.flattenArray(parts);
-        let final = parts2[0];
-        let prev = parts2[0];
-        parts2.skip(1).forEach(part => {
-            if (prev.endsWith("/") && part.startsWith("/")) {
-                final += part.substr(1);
-            }
-            else if (!prev.endsWith("/") && !part.startsWith("/")) {
-                final += "/" + part;
-            }
-            else {
-                final += part;
-            }
-            prev = part;
-        });
-        return final;
-    }
     getCvUrlForIncludeAndPacakge(include: string, packageName: string) {
-        let url = this.urlJoin([this.cvBaseUrl, include, packageName.split("::")]) + ".pm";
+        let url = Helper.urlJoin([this.cvBaseUrl, include, packageName.split("::")]) + ".pm";
         return url;
     }
     resolvePackageWithInclude(packageName: string, include: string): Promise<string> {
-        let url = this.urlJoin([include, packageName.split("::")]) + ".pm";
+        let url = Helper.urlJoin([include, packageName.split("::")]) + ".pm";
         return this.service.fs(url).then(t => include);
     }
 
     resolvePackage(pkg: PackageResolution): Promise<string> {
-        let funcs = this.selectAsyncFuncs(this.includes, t => this.resolvePackageWithInclude(pkg.name, t));
-        return this.firstSuccess(funcs).catch(t => null).then(t => pkg.resolvedIncludePath = t);
+        let funcs = Helper.selectAsyncFuncs(this.includes, t => this.resolvePackageWithInclude(pkg.name, t));
+        return Helper.firstSuccess(funcs).catch(t => null).then(t => pkg.resolvedIncludePath = t);
     }
-
-    selectAsyncFuncs<T, R>(list: T[], selector: (item: T) => Promise<R>): Array<AsyncFunc<R>> {
-        return list.map(t => () => selector(t));
-    }
-    firstSuccess<T>(funcs: Array<AsyncFunc<T>>): Promise<T> {
-        return new Promise((resolve, reject) => {
-            let index = -1;
-            let tryNext = () => {
-                index++;
-                let func = funcs[index];
-                if (func == null) {
-                    reject();
-                    return;
-                }
-                func()
-                    .then(t => {
-                        resolve(t);
-                    })
-                    .catch(t => {
-                        tryNext();
-                    });
-            };
-            tryNext();
-        });
-
-
-    }
-
 
 
     main() {
@@ -287,42 +227,6 @@ export class IndexPage {
         return path;
     }
 
-    compileTempalteString(s: string) {
-        if (s.startsWith("{{") && s.endsWith("}}")) {
-            let code = s.substring(2, s.length - 2);
-            let func = new Function("___", "return ___." + code);
-            return func;
-        }
-        return null;
-    }
-    dataBind(node: Node, obj: any) {
-        if (node.nodeType == 3) {
-            let func = this.compileTempalteString(node.nodeValue);
-            if (func != null)
-                node.nodeValue = func(obj);
-        }
-        else {
-            let atts = Array.from(node.attributes);
-            atts.forEach(att => {
-                let func = this.compileTempalteString(att.value);
-                if (func != null) {
-                    let res = func(obj);
-                    node[att.name] = res;
-                }
-            });
-            Array.from(node.childNodes).forEach(t => this.dataBind(t, obj));
-        }
-    }
-    repeat(el: any, list: any[]) {
-        let el2 = $(el);
-        el2.parent().children(".template-instance").remove();
-        el2.parent().append(list.select(obj => {
-            let el3 = el2.clone().removeClass("template").addClass("template-instance");
-            let el4 = el3[0];
-            this.dataBind(el4, obj);
-            return el4;
-        }));
-    }
     file: P5File;
     lastUrl: string;
     update() {
@@ -336,9 +240,9 @@ export class IndexPage {
         this.service.fs(url).then(t => this.file = t).then(() => {
             if (this.file.children != null) {
                 this.file.children.forEach(t => t.name = t.path);
-                this.file.children.forEach(t => t.path = this.urlJoin([url, t.path]));
+                this.file.children.forEach(t => t.path = Helper.urlJoin([url, t.path]));
                 this.file.children = this.file.children.orderBy([t => !t.is_dir, t => t.name]);
-                this.repeat(".child", this.file.children);
+                Helper.repeat(".child", this.file.children);
                 console.log("TODO: implement directory browser", this.file);
             }
             else {
@@ -592,37 +496,6 @@ export class IndexPage {
         }
     }
 
-    createInstanceNode(obj: Object) {
-        if (typeof (obj) != "object") {
-            let anp2: TreeNodeData = { text: obj.constructor.name, value: obj, children: [] };
-            return anp2;
-        }
-        let anp: TreeNodeData = { text: obj.constructor.name, obj: obj, children: [] };
-        if (obj instanceof Token) {
-            anp.text = obj.type.name + " { Token }";
-            return anp;
-        }
-        anp.children = Object.keys(obj).select(prop => this.createPropertyNode(obj, prop)).exceptNulls();
-        return anp;
-    }
-
-    createPropertyNode(parentObj: Object, prop: string) {
-        if (["parentNode", "parentNodeProp", "tokens", "token", "isStatement", "isExpression"/*, "whitespaceBefore", "whitespaceAfter"*/].contains(prop))
-            return null;
-        let anp: TreeNodeData = { prop: prop, text: prop, obj: parentObj, children: [], value: parentObj[prop] };
-        if (anp.value == null)
-            return anp;
-        if (typeof (anp.value) == "object") {
-            if (anp.value instanceof Array)
-                anp.children = anp.value.select(t => this.createInstanceNode(t));
-            else
-                anp.children = [this.createInstanceNode(anp.value)];
-        }
-        return anp;
-
-    }
-
-
     getTokens(obj: any, deep: boolean): Token[] {
         if (obj == null)
             return [];
@@ -828,7 +701,6 @@ export class IndexPage {
             collapsibleTokens.removeLast();
         let lineStart = collapsibleTokens[0].range.start.line;
         let lineEnd = collapsibleTokens.last().range.end.line;
-        //console.log(collapsibleTokens.where(t => t.value.contains("\n")).select(t => this.tokenToElement.get(t)));
         let range = collapsibleTokens.select(t => this.tokenToElement.get(t)).exceptNulls();
         let span = $.create("span.collapsable");
         this.wrap(span[0], range);
