@@ -1,11 +1,11 @@
-﻿/// <reference path="../src/extensions.ts" />
+﻿/// <reference path="../../src/extensions.ts" />
 "use strict";
 
-import {Token, TokenType, File2, } from "../src/token";
-import {AstWriter} from "../src/ast-writer";
-import {ParserBase} from "../src/parser-base";
-import {ExpressionParser} from "../src/expression-parser";
-import {Parser} from "../src/parser";
+import {Token, TokenType, File2, } from "../../src/token";
+import {AstWriter} from "../../src/ast-writer";
+import {ParserBase} from "../../src/parser-base";
+import {ExpressionParser} from "../../src/expression-parser";
+import {Parser} from "../../src/parser";
 import {
 AstNode, Expression, Statement, UnresolvedExpression, SimpleName, SubroutineDeclaration, SubroutineExpression, ArrayMemberAccessExpression, ArrayRefDeclaration,
 BarewordExpression, BeginStatement, BinaryExpression, Block, BlockExpression, BlockStatement, ElseStatement, ElsifStatement, EmptyStatement, EndStatement,
@@ -14,14 +14,14 @@ NamedMemberExpression, NativeFunctionInvocation, NativeInvocation_BlockAndListOr
 Operator, PackageDeclaration, ParenthesizedList, PostfixUnaryExpression, PrefixUnaryExpression, QwExpression, RawExpression, RawStatement, RegexExpression,
 ReturnExpression, TrinaryExpression, Unit, UnlessStatement, UseOrNoStatement, UseStatement, ValueExpression, VariableDeclarationExpression, VariableDeclarationStatement, WhileStatement,
 HasArrow, HasLabel,
-} from "../src/ast";
-import {PrecedenceResolver} from "../src/precedence-resolver";
-import {TokenTypes} from "../src/token-types";
-import {Tokenizer} from "../src/tokenizer";
-import {safeTry, TokenReader, Logger, AstNodeFixator} from "../src/utils";
-import "../src/extensions";
-import {RefArrayToRefUtil} from "../src/refactor";
-import {ExpressionTester, EtReport, EtItem} from "../src/expression-tester";
+} from "../../src/ast";
+import {PrecedenceResolver} from "../../src/precedence-resolver";
+import {TokenTypes} from "../../src/token-types";
+import {Tokenizer} from "../../src/tokenizer";
+import {safeTry, TokenReader, Logger, AstNodeFixator} from "../../src/utils";
+import "../../src/extensions";
+import {RefArrayToRefUtil} from "../../src/refactor";
+import {ExpressionTester, EtReport, EtItem} from "../../src/expression-tester";
 
 export class IndexPage {
 
