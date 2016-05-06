@@ -45,19 +45,26 @@ a:target {
 }
 
 .line .line-overlay {
-    display: none;
-}
-
-.line.selected .line-overlay {
+    z-index: -1;
     display: block;
     position: absolute;
     width: 100%;
-    background-color: rgb(248, 238, 199);
     left: 0;
-    z-index: -1;
     height: 15px;
     border-left: solid 50px white;
     box-sizing: border-box;
+}
+
+.line:hover .line-overlay {
+    background-color:#f0f0f0;
+}
+
+.line.selected .line-overlay {
+    background-color: rgb(248, 238, 199);
+}
+
+.line.selected:hover .line-overlay {
+    background-color: rgb(255, 224, 103);
 }
 
 .code-container {
@@ -68,11 +75,28 @@ a:target {
     border-spacing: 0;
 }
 
-table.code-container > tbody > tr > td:first-child {
+.code-container .td-line-numbers {
     width: 60px;
 }
 
-table.code-container > tbody > tr > td {
+.code-container.wide-line-numbers .td-line-numbers {
+    width: 160px;
+}
+
+.line .git-blame {
+    display:inline-block;
+    width:90px;
+    overflow:hidden;
+    text-overflow:clip;
+    vertical-align:top;
+    text-align:left;
+}
+
+.tooltip.git-blame{
+
+}
+
+.code-container > tbody > tr > td {
     vertical-align: top;
     padding: 0;
 }
@@ -89,12 +113,11 @@ table.code-container > tbody > tr > td {
     user-select: none;
 }
 
-.line-numbers > .line > .line-number {
+.line-number {
     display: inline-block;
-    /*padding-right:20px;*/
-    /*text-align: right;*/
     width: 30px;
-    /*box-sizing:border-box;*/
+    text-decoration:none;
+    color:inherit;
 }
 
 .expander-container {
@@ -130,10 +153,9 @@ table.code-container > tbody > tr > td {
     color: black;
     border:1px solid #ccc;
     padding:6px;
+    white-space:pre;
 }
 
-.tooltip.tt.tt-violation {
-}
 
 
 

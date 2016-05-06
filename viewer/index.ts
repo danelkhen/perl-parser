@@ -103,6 +103,7 @@ export class IndexPage {
         this.tbUrl.change(e => this.update());
         $("#cbAddParentheses").change(e => this.update());
         $("#cbDeparseFriendly").change(e => this.update());
+        //$(".line-numbers").on("click", "a.line-number", e=>e.preventDefault());
         $(".line-numbers").mousedown(e => this.onLineNumberMouseDown(e));
         $(".line-numbers").mouseover(e => this.onLineNumberMouseOver(e));
         $(".line-numbers").mouseup(e => this.onLineNumberMouseUp(e));
@@ -119,36 +120,55 @@ export class IndexPage {
     critique() {
         this.service.critique(this.file.path).then(res => {
             console.log(res);
-            res.violations.forEach(violation => {
+            //let firstViolationLine = null;
+            let hls = res.violations.select(violation => {
                 let pos = new File2Pos();
                 pos.line = violation.source.location.line;
                 pos.column = violation.source.location.column;
                 let tokens = this.findTokens(pos, violation.source.code.length);
                 if (tokens == null)
                     return;
-                tokens.forEach(token => {
-                    let el = this.tokenToElement.get(token);
-                    if (el == null)
-                        return;
-                    $(el).addClass("hl hl-violation");
-                    new Tooltip({
-                        target: el,
-                        position: 'bottom left',
-                        content: `${violation.description} ${violation.severity} ${violation.policy}`,
-                        classes: 'tt tt-violation'
-                    });
-                });
+                let hl = this.hyperlinkTokens(tokens, null, null, null, "hl hl-violation");
+                this.tooltip({ target: hl, content: `${violation.description}\n${violation.policy}\nseverity:${violation.severity}`, });
+                //if (firstViolationLine == null)
+                //    firstViolationLine = violation.source.location.line;
+                return hl;
+                //tokens.forEach(token => {
+                //    let el = this.tokenToElement.get(token);
+                //    if (el == null)
+                //        return;
+                //    $(el).addClass("hl hl-violation");
+
+                //    this.tooltip({ target: el, content: `${violation.description}\n${violation.policy}\nseverity:${violation.severity}`, });
+                //});
             });
+            if (hls.length > 0)
+                $(hls[0]).blur().focus();
+            //if (firstViolationLine !=null )
+            //    this.scrollToLine(firstViolationLine);
         });
     }
 
     gitBlame() {
+        $(".code-container").addClass("wide-line-numbers");
         this.service.gitBlame(this.file.path).then(items => {
             items.forEach(item => {
                 let line = this.getLineEl(parseInt(item.line_num));
-                $(line).getAppend(".git-blame").text(item.author);
+                $(line).find(".git-blame").remove();
+                let el = $.create(".git-blame").text(item.author);
+                this.tooltip({ target: el[0], content: [item.author, item.date, item.sha].join("\n") });
+                $(line).find(".line-number").before(el);
             });
         });
+    }
+
+    tooltip(opts: TooltipOptions) {
+        if (opts.position == null)
+            opts.position = "bottom left";
+        if (opts.classes == null)
+            opts.classes = opts.target.className;
+        opts.classes += " tt";
+        new Tooltip(opts);
     }
 
     findTokens(pos: File2Pos, length: number): Token[] {
@@ -291,7 +311,8 @@ export class IndexPage {
         this.lineNumbersEl = $(".line-numbers").empty()[0];
         this.lines.forEach((line, i) => {
             let div = this.lineTemplate.clone();
-            div.find(".line-number").text((i + 1).toString());
+            let lineNumber = i + 1;
+            div.find(".line-number").text(lineNumber.toString()).attr({ name: "L" + lineNumber, href: "javascript:void(0)" });
             this.lineNumbersEl.appendChild(div[0]);
         });
     }
@@ -338,10 +359,11 @@ export class IndexPage {
             return;
         let el = $("a[name='" + hash + "']:visible").first();
         if (el.length == 0) {
-            el = $(".line.selected");
-            if (el.length > 0)
-                el[0].scrollIntoView();
-            return;
+            el = $(".line.selected:first");
+            el = el.find("a:first");
+            ////if (el.length > 0)
+            ////    el[0].scrollIntoView();
+            //return;
         }
         el.focus();
     }
@@ -379,6 +401,12 @@ export class IndexPage {
 
     }
 
+    scrollToLine(line: number) {
+        let el = this.getLineEl(line);
+        if (el.previousSibling != null)
+            el = <HTMLElement>el.previousSibling;
+        el.scrollIntoView();
+    }
 
     generateCode() {
         new AstNodeFixator().process(this.unit);
@@ -400,42 +428,42 @@ export class IndexPage {
         this.renderTokens();
     }
 
-    splitNewLineTokens() {
-        let list: Token[] = [];
-        this.tokens.forEach(token => {
-            if (token.is(TokenTypes.whitespace) && token.value.contains("\n") && token.value != "\n") {
-                let s = token.value;
-                while (s.length > 0) {
-                    if (s[0] == "\n") {
-                        let newLineToken = TokenTypes.whitespace.create2("\n");
-                        list.push(newLineToken);
-                        s = s.substring(1);
-                    }
-                    else {
-                        let index = s.indexOf("\n");
-                        if (index > 0) {
-                            let part = s.substring(0, index - 1);
-                            let whitespaceToken = TokenTypes.whitespace.create2(part);
-                            list.push(whitespaceToken);
-                            let whitespaceToken2 = TokenTypes.whitespace.create2("\n");
-                            list.push(whitespaceToken2);
-                            s = s.substring(index + 1);
-                        }
-                        else {
-                            let whitespaceToken = TokenTypes.whitespace.create2(s);
-                            list.push(whitespaceToken);
-                            s = "";
-                        }
-                    }
-                }
-                return;
-            }
-            else {
-                list.push(token);
-            }
-        });
-        this.tokens = list;
-    }
+    //splitNewLineTokens() {
+    //    let list: Token[] = [];
+    //    this.tokens.forEach(token => {
+    //        if (token.is(TokenTypes.whitespace) && token.value.contains("\n") && token.value != "\n") {
+    //            let s = token.value;
+    //            while (s.length > 0) {
+    //                if (s[0] == "\n") {
+    //                    let newLineToken = TokenTypes.whitespace.create2("\n");
+    //                    list.push(newLineToken);
+    //                    s = s.substring(1);
+    //                }
+    //                else {
+    //                    let index = s.indexOf("\n");
+    //                    if (index > 0) {
+    //                        let part = s.substring(0, index - 1);
+    //                        let whitespaceToken = TokenTypes.whitespace.create2(part);
+    //                        list.push(whitespaceToken);
+    //                        let whitespaceToken2 = TokenTypes.whitespace.create2("\n");
+    //                        list.push(whitespaceToken2);
+    //                        s = s.substring(index + 1);
+    //                    }
+    //                    else {
+    //                        let whitespaceToken = TokenTypes.whitespace.create2(s);
+    //                        list.push(whitespaceToken);
+    //                        s = "";
+    //                    }
+    //                }
+    //            }
+    //            return;
+    //        }
+    //        else {
+    //            list.push(token);
+    //        }
+    //    });
+    //    this.tokens = list;
+    //}
 
     renderTokens() {
         let codeEl = $(".code")[0];
@@ -443,18 +471,34 @@ export class IndexPage {
         this.lines.clear();
         if (this.tokens == null || this.tokens.length == 0)
             return;
-        this.splitNewLineTokens();
+        //this.splitNewLineTokens();
 
         let line = new CvLine();
         line.tokens = [];
         this.lines.add(line);
         this.tokens.forEach(token => {
             line.tokens.push(token);
-            if (token.is(TokenTypes.whitespace) && token.value == "\n") {
+            let lineCount = token.range.end.line - token.range.start.line;
+            for (let i = 0; i < lineCount; i++) {
                 line = new CvLine();
-                line.tokens = [];
+                line.tokens = [token];
                 this.lines.add(line);
             }
+            //if (token.is(TokenTypes.whitespace) && token.value == "\n") {
+            //    line = new CvLine();
+            //    line.tokens = [];
+            //    this.lines.add(line);
+            //}
+            //else {
+            //    let lines = token.value.lines();
+            //    if (lines.length > 1) {
+            //        lines.skip(1).forEach(t => {
+            //            line = new CvLine();
+            //            line.tokens = [token];
+            //            this.lines.add(line);
+            //        });
+            //    }
+            //}
         });
         this.tokens.forEach(token => {
             let span = document.createElement("span");
@@ -560,11 +604,52 @@ export class IndexPage {
             let x = this.collectTokens2(sub.block);
             this.collapsable(x);
         });
+        this.findConsecutiveRepetitions(this.tokens, (x, y) => x.isAny([TokenTypes.comment, TokenTypes.whitespace]) && y.isAny([TokenTypes.comment, TokenTypes.whitespace])).forEach(comments => {
+            while (comments.length > 0 && comments.last().is(TokenTypes.whitespace))
+                comments.removeLast();
+            while (comments.length > 0 && comments.first().is(TokenTypes.whitespace))
+                comments.removeAt(0);
+            if (comments.length <= 1)
+                return;
+            let text = comments.select(t => t.value).join("");
+            if (text.lines().length > 3) {
+                this.collapsable(comments);
+            }
+        });
+        this.tokens.where(t => t.is(TokenTypes.pod) && t.value.lines().length > 3).forEach(pod => {
+            this.collapsable([pod]);
+        });
+    }
+
+    findConsecutiveRepetitions<T>(list: T[], equals: (x: T, y: T) => boolean): Array<T[]> {
+        let repeat: T[] = null;
+        let repeats: Array<T[]> = [];
+        list.forEach(t => {
+            if (repeat == null)
+                repeat = [t];
+            else if (equals(repeat[0], t))
+                repeat.push(t);
+            else {
+                if (repeat.length > 1)
+                    repeats.push(repeat);
+                repeat = [t];
+            }
+        });
+        if (repeat != null && repeat.length > 1)
+            repeats.push(repeat);
+        return repeats;
     }
 
 
-    hyperlinkNode(node: AstNode, href: string, name?: string, title?: string, css?: string) {
+    hyperlinkNode(node: AstNode, href: string, name?: string, title?: string, css?: string): HTMLAnchorElement {
         let tokens = this.collectTokens2(node);
+        let a = this.hyperlinkTokens(tokens, href, name, title, css);
+        $(a).data("AstNode", node);
+        return a;
+    }
+    hyperlinkTokens(tokens: Token[], href: string, name?: string, title?: string, css?: string): HTMLAnchorElement {
+        if (href == null)
+            href = "javascript:void(0)";
         let els = tokens.select(token => this.tokenToElement.get(token));
         if ($(els).closest("a").length > 0) {
             console.warn("already hyperlinked");
@@ -580,9 +665,9 @@ export class IndexPage {
             a.attr("title", title);
         if (css != null)
             a.addClass(css);
-        a.data("AstNode", node);
         a.append(els);
         a.attr({ href, name });
+        return <HTMLAnchorElement>a[0];
     }
 
     highlightNode(node: AstNode) {
@@ -719,8 +804,12 @@ export function main() {
 
     $(document.body).click(e => {
         if (e.target.nodeName == "A") {
+            if (e.isDefaultPrevented())
+                return;
             e.preventDefault();
             let href = e.target.getAttribute("href");
+            if (href == null || href == "" || href.startsWith("javascript:"))
+                return;
             window.history.pushState("", "", href);
             $(window).trigger("urlchange");
         }

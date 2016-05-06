@@ -1,5 +1,5 @@
 ﻿.code a { color:blue; text-decoration:none; }
-.code a:hover { text-decoration:underline;}
+.code a[href]:hover { text-decoration:underline;}
 
 .code .qq { color: red;}
 .code .pod { color: darkgreen;}
