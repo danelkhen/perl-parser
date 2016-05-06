@@ -4,3 +4,13 @@
 /// <reference path="../typings/browser/ambient/jquery/index.d.ts" />
 /// <reference path="../typings/browser/ambient/es6-shim/index.d.ts" />
 
+declare class Tooltip {
+    constructor(opts?: TooltipOptions);
+}
+
+declare interface TooltipOptions {
+    target: any;
+    position?: string;
+    content?: any;
+    classes?: string;
+}

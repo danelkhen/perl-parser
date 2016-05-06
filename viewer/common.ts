@@ -150,6 +150,7 @@ export interface TreeNodeData {
 export class CvLine {
     //lineCodeEl: HTMLElement;
     lineNumberEl: HTMLElement;
+    tokens:Token[];
 }
 
 
@@ -339,16 +340,6 @@ implmement perldoc api: perldoc -T -o html -f return
 
 */
 
-export declare class Tooltip {
-    constructor(opts?: TooltipOptions);
-}
-
-export declare interface TooltipOptions {
-    target: any;
-    position?: string;
-    content?: any;
-    classes?: string;
-}
 
 export interface Expander {
     toggle(collapsed?: boolean);

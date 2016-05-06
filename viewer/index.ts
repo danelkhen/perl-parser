@@ -12,7 +12,7 @@ import {
     ReturnExpression, TrinaryExpression, Unit, UnlessStatement, UseOrNoStatement, UseStatement, ValueExpression, VariableDeclarationExpression, VariableDeclarationStatement, WhileStatement,
     AstQuery, PrecedenceResolver, TokenTypes, Tokenizer, safeTry, TokenReader, Logger, AstNodeFixator,
 } from "../src/index";
-import {CvLine, IndexSelection, PackageResolution, AsyncFunc, Tooltip, TreeNodeData, Expander, Helper} from "./common";
+import {CvLine, IndexSelection, PackageResolution, AsyncFunc, TreeNodeData, Expander, Helper} from "./common";
 
 import "../src/extensions";
 import {RefArrayToRefUtil} from "../src/refactor";
@@ -27,26 +27,33 @@ export class IndexPage {
         this.service = new P5Service();
     }
 
-    tokenToElement: Map<Token, HTMLElement> = new Map<Token, HTMLElement>();
     tbUrl: JQuery;
     tbRegex: JQuery;
     urlKey: string;
     code: string;
     firstTime: boolean = true;
-    //rawFilesBaseUrl = "http://localhost/";//"https://raw.githubusercontent.com/";
     cvBaseUrl = "/";
     lines: CvLine[];
     selection: IndexSelection;
+    service: P5Service;
+    file: P5File;
+    lastUrl: string;
+    isAllCollapsed: boolean;
+    isMouseDown = false;
+    unit: Unit;
+    tokens: Token[];
+    generatedCode: string;
+    
+    tokenToElement: Map<Token, HTMLElement> = new Map<Token, HTMLElement>();
     includes = [
         "lib/",
     ];
-
-    service: P5Service;
 
     getCvUrlForIncludeAndPacakge(include: string, packageName: string) {
         let url = Helper.urlJoin([this.cvBaseUrl, include, packageName.split("::")]) + ".pm";
         return url;
     }
+    
     resolvePackageWithInclude(packageName: string, include: string): Promise<string> {
         let url = Helper.urlJoin([include, packageName.split("::")]) + ".pm";
         return this.service.fs(url).then(t => include);
@@ -56,7 +63,6 @@ export class IndexPage {
         let funcs = Helper.selectAsyncFuncs(this.includes, t => this.resolvePackageWithInclude(pkg.name, t));
         return Helper.firstSuccess(funcs).catch(t => null).then(t => pkg.resolvedIncludePath = t);
     }
-
 
     main() {
         console.log(window.location.pathname);
@@ -95,7 +101,6 @@ export class IndexPage {
         $(window).on("urlchange", e => this.update());
     }
 
-    isAllCollapsed: boolean;
     expandOrCollapseAll() {
         this.isAllCollapsed = !this.isAllCollapsed;
         this.getExpanders().forEach(t => t.toggle(this.isAllCollapsed));
@@ -168,7 +173,6 @@ export class IndexPage {
         this.clickLine(line, ctrl, shift);
     }
 
-    isMouseDown = false;
     onLineNumberMouseOver(e: JQueryMouseEventObject) {
         if (!this.isMouseDown)
             return;
@@ -227,8 +231,6 @@ export class IndexPage {
         return path;
     }
 
-    file: P5File;
-    lastUrl: string;
     update() {
         let url = this.getUrl();
         if (this.lastUrl == url)
@@ -261,27 +263,19 @@ export class IndexPage {
     getLineEl(line: number): HTMLElement {
         return <HTMLElement>this.lineNumbersEl.childNodes.item(line - 1);
     }
+    lineTemplate:JQuery;
     renderLineNumbers() {
+        if(this.lineTemplate==null)
+            this.lineTemplate = $(".line").first().remove();
+        
         this.lineNumbersEl = $(".line-numbers").empty()[0];
-        let count = this.code.lines().length;
-        for (let i = 0; i < count; i++) {
-            let div = document.createElement("div");
-            div.className = "line";
-            let div3 = document.createElement("div");
-            div3.className = "line-overlay";
-            let div2 = document.createElement("div");
-            div2.className = "line-number";
-            div.appendChild(div3);
-            div.appendChild(div2);
-            $.create(".expander-container").appendTo(div);
-            div2.textContent = (i + 1).toString();
-            this.lineNumbersEl.appendChild(div);//$.create("div").text(i + 1));
-        }
+        this.lines.forEach((line,i) => {
+            let div = this.lineTemplate.clone();
+            div.find(".line-number").text((i + 1).toString());
+            this.lineNumbersEl.appendChild(div[0]);
+        });
     }
 
-    unit: Unit;
-    tokens: Token[];
-    generatedCode: string;
 
     parse(filename: string, data: string) {
         //if (localStorage.getItem("pause") == "1" && this.firstTime) {
@@ -422,6 +416,7 @@ export class IndexPage {
         });
         this.tokens = list;
     }
+    
     renderTokens() {
         let codeEl = $(".code")[0];
         codeEl.innerHTML = "";
@@ -431,29 +426,22 @@ export class IndexPage {
         this.splitNewLineTokens();
 
         let line = new CvLine();
-        //line.lineCodeEl = document.createElement("div");
-        //codeEl.appendChild(line.lineCodeEl);
+        line.tokens = [];
         this.lines.add(line);
         this.tokens.forEach(token => {
-            //if (token.is(TokenTypes.whitespace) && token.value == "\n") {
-            //    if (line.lineCodeEl.firstChild == null)
-            //        line.lineCodeEl.textContent = "\n";
-            //    line = new CvLine();
-            //    line.lineCodeEl = document.createElement("div");
-            //    line.lineCodeEl.className = "line";
-            //    //div.textContent = token.value;
-            //    codeEl.appendChild(line.lineCodeEl);
-            //    this.lines.add(line);
-            //    this.tokenToElement.set(token, line.lineCodeEl);
-            //}
-            //else {
+            line.tokens.push(token);
+            if (token.is(TokenTypes.whitespace) && token.value == "\n") {
+                line = new CvLine();
+                line.tokens = [];
+                this.lines.add(line);
+            }
+        });
+        this.tokens.forEach(token => {
             let span = document.createElement("span");
             span.className = token.type.name;
             span.textContent = token.value;
-            //line.lineCodeEl.appendChild(span);
             codeEl.appendChild(span);
             this.tokenToElement.set(token, span);
-            //}
         });
         this.renderLineNumbers();
         this.renderSelection();
@@ -466,34 +454,6 @@ export class IndexPage {
         new RefArrayToRefUtil(this.unit).process();
         this.generateCode();
         this.render();
-    }
-
-    onMouseOverNode(e: Event, node: TreeNodeData) {
-        $(".selected").removeClass("selected");
-        //let obj = node.obj;
-        //if (obj == null)
-        //    return;
-        //if (!(obj instanceof AstNode))
-        //    return;
-        let tokens = this.getTokens(node.value, true);
-        if (tokens.length == 0)
-            tokens = this.getTokens(node.obj, true);
-
-        //let astNode = <AstNode>obj;
-        $(e.target).closest(".self").addClass("selected");
-        tokens.forEach(token => $(this.tokenToElement.get(token)).addClass("selected"));
-        let el = this.tokenToElement.get(tokens[0]);
-        if (el != null) {
-            let div = $(".code")[0];
-            let top = div.scrollTop;
-            let bottom = div.scrollTop + div.offsetHeight;
-            let top2 = el.offsetTop;
-            let bottom2 = el.offsetTop + el.offsetHeight;
-            if (top2 < top)
-                div.scrollTop = top2;
-            else if (bottom2 > bottom)
-                div.scrollTop = top2;
-        }
     }
 
     getTokens(obj: any, deep: boolean): Token[] {
@@ -578,7 +538,7 @@ export class IndexPage {
         });
         subs.forEach(sub => {
             let x = this.collectTokens2(sub.block);
-            this.collapsable(null, x);
+            this.collapsable(x);
         });
     }
 
@@ -696,12 +656,12 @@ export class IndexPage {
         $(wrapper).append(els);
     }
 
-    collapsable(anchorTokens: Token[], collapsibleTokens: Token[]) {
-        while (collapsibleTokens.last().is(TokenTypes.whitespace, "\n"))
-            collapsibleTokens.removeLast();
-        let lineStart = collapsibleTokens[0].range.start.line;
-        let lineEnd = collapsibleTokens.last().range.end.line;
-        let range = collapsibleTokens.select(t => this.tokenToElement.get(t)).exceptNulls();
+    collapsable(tokens: Token[]) {
+        while (tokens.last().is(TokenTypes.whitespace, "\n"))
+            tokens.removeLast();
+        let lineStart = tokens[0].range.start.line;
+        let lineEnd = tokens.last().range.end.line;
+        let range = tokens.select(t => this.tokenToElement.get(t)).exceptNulls();
         let span = $.create("span.collapsable");
         this.wrap(span[0], range);
         let lineStartEl = $(this.getLineEl(lineStart));
@@ -745,7 +705,7 @@ export function main() {
             $(window).trigger("urlchange");
         }
     });
-    let win:any = window;
+    let win: any = window;
     let page = new IndexPage();
     win._page = page;
 
