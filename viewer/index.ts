@@ -18,6 +18,7 @@ import "../src/extensions";
 import {RefArrayToRefUtil} from "../src/refactor";
 import {ExpressionTester, EtReport, EtItem} from "../src/expression-tester";
 import {P5Service, P5File} from "./p5-service";
+import {monitor, Monitor} from "./monitor";
 
 export class IndexPage {
     constructor() {
@@ -43,7 +44,7 @@ export class IndexPage {
     unit: Unit;
     tokens: Token[];
     generatedCode: string;
-    
+
     tokenToElement: Map<Token, HTMLElement> = new Map<Token, HTMLElement>();
     includes = [
         "lib/",
@@ -53,7 +54,7 @@ export class IndexPage {
         let url = Helper.urlJoin([this.cvBaseUrl, include, packageName.split("::")]) + ".pm";
         return url;
     }
-    
+
     resolvePackageWithInclude(packageName: string, include: string): Promise<string> {
         let url = Helper.urlJoin([include, packageName.split("::")]) + ".pm";
         return this.service.fs(url).then(t => include);
@@ -64,10 +65,20 @@ export class IndexPage {
         return Helper.firstSuccess(funcs).catch(t => null).then(t => pkg.resolvedIncludePath = t);
     }
 
+    monitor: Monitor;
     main() {
-        console.log(window.location.pathname);
+        this.monitor = monitor;
+        //let x = { name: "ggg", phones: [{ number: "asd" }, { number: "dddd" }] };
+        //monitor.methodInvoked.attach(e => console.log("methodInvoked", e));
+        //monitor.propSet.attach(e => console.log("propSet", e));
+        //monitor.register(x, () => true);
+        //x.name = "aaa";
+        //x.phones.push({ number: "aaaaa" });
+        //x.phones.removeAt(1);
+        //console.log(window.location.pathname);
         $(".menu").getAppend("button.btnCritique").text("Critique").click(e => this.critique());
         $(".menu").getAppend("button.btnExpandOrCollapseAll").text("Expand/Collapse").click(e => this.expandOrCollapseAll());
+        $(".menu").getAppend("button.btnGitBlame").text("git blame").click(e => this.gitBlame());
         this.tbUrl = $("#tbUrl");
         this.tbUrl.val(window.location.pathname);
         this.urlKey = "perl-parser\turl";
@@ -127,6 +138,15 @@ export class IndexPage {
                         classes: 'tt tt-violation'
                     });
                 });
+            });
+        });
+    }
+
+    gitBlame() {
+        this.service.gitBlame(this.file.path).then(items => {
+            items.forEach(item => {
+                let line = this.getLineEl(parseInt(item.line_num));
+                $(line).getAppend(".git-blame").text(item.author);
             });
         });
     }
@@ -263,13 +283,13 @@ export class IndexPage {
     getLineEl(line: number): HTMLElement {
         return <HTMLElement>this.lineNumbersEl.childNodes.item(line - 1);
     }
-    lineTemplate:JQuery;
+    lineTemplate: JQuery;
     renderLineNumbers() {
-        if(this.lineTemplate==null)
+        if (this.lineTemplate == null)
             this.lineTemplate = $(".line").first().remove();
-        
+
         this.lineNumbersEl = $(".line-numbers").empty()[0];
-        this.lines.forEach((line,i) => {
+        this.lines.forEach((line, i) => {
             let div = this.lineTemplate.clone();
             div.find(".line-number").text((i + 1).toString());
             this.lineNumbersEl.appendChild(div[0]);
@@ -416,7 +436,7 @@ export class IndexPage {
         });
         this.tokens = list;
     }
-    
+
     renderTokens() {
         let codeEl = $(".code")[0];
         codeEl.innerHTML = "";

@@ -16,6 +16,11 @@ export class P5Service {
         return this.ajax({ url: "critique/:path", query: { path } });
     }
 
+    gitBlame(path: string): Promise<GitBlameItem[]> {
+        return this.ajax({ url: "git/blame/:path", query: { path } });
+    }
+
+
     ajax<T>(opts: { method?: string, url: string, query?: any }): Promise<T> {
         let url2 = this.baseUrl + opts.url;
         Object.keys(opts.query).forEach(key => {
@@ -86,3 +91,9 @@ export interface CritiqueResponse {
 }
 
 
+export interface GitBlameItem {
+    author:string,
+    date:string,
+    line_num:string,
+    sha:string,
+}
