@@ -571,14 +571,13 @@ export class IndexPage {
         });
         builtins.forEach(node => {
             let name = node.toCode().trim();
-            this.hyperlinkNode(node, "http://perldoc.perl.org/functions/" + name + ".html", name, "(builtin function) " + name);
+            this.hyperlinkNode(node, "http://perldoc.perl.org/functions/" + name + ".html", name, "(builtin function) " + name, "builtin-function");
         });
         pragmas.forEach(node => {
             let name = node.toCode().trim();
             this.hyperlinkNode(node, "http://perldoc.perl.org/" + name + ".html", name, "(pragma) " + name);
         });
 
-        //let resolutions = this.findUsedPackages(this.unit).select(node => <PackageResolution>{ node: node });
         let resolutions: PackageResolution[] = inUse.select(node => ({ node: node, name: node.toCode().trim() }));
         resolutions.forEach(pkg => {
             this.resolvePackage(pkg)

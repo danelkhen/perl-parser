@@ -4,6 +4,8 @@
 .code .qq { color: red;}
 .code .pod { color: darkgreen;}
 .code .keyword { color: blue;}
+.code .builtin-function { color: blue;}
+
 .code .end { color: blue;}
 .code .sigiledIdentifier { color: #FF8700;}
 .code .integer { color: red;}
