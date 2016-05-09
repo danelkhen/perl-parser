@@ -3,6 +3,7 @@
 /// <reference path="../libs/corex-jquery.d.ts" />
 /// <reference path="../typings/browser/ambient/jquery/index.d.ts" />
 /// <reference path="../typings/browser/ambient/es6-shim/index.d.ts" />
+/// <reference path="../typings/browser/ambient/codemirror/index.d.ts" />
 
 declare class Tooltip {
     constructor(opts?: TooltipOptions);

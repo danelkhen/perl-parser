@@ -796,6 +796,14 @@ export class IndexPage {
 
 
 export function main() {
+
+    //var editor = CodeMirror.fromTextArea(<HTMLTextAreaElement>$("textarea")[0], { lineNumbers: true, mode:"perl",  foldGutter:true, });
+    //editor.setSize(null, "100%");
+    //editor.setValue("sub ggg {\nprint 'ggg';\n\n\n\n}");
+    //window.editor = editor;
+    //editor.foldCode(CodeMirror.Pos(0, 8), {rangeFinder:CodeMirror.fold.brace});
+    //return;
+
     window.onpopstate = e => {
         e.preventDefault();
         $(window).trigger("urlchange");
@@ -819,6 +827,9 @@ export function main() {
 
     page.main();
     $(".loading").css({ display: "none" });
+
+
+
 }
 
 

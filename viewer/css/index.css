@@ -12,9 +12,9 @@ textarea,input,select{
     border:1px solid #777;
 }*/
 body {
-    padding: 0 0 1000px 0; /* 1000px to avoid y-scrollbar 'jumps' during collapsing of code */
+    padding: 30px 0 1000px 0; /* 1000px to avoid y-scrollbar 'jumps' during collapsing of code */
     margin: 0;
-    /*height: 100%;*/
+    height: 100%;
     /*overflow: hidden;*/
 }
 
@@ -247,6 +247,6 @@ a:target {
 
 .menu {
     position: fixed;
-    text-align: right;
     width: 100%;
+    top:0;
 }
