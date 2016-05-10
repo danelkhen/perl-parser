@@ -17,7 +17,7 @@ import {CvLine, IndexSelection, PackageResolution, AsyncFunc, TreeNodeData, Expa
 import "../src/extensions";
 import {RefArrayToRefUtil} from "../src/refactor";
 import {ExpressionTester, EtReport, EtItem} from "../src/expression-tester";
-import {P5Service, P5File} from "./p5-service";
+import {P5Service, P5File, CritiqueResponse, CritiqueViolation} from "./p5-service";
 import {monitor, Monitor} from "./monitor";
 
 export class IndexPage {
@@ -76,33 +76,33 @@ export class IndexPage {
         //x.phones.push({ number: "aaaaa" });
         //x.phones.removeAt(1);
         //console.log(window.location.pathname);
-        $(".menu").getAppend("button.btnCritique").text("Critique").click(e => this.critique());
-        $(".menu").getAppend("button.btnExpandOrCollapseAll").text("Expand/Collapse").click(e => this.expandOrCollapseAll());
-        $(".menu").getAppend("button.btnGitBlame").text("git blame").click(e => this.gitBlame());
-        this.tbUrl = $("#tbUrl");
-        this.tbUrl.val(window.location.pathname);
-        this.urlKey = "perl-parser\turl";
-        this.tbRegex = $("#tbRegex");
-        $("#btnRefactor").click(e => this.refactor());
-        $("#btnTestExpressions").click(e => this.testExpressions());
+        //$(".menu").getAppend("button.btn.btnCritique").text("Critique").click(e => this.critique());
+        //$(".menu").getAppend("button.btn.btnExpandOrCollapseAll").text("Expand/Collapse").click(e => this.expandOrCollapseAll());
+        //$(".menu").getAppend("button.btn.btnGitBlame").text("git blame").click(e => this.gitBlame());
+        //this.tbUrl = $("#tbUrl");
+        //this.tbUrl.val(window.location.pathname);
+        //this.urlKey = "perl-parser\turl";
+        //this.tbRegex = $("#tbRegex");
+        //$("#btnRefactor").click(e => this.refactor());
+        //$("#btnTestExpressions").click(e => this.testExpressions());
 
-        this.tbRegex.keyup(e => {
-            let s = this.tbRegex.val();
-            try {
-                let regex = new Function("return " + s + ";")();
-                let res = regex.exec(this.code);
-                if (res instanceof Array)
-                    console.log(JSON.stringify(res[0]), { regex: res });
-                else
-                    console.log(res);
-            }
-            catch (e) {
-                console.log(e);
-            }
-        });
-        this.tbUrl.change(e => this.update());
-        $("#cbAddParentheses").change(e => this.update());
-        $("#cbDeparseFriendly").change(e => this.update());
+        //this.tbRegex.keyup(e => {
+        //    let s = this.tbRegex.val();
+        //    try {
+        //        let regex = new Function("return " + s + ";")();
+        //        let res = regex.exec(this.code);
+        //        if (res instanceof Array)
+        //            console.log(JSON.stringify(res[0]), { regex: res });
+        //        else
+        //            console.log(res);
+        //    }
+        //    catch (e) {
+        //        console.log(e);
+        //    }
+        //});
+        //this.tbUrl.change(e => this.update());
+        //$("#cbAddParentheses").change(e => this.update());
+        //$("#cbDeparseFriendly").change(e => this.update());
         //$(".line-numbers").on("click", "a.line-number", e=>e.preventDefault());
         $(".line-numbers").mousedown(e => this.onLineNumberMouseDown(e));
         $(".line-numbers").mouseover(e => this.onLineNumberMouseOver(e));
@@ -110,6 +110,7 @@ export class IndexPage {
         this.selection.fromParam(location.hash.substr(1));
 
         this.update();
+
         $(window).on("urlchange", e => this.update());
     }
 
@@ -117,10 +118,16 @@ export class IndexPage {
         this.isAllCollapsed = !this.isAllCollapsed;
         this.getExpanders().forEach(t => t.toggle(this.isAllCollapsed));
     }
+
+    critiqueRes: CritiqueResponse;
     critique() {
         this.service.critique(this.file.path).then(res => {
+            this.critiqueRes = res;
             console.log(res);
             //let firstViolationLine = null;
+            this.dataBind();
+            //Helper.dataBind($(".bottom-bar")[0], this);
+            //Helper.repeat(".critique-row", res.violations);
             let hls = res.violations.select(violation => {
                 let pos = new File2Pos();
                 pos.line = violation.source.location.line;
@@ -284,20 +291,40 @@ export class IndexPage {
                 this.file.children.forEach(t => t.name = t.path);
                 this.file.children.forEach(t => t.path = Helper.urlJoin([url, t.path]));
                 this.file.children = this.file.children.orderBy([t => !t.is_dir, t => t.name]);
-                Helper.repeat(".child", this.file.children);
-                console.log("TODO: implement directory browser", this.file);
             }
             else {
                 this.service.src(url).then(data => {
                     this.file.src = data;
                     this.parse(url, data);
+                    this.dataBind();
                 });
             }
-            $(".dir-view").toggleClass("active", this.file.children != null);
-            $(".code-view").toggleClass("active", this.file.children == null);
+            //$(".dir-view").toggleClass("active", this.file.children != null);
+            //$(".code-view").toggleClass("active", this.file.children == null);
+            this.dataBind();
         });
+        this.dataBind();
     }
 
+    dataBindTimeout: number;
+    dataBind() {
+        if (this.dataBindTimeout != null) {
+            window.clearTimeout(this.dataBindTimeout);
+            this.dataBindTimeout = null;
+        }
+        this.dataBindTimeout = window.setTimeout(() => {
+            this.dataBindTimeout = null;
+            this.dataBindNow();
+        }, 10);
+    }
+
+    dataBindNow() {
+        Helper.dataBind(document.body, this, this);
+    }
+
+    violation_click(e: JQueryEventObject, violation: CritiqueViolation) {
+        console.log(e);
+    }
 
     lineNumbersEl: HTMLElement;
     getLineEl(line: number): HTMLElement {
@@ -428,42 +455,6 @@ export class IndexPage {
         this.renderTokens();
     }
 
-    //splitNewLineTokens() {
-    //    let list: Token[] = [];
-    //    this.tokens.forEach(token => {
-    //        if (token.is(TokenTypes.whitespace) && token.value.contains("\n") && token.value != "\n") {
-    //            let s = token.value;
-    //            while (s.length > 0) {
-    //                if (s[0] == "\n") {
-    //                    let newLineToken = TokenTypes.whitespace.create2("\n");
-    //                    list.push(newLineToken);
-    //                    s = s.substring(1);
-    //                }
-    //                else {
-    //                    let index = s.indexOf("\n");
-    //                    if (index > 0) {
-    //                        let part = s.substring(0, index - 1);
-    //                        let whitespaceToken = TokenTypes.whitespace.create2(part);
-    //                        list.push(whitespaceToken);
-    //                        let whitespaceToken2 = TokenTypes.whitespace.create2("\n");
-    //                        list.push(whitespaceToken2);
-    //                        s = s.substring(index + 1);
-    //                    }
-    //                    else {
-    //                        let whitespaceToken = TokenTypes.whitespace.create2(s);
-    //                        list.push(whitespaceToken);
-    //                        s = "";
-    //                    }
-    //                }
-    //            }
-    //            return;
-    //        }
-    //        else {
-    //            list.push(token);
-    //        }
-    //    });
-    //    this.tokens = list;
-    //}
 
     renderTokens() {
         let codeEl = $(".code")[0];
@@ -650,16 +641,18 @@ export class IndexPage {
         if (href == null)
             href = "javascript:void(0)";
         let els = tokens.select(token => this.tokenToElement.get(token));
-        if ($(els).closest("a").length > 0) {
+        let a = $(els).closest("a");
+        if (a.length > 0) {
             console.warn("already hyperlinked");
-            return;
+            return <HTMLAnchorElement>a[0];
         }
-        if ($(els[0]).closest("a").length > 0) {
+        a = $(els[0]).closest("a");
+        if (a.length > 0) {
             console.warn("already hyperlinked 2");
-            return;
+            return <HTMLAnchorElement>a[0];
         }
         //console.log("hyperlinkNode", els);
-        let a = $.create("a").insertBefore(els[0]);
+        a = $.create("a").insertBefore(els[0]);
         if (title != null)
             a.attr("title", title);
         if (css != null)
@@ -792,17 +785,18 @@ export class IndexPage {
         return $(".expander").toArray$().select(t => t.dataItem());
     }
 
+    isFolder() {
+        return this.file != null && this.file.children != null;
+    }
+    isFile() {
+        return this.file != null && this.file.children == null;
+    }
+
 }
 
 
 export function main() {
 
-    //var editor = CodeMirror.fromTextArea(<HTMLTextAreaElement>$("textarea")[0], { lineNumbers: true, mode:"perl",  foldGutter:true, });
-    //editor.setSize(null, "100%");
-    //editor.setValue("sub ggg {\nprint 'ggg';\n\n\n\n}");
-    //window.editor = editor;
-    //editor.foldCode(CodeMirror.Pos(0, 8), {rangeFinder:CodeMirror.fold.brace});
-    //return;
 
     window.onpopstate = e => {
         e.preventDefault();
@@ -834,4 +828,50 @@ export function main() {
 
 
 $(main);
+
+
+//splitNewLineTokens() {
+//    let list: Token[] = [];
+//    this.tokens.forEach(token => {
+//        if (token.is(TokenTypes.whitespace) && token.value.contains("\n") && token.value != "\n") {
+//            let s = token.value;
+//            while (s.length > 0) {
+//                if (s[0] == "\n") {
+//                    let newLineToken = TokenTypes.whitespace.create2("\n");
+//                    list.push(newLineToken);
+//                    s = s.substring(1);
+//                }
+//                else {
+//                    let index = s.indexOf("\n");
+//                    if (index > 0) {
+//                        let part = s.substring(0, index - 1);
+//                        let whitespaceToken = TokenTypes.whitespace.create2(part);
+//                        list.push(whitespaceToken);
+//                        let whitespaceToken2 = TokenTypes.whitespace.create2("\n");
+//                        list.push(whitespaceToken2);
+//                        s = s.substring(index + 1);
+//                    }
+//                    else {
+//                        let whitespaceToken = TokenTypes.whitespace.create2(s);
+//                        list.push(whitespaceToken);
+//                        s = "";
+//                    }
+//                }
+//            }
+//            return;
+//        }
+//        else {
+//            list.push(token);
+//        }
+//    });
+//    this.tokens = list;
+//}
+
+
+//var editor = CodeMirror.fromTextArea(<HTMLTextAreaElement>$("textarea")[0], { lineNumbers: true, mode:"perl",  foldGutter:true, });
+//editor.setSize(null, "100%");
+//editor.setValue("sub ggg {\nprint 'ggg';\n\n\n\n}");
+//window.editor = editor;
+//editor.foldCode(CodeMirror.Pos(0, 8), {rangeFinder:CodeMirror.fold.brace});
+//return;
 

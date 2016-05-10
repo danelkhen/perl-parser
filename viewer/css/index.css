@@ -3,6 +3,7 @@
     margin: 0;
     height: 100%;
     font-family: Arial;
+    font-size: 13px;
 }
 /*html,input,textarea,select{
     background-color:#1E1E1E;
@@ -12,10 +13,35 @@ textarea,input,select{
     border:1px solid #777;
 }*/
 body {
-    padding: 30px 0 1000px 0; /* 1000px to avoid y-scrollbar 'jumps' during collapsing of code */
+    padding: 30px 0 30px 0;
     margin: 0;
-    height: 100%;
-    /*overflow: hidden;*/
+}
+
+a {
+    font-size: inherit;
+    text-decoration: none;
+    color: #1378FF;
+}
+
+.top-bar {
+    position: fixed;
+    width: 100%;
+    top: 0;
+    background-color: rgb(214, 231, 242);
+    height: 30px;
+    padding: 0 20px;
+}
+
+.bottom-bar {
+    position: fixed;
+    bottom: 0;
+    width: 100%;
+    height: 200px;
+    background-color: rgb(214, 231, 242);
+    padding: 0 20px;
+}
+
+.menu {
 }
 
 .loading {
@@ -56,7 +82,7 @@ a:target {
 }
 
 .line:hover .line-overlay {
-    background-color:#f0f0f0;
+    background-color: #f0f0f0;
 }
 
 .line.selected .line-overlay {
@@ -84,16 +110,15 @@ a:target {
 }
 
 .line .git-blame {
-    display:inline-block;
-    width:90px;
-    overflow:hidden;
-    text-overflow:clip;
-    vertical-align:top;
-    text-align:left;
+    display: inline-block;
+    width: 90px;
+    overflow: hidden;
+    text-overflow: clip;
+    vertical-align: top;
+    text-align: left;
 }
 
-.tooltip.git-blame{
-
+.tooltip.git-blame {
 }
 
 .code-container > tbody > tr > td {
@@ -116,8 +141,8 @@ a:target {
 .line-number {
     display: inline-block;
     width: 30px;
-    text-decoration:none;
-    color:inherit;
+    text-decoration: none;
+    color: inherit;
 }
 
 .expander-container {
@@ -148,12 +173,12 @@ a:target {
     max-width: 30%;
     font-size: 12px;
     font-family: Arial;
-    border-radius:2px;
+    border-radius: 2px;
     background-color: #fdfdfd;
     color: black;
-    border:1px solid #ccc;
-    padding:6px;
-    white-space:pre;
+    border: 1px solid #ccc;
+    padding: 6px;
+    white-space: pre;
 }
 
 
@@ -172,13 +197,13 @@ a:target {
     height: 100%;
 }
 
-.view {
+/*.view {
     display: none;
 }
 
 .view.active {
     display: block;
-}
+}*/
 
 /*.td-code {
     position: relative;
@@ -246,7 +271,63 @@ a:target {
 }
 
 .menu {
-    position: fixed;
-    width: 100%;
-    top:0;
+    font-size: 13px;
+}
+
+.btn {
+    background-color: white;
+    border: 1px solid #ccc;
+    margin-left: -1px;
+    padding: 1px 6px;
+    font: inherit;
+    line-height: 150%;
+    display: inline-block;
+}
+
+/*button::-moz-focus-inner,
+input[type="reset"]::-moz-focus-inner,
+input[type="button"]::-moz-focus-inner,
+input[type="submit"]::-moz-focus-inner,
+input[type="file"] > input[type="button"]::-moz-focus-inner {border:0;padding:0;margin:0;}*/
+
+a.btn {
+    color: inherit;
+}
+
+.btn:hover {
+    background-color: #eee;
+}
+
+.bottom-bar {
+    font-size: 12px;
+}
+
+
+.grid {
+    border-collapse: collapse;
+    border: 1px solid #ccc;
+}
+
+.grid > thead > tr > th {
+    border: 1px solid #ccc;
+    text-align: left;
+    padding: 2px 4px;
+}
+
+.grid > tbody > tr > td {
+    border: none;
+    vertical-align: top;
+    padding: 2px 4px;
+}
+
+.dir-view {
+    padding: 0 20px;
+}
+
+.dir-view .child {
+    padding: 2px 0;
+}
+
+[_for] {
+    display: none;
 }

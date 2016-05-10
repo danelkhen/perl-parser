@@ -542,9 +542,9 @@ Array.prototype.take = function (count) {
     return this.slice(0, count);
 };
 Array.prototype.takeWhile = function (pred) {
-    let took = [];
+    var took = [];
     this.first(t=> {
-        let take = pred(t);
+        var take = pred(t);
         if (take)
             took.push(t);
         return !take;
