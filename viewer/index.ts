@@ -785,10 +785,14 @@ export class IndexPage {
         return $(".expander").toArray$().select(t => t.dataItem());
     }
 
-    isFolder() {
+    isFolder(file?: P5File) {
+        if (arguments.length == 0)
+            file = this.file;
         return this.file != null && this.file.children != null;
     }
-    isFile() {
+    isFile(file?: P5File) {
+        if (arguments.length == 0)
+            file = this.file;
         return this.file != null && this.file.children == null;
     }
 
