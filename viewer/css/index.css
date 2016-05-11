@@ -320,6 +320,10 @@ a.btn {
     padding: 2px 4px;
 }
 
+.grid > tbody > tr:hover {
+    background-color:#eee;
+}
+
 .dir-view {
     padding: 0 20px;
 }
@@ -330,4 +334,9 @@ a.btn {
 
 [_for] {
     display: none;
+}
+
+.critique .grid{
+    background-color:white;
+    cursor:default;
 }

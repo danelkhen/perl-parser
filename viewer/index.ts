@@ -323,7 +323,8 @@ export class IndexPage {
     }
 
     violation_click(e: JQueryEventObject, violation: CritiqueViolation) {
-        console.log(e);
+        console.log(e, violation);
+        this.scrollToLine(violation.source.location.line);
     }
 
     lineNumbersEl: HTMLElement;
@@ -430,9 +431,18 @@ export class IndexPage {
 
     scrollToLine(line: number) {
         let el = this.getLineEl(line);
-        if (el.previousSibling != null)
-            el = <HTMLElement>el.previousSibling;
-        el.scrollIntoView();
+        this.scrollToElement(el);
+        //if (el.previousSibling != null)
+        //    el = <HTMLElement>el.previousSibling;
+        //el.scrollIntoView();
+    }
+
+    scrollEl: HTMLElement = document.body;
+    scrollOffset: JQueryCoordinates = { left: 0, top: 30 };
+    lineHeight = 15;
+    scrollToElement(el: HTMLElement) {
+        let pos = $(el).offset();
+        this.scrollEl.scrollTop = pos.top - this.scrollOffset.top;
     }
 
     generateCode() {
