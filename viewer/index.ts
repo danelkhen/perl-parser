@@ -64,9 +64,10 @@ export class IndexPage {
         let funcs = Helper.selectAsyncFuncs(this.includes, t => this.resolvePackageWithInclude(pkg.name, t));
         return Helper.firstSuccess(funcs).catch(t => null).then(t => pkg.resolvedIncludePath = t);
     }
-
     monitor: Monitor;
     main() {
+        this.scrollEl = $(".code-view")[0];
+
         this.monitor = monitor;
         //let x = { name: "ggg", phones: [{ number: "asd" }, { number: "dddd" }] };
         //monitor.methodInvoked.attach(e => console.log("methodInvoked", e));
@@ -438,11 +439,10 @@ export class IndexPage {
     }
 
     scrollEl: HTMLElement = document.body;
-    scrollOffset: JQueryCoordinates = { left: 0, top: 30 };
+    //scrollOffset: JQueryCoordinates = { left: 0, top: 30 };
     lineHeight = 15;
     scrollToElement(el: HTMLElement) {
-        let pos = $(el).offset();
-        this.scrollEl.scrollTop = pos.top - this.scrollOffset.top;
+        this.scrollEl.scrollTop = el.offsetTop;// - this.lineHeight;//pos.top;// - this.scrollOffset.top;
     }
 
     generateCode() {

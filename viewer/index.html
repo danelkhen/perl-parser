@@ -42,50 +42,64 @@
     </script>
 </head>
 <body>
-    <div class="top-bar">
-        <div class="menu">
-            <a class="btn btnUp" href="../" _if="isFolder()">up</a>
-            <a class="btn btnUp" href="./" _if="isFile()">up</a>
-            <button class="btn" _onclick="e => this.critique()">critique</button>
-            <button class="btn" _onclick="e => this.expandOrCollapseAll()">toggle</button>
-            <button class="btn" _onclick="e => this.gitBlame()">blame</button>
-        </div>
-    </div>
     <div class="loading">Loading...</div>
-    <div class="dir-view" _if="isFolder()">
-        <div class="{{t => 'child template'}}" _for="file.children"><a href="{{path}}">{{name}}</a></div>
-    </div>
-    <div _if="isFile()">
-        <table class="code-container" _ignore>
-            <tr>
-                <td class="td-line-numbers"><div class="line-numbers"><div class="line"><div class="line-overlay"></div><a class="line-number">1</a><div class="expander-container"></div></div></div></td>
-                <td class="td-code"><div class="code"></div><textarea class="ta-code" spellcheck="false"></textarea></td>
-            </tr>
-        </table>
-    </div>
-    <div class="bottom-bar" _if="critiqueRes!=null">
-        <div class="pane">
-            <div class="critique" _if="critiqueRes!=null">
-                <table class="grid">
-                    <thead>
+    <table class="layout">
+        <tr class="top">
+            <td>
+                <div class="top-bar">
+                    <div class="menu">
+                        <a class="btn btnUp" href="../" _if="isFolder()">up</a>
+                        <a class="btn btnUp" href="./" _if="isFile()">up</a>
+                        <button class="btn" _onclick="e => this.critique()">critique</button>
+                        <button class="btn" _onclick="e => this.expandOrCollapseAll()">toggle</button>
+                        <button class="btn" _onclick="e => this.gitBlame()">blame</button>
+                    </div>
+                </div>
+            </td>
+        </tr>
+        <tr class="main">
+            <td>
+                <div class="dir-view" _if="isFolder()">
+                    <div class="{{t => 'child template'}}" _for="file.children"><a href="{{path}}">{{name}}</a></div>
+                </div>
+                <div _if="isFile()" class="code-view">
+                    <table class="code-container" _ignore>
                         <tr>
-                            <th>description</th>
-                            <th>policy</th>
-                            <th>line</th>
-                            <th>severity</th>
+                            <td class="td-line-numbers"><div class="line-numbers"><div class="line"><div class="line-overlay"></div><a class="line-number">1</a><div class="expander-container"></div></div></div></td>
+                            <td class="td-code"><div class="code"></div><textarea class="ta-code" spellcheck="false"></textarea></td>
                         </tr>
-                    </thead>
-                    <tbody>
-                        <tr class="critique-row template" _for="critiqueRes.violations" _onclick="(e, violation) => this.violation_click(e, violation)">
-                            <td>{{description}}</td>
-                            <td>{{policy}}</td>
-                            <td>{{source.location.line}}</td>
-                            <td>{{severity}}</td>
-                        </tr>
-                    </tbody>
-                </table>
-            </div>
-        </div>
-    </div>
+                    </table>
+                </div>
+            </td>
+        </tr>
+        <tr class="bottom">
+            <td>
+                <div class="bottom-bar" _if="critiqueRes!=null">
+                    <div class="pane">
+                        <div class="critique" _if="critiqueRes!=null">
+                            <table class="grid">
+                                <thead>
+                                    <tr>
+                                        <th>description</th>
+                                        <th>policy</th>
+                                        <th>line</th>
+                                        <th>severity</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr class="critique-row template" _for="critiqueRes.violations" _onclick="(e, violation) => this.violation_click(e, violation)">
+                                        <td>{{description}}</td>
+                                        <td>{{policy}}</td>
+                                        <td>{{source.location.line}}</td>
+                                        <td>{{severity}}</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </td>
+        </tr>
+    </table>
 </body>
 </html>
