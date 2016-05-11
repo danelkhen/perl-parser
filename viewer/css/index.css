@@ -133,12 +133,20 @@ a:target {
 }
 
 
-.code-container .line-numbers {
+.code-container .lines {
     width: 100%;
     position: absolute;
     user-select: none;
     z-index:0;
+    color: #bbb;
+    cursor: default;
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+    position: absolute;
 }
+
 
 .code-container.wide-line-numbers .line-numbers {
     width: 160px;
@@ -170,18 +178,6 @@ a:target {
     padding: 0;
 }
 
-.line-numbers {
-    box-sizing: border-box;
-    /*text-align: right;*/
-    padding-right: 10px;
-    color: #bbb;
-    cursor: default;
-    -webkit-user-select: none;
-    -moz-user-select: none;
-    -ms-user-select: none;
-    user-select: none;
-    position: relative;
-}
 
 .line-number {
     display: inline-block;
@@ -189,6 +185,7 @@ a:target {
     text-decoration: none;
     color: inherit;
     text-align: right;
+    padding-right:10px;
 }
 
 .expander-container {
@@ -196,7 +193,7 @@ a:target {
     display: inline-block;
 }
 
-.line-numbers > .line:hover {
+.lines > .line:hover {
     color: black;
 }
 

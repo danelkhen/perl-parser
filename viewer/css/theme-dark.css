@@ -1,9 +1,9 @@
-﻿.line-numbers {
+﻿.lines {
     color: #bbb;
     background-color:rgb(30,30,30);
 }
 
-.line-numbers > div:hover {
+.lines > div:hover {
     color: white;
 }
 .ta-code{

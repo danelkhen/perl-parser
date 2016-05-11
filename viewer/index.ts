@@ -105,9 +105,9 @@ export class IndexPage {
         //$("#cbAddParentheses").change(e => this.update());
         //$("#cbDeparseFriendly").change(e => this.update());
         //$(".line-numbers").on("click", "a.line-number", e=>e.preventDefault());
-        $(".line-numbers").mousedown(e => this.onLineNumberMouseDown(e));
-        $(".line-numbers").mouseover(e => this.onLineNumberMouseOver(e));
-        $(".line-numbers").mouseup(e => this.onLineNumberMouseUp(e));
+        $(".lines").mousedown(e => this.onLineNumberMouseDown(e));
+        $(".lines").mouseover(e => this.onLineNumberMouseOver(e));
+        $(".lines").mouseup(e => this.onLineNumberMouseUp(e));
         this.selection.fromParam(location.hash.substr(1));
 
         this.update();
@@ -267,7 +267,7 @@ export class IndexPage {
     renderSelection() {
         let obj: { [key: string]: boolean } = {};
         this.selection.getSelectedIndexes().forEach(t => obj[t] = true);
-        let node = <HTMLElement>$(".line-numbers")[0].firstChild;
+        let node = <HTMLElement>$(".lines")[0].firstChild;
         let index = 1;
         while (node != null) {
             $(node).toggleClass("selected", obj[index] == true);
@@ -339,7 +339,7 @@ export class IndexPage {
         if (this.lineTemplate == null)
             this.lineTemplate = $(".line").first().remove();
 
-        this.lineNumbersEl = $(".line-numbers").empty()[0];
+        this.lineNumbersEl = $(".lines").empty()[0];
         this.lines.forEach((line, i) => {
             let div = this.lineTemplate.clone();
             let lineNumber = i + 1;
