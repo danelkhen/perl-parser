@@ -158,7 +158,7 @@ export class IndexPage {
     }
 
     gitBlame() {
-        $(".code-container").addClass("wide-line-numbers");
+        $(".code-container").addClass("git-blame-mode");
         this.service.gitBlame(this.file.path).then(items => {
             items.forEach(item => {
                 let line = this.getLineEl(parseInt(item.line_num));
