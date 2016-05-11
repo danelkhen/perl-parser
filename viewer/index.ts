@@ -163,7 +163,9 @@ export class IndexPage {
             items.forEach(item => {
                 let line = this.getLineEl(parseInt(item.line_num));
                 $(line).find(".git-blame").remove();
-                let el = $.create(".git-blame").text(item.author);
+                let el = $.create(".git-blame");
+                el.getAppend("span.sha").text(item.sha);
+                el.getAppend("span.author").text(item.author);
                 this.tooltip({ target: el[0], content: [item.author, item.date, item.sha].join("\n") });
                 $(line).find(".line-number").before(el);
             });

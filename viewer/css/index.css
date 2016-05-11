@@ -144,13 +144,22 @@ a:target {
     width: 160px;
 }
 
-.line .git-blame {
+.line .git-blame{
     display: inline-block;
     width: 90px;
     overflow: hidden;
     text-overflow: clip;
     vertical-align: top;
     text-align: left;
+}
+
+.line .git-blame span {
+    display: inline-block;
+    width: 50%;
+    overflow: hidden;
+    text-overflow: clip;
+    padding-right:10px;
+    box-sizing:border-box;
 }
 
 .tooltip.git-blame {
