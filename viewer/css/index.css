@@ -44,9 +44,10 @@ a {
 .layout > tbody > .bottom {
     /*height: 30px;*/
 }
-.layout > tbody > tr > td{
-    vertical-align:top;
-    padding:0;
+
+.layout > tbody > tr > td {
+    vertical-align: top;
+    padding: 0;
 }
 
 .top-bar {
@@ -57,8 +58,8 @@ a {
     /*height: 30px;*/
     padding: 0 20px;
     /*box-shadow:black 10px 10px;*/
-    border-spacing:0;
-    border:none;
+    border-spacing: 0;
+    border: none;
 }
 
 .bottom-bar {
@@ -101,7 +102,6 @@ a:target {
 
 .line {
     position: relative;
-    text-align: right;
 }
 
 .line .line-overlay {
@@ -109,7 +109,7 @@ a:target {
     display: block;
     position: absolute;
     width: 100%;
-    min-width:30px;
+    min-width: 30px;
     left: 0;
     height: 15px;
     /*border-left: solid 50px white;*/
@@ -127,24 +127,24 @@ a:target {
 .line.selected:hover .line-overlay {
     background-color: rgb(255, 224, 103);
 }
+
 .code-container {
-    box-sizing: border-box;
+    position: relative;
+}
+
+
+.code-container .line-numbers {
     width: 100%;
-    table-layout: fixed;
-    border-collapse: collapse;
-    border-spacing: 0;
+    position: absolute;
+    user-select: none;
+    z-index:0;
 }
 
-
-.code-container .td-line-numbers {
-    width: 60px;
-}
-
-.code-container.wide-line-numbers .td-line-numbers {
+.code-container.wide-line-numbers .line-numbers {
     width: 160px;
 }
 
-.line .git-blame{
+.line .git-blame {
     display: inline-block;
     width: 90px;
     overflow: hidden;
@@ -158,8 +158,8 @@ a:target {
     width: 50%;
     overflow: hidden;
     text-overflow: clip;
-    padding-right:10px;
-    box-sizing:border-box;
+    padding-right: 10px;
+    box-sizing: border-box;
 }
 
 .tooltip.git-blame {
@@ -180,7 +180,7 @@ a:target {
     -moz-user-select: none;
     -ms-user-select: none;
     user-select: none;
-    position:relative;
+    position: relative;
 }
 
 .line-number {
@@ -188,6 +188,7 @@ a:target {
     width: 30px;
     text-decoration: none;
     color: inherit;
+    text-align: right;
 }
 
 .expander-container {
@@ -200,7 +201,6 @@ a:target {
 }
 
 .code-container {
-    white-space: pre;
     font-family: 'Source Code Pro';
     font-size: 12px;
 }
@@ -250,9 +250,10 @@ a:target {
     display: block;
 }*/
 
-/*.td-code {
-    position: relative;
-}*/
+.td-code {
+    position:relative;
+    left:60px;
+}
 
 .ta-code {
     display: none;
@@ -290,6 +291,10 @@ a:target {
 .collapsable.collapsed::before {
     content: "...";
     display: block;
+}
+
+.line-number, .code {
+    white-space: pre;
 }
 
 .line.collapsed {
@@ -370,8 +375,8 @@ a.btn {
 }
 
 .dir-view {
-    overflow:auto;
-    height:100%;
+    overflow: auto;
+    height: 100%;
 }
 
 .dir-view .child {
@@ -381,9 +386,11 @@ a.btn {
 [_for] {
     display: none;
 }
-.critique{
-    min-height:100px;
+
+.critique {
+    min-height: 100px;
 }
+
 .critique .grid {
     background-color: white;
     cursor: default;
