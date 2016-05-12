@@ -19,6 +19,7 @@ import {RefArrayToRefUtil} from "../src/refactor";
 import {ExpressionTester, EtReport, EtItem} from "../src/expression-tester";
 import {P5Service, P5File, CritiqueResponse, CritiqueViolation} from "./p5-service";
 import {monitor, Monitor} from "./monitor";
+import {Key, Rect, Size, Point} from "./common";
 
 export class IndexPage {
     constructor() {
@@ -67,6 +68,7 @@ export class IndexPage {
     monitor: Monitor;
     main() {
         this.scrollEl = $(".code-view")[0];
+        //this.pageSize = Math.floor(this.scrollEl.offsetHeight / this.lineHeight);
 
         this.monitor = monitor;
         //let x = { name: "ggg", phones: [{ number: "asd" }, { number: "dddd" }] };
@@ -113,7 +115,76 @@ export class IndexPage {
         this.update();
 
         $(window).on("urlchange", e => this.update());
+        this.initCaret();
     }
+    caretEl: HTMLElement;
+    caretPos: File2Pos;
+    initCaret() {
+        this.caretEl = $(".caret")[0];
+        this.caretEl.focus();
+        this.caretPos = new File2Pos();
+        this.caretPos.column = 1;
+        this.caretPos.line = 1;
+        this.caretPos.index = 0;
+        $(window).keydown(e => {
+            this.window_keydown(e);
+        });
+        this.renderCaretPos();
+    }
+    renderCaretPos() {
+        $(this.caretEl).css({ left: (this.caretPos.column - 1) * this.fontWidth, top: (this.caretPos.line - 1) * this.lineHeight });
+        this.scrollToPosIfNeeded(this.caretPos);
+        //this.scrollToElement(this.caretEl);
+    }
+    window_keydown(e: JQueryKeyEventObject) {
+        let key = e.keyCode;
+        let alt = e.altKey;
+        let shift = e.shiftKey;
+        let ctrl = e.ctrlKey;
+
+        if (key == Key.RIGHT) {
+            e.preventDefault();
+            this.caretPos.column++;
+            this.renderCaretPos();
+        }
+        else if (key == Key.LEFT) {
+            e.preventDefault();
+            this.caretPos.column--;
+            if (this.caretPos.column < 1)
+                this.caretPos.column = 1;
+            this.renderCaretPos();
+        }
+        else if (key == Key.UP) {
+            e.preventDefault();
+            this.caretPos.line--;
+            if (this.caretPos.line < 1)
+                this.caretPos.line = 1;
+            this.renderCaretPos();
+        }
+        else if (key == Key.DOWN) {
+            e.preventDefault();
+            this.caretPos.line++;
+            this.renderCaretPos();
+        }
+        else if (key == Key.PAGE_UP) {
+            e.preventDefault();
+            this.caretPos.line -= this.getVisibleLines();
+            if (this.caretPos.line < 1)
+                this.caretPos.line = 1;
+            this.renderCaretPos();
+        }
+        else if (key == Key.PAGE_DOWN) {
+            e.preventDefault();
+            this.caretPos.line += this.getVisibleLines();
+            this.renderCaretPos();
+        }
+        else if (key == Key.HOME) {
+            e.preventDefault();
+            this.caretPos.column = 1;
+            this.renderCaretPos();
+        }
+    }
+    //pageSize: number;
 
     expandOrCollapseAll() {
         this.isAllCollapsed = !this.isAllCollapsed;
@@ -440,11 +511,84 @@ export class IndexPage {
         //el.scrollIntoView();
     }
 
+    elToOffsetRect(el: HTMLElement): Rect {
+        return new Rect(this.elToOffsetPoint(el), new Size(el.offsetWidth, el.offsetHeight));
+    }
+    elToOffsetPoint(el: HTMLElement): Point {
+        return new Point(el.offsetLeft, el.offsetTop);
+    }
+
     scrollEl: HTMLElement = document.body;
     //scrollOffset: JQueryCoordinates = { left: 0, top: 30 };
     lineHeight = 15;
+    screenToPos(p: Point): Point {
+        return p.div(this.projectionRatio).floor();
+    }
+    posToScreen(p: Point): Point {
+        return p.mul(this.projectionRatio);
+    }
+    fontWidth = 7.19;
+    projectionRatio: Point = new Point(this.fontWidth, this.lineHeight);
+
+    getFirstVisibleLineNumber(): number {
+        let y = Math.ceil(this.scrollEl.scrollTop / this.lineHeight) + 1;
+        return y;
+    }
+    getVisibleLines(): number {
+        let lines = Math.floor(this.scrollEl.offsetHeight / this.lineHeight) - 1;
+        return lines;
+    }
+
     scrollToElement(el: HTMLElement) {
-        this.scrollEl.scrollTop = el.offsetTop;// - this.lineHeight;//pos.top;// - this.scrollOffset.top;
+        let point = this.elToOffsetPoint(el);
+        let rect = this.elToOffsetRect(this.scrollEl);
+
+        let diff = this.smallestOffsetNeededToInclude(this.scrollEl.scrollTop, this.scrollEl.offsetHeight, el.offsetTop + el.offsetHeight);
+        if (diff != 0) {
+            console.log(diff);
+            let scrollTop = this.scrollEl.scrollTop + diff;
+            if (scrollTop < 0)
+                scrollTop = 0;
+            this.scrollEl.scrollTop = scrollTop;
+        }
+        //console.log("scrollToElement", point, rect);
+        //if (point.isInside(rect)) {
+        //    console.log("isInside");
+        //    return;
+        //}
+        //let diff = point.subtract(rect.topLeft);
+        //let diff2 = point.subtract(rect.bottomLeft);
+        //console.log("diff", diff, diff2);
+        //// let diff = rect.distanceTo(point);
+        //this.scrollEl.scrollLeft += diff2.x;
+        //this.scrollEl.scrollTop += diff2.y;
+
+
+        //        this.scrollEl.scrollTop = el.offsetTop;// - this.lineHeight;//pos.top;// - this.scrollOffset.top;
+    }
+    scrollToPosIfNeeded(p: File2Pos) {
+        let firstLine = this.getFirstVisibleLineNumber();
+        let diff = this.smallestOffsetNeededToInclude(firstLine, firstLine + this.getVisibleLines(), p.line);
+        console.log(firstLine, this.getVisibleLines(), p.line, "diff=" + diff);
+        if (diff != 0) {
+            let diff2 = diff * this.lineHeight;
+            let scrollTop = this.scrollEl.scrollTop + diff2;
+            if (scrollTop < 0)
+                scrollTop = 0;
+            this.scrollEl.scrollTop = scrollTop;
+        }
+    }
+
+    smallestOffsetNeededToInclude(from: number, to: number, index: number) {
+        let length = to - from;
+        let diff = index - from;
+        if (diff > 0) {
+            if (diff > length)
+                diff -= length;
+            else
+                return 0;
+        }
+        return diff;
     }
 
     generateCode() {

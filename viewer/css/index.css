@@ -162,7 +162,7 @@ a:target {
     overflow: hidden;
     text-overflow: clip;
     vertical-align: top;
-    white-space:nowrap;
+    white-space: nowrap;
 }
 
 .line .git-blame span {
@@ -395,4 +395,20 @@ a.btn {
 .critique .grid {
     background-color: white;
     cursor: default;
+}
+
+
+.caret {
+    width: 0.5em;
+    position: absolute;
+    top: 0;
+    left: 0;
+    /*border: 1px solid black;*/
+    border:none;
+    height: 15px;
+    padding:0;
+    margin:0;
+    z-index:-1;
+    background-color:rgba(0, 200, 0, 0.3);
+    resize:none;
 }
