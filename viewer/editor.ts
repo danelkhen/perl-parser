@@ -23,7 +23,6 @@ import {EditorDomBinder} from "./editor-dom-binder";
 
 export class Editor {
     code: string;
-    firstTime: boolean = true;
     lines: CvLine[];
     isAllCollapsed: boolean;
     unit: Unit;
@@ -31,6 +30,19 @@ export class Editor {
     caretPos: File2Pos;
     sourceFile: File2;
     binder: EditorDomBinder;
+    constructor() {
+        //this.watchable(t => [t.code, t.lines, t.isAllCollapsed, t.unit, t.tokens, t.caretPos, t.sourceFile, t.binder]);
+    }
+
+    data: Object;
+    watchable(props: (x: this) => Array<any>) {
+        let code = props.toString();
+        let props2 = code.split(/[\,\[\] ]/).map(t => t.split(".").last());
+        props2.forEach(p => {
+            Object.defineProperty(this, p, { get: () => this.data[p], set: value => this.data[p] = value });
+        });
+
+    }
 
 
     tokenToElement: Map<Token, HTMLElement> = new Map<Token, HTMLElement>();
@@ -57,7 +69,6 @@ export class Editor {
         //    this.firstTime = false;
         //    return;
         //}
-        this.firstTime = false;
         this.code = data;
         let codeEl = $(".code").empty().text(data);
         $(".ta-code").val(data);
