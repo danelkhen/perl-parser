@@ -19,6 +19,7 @@ import {ExpressionTester, EtReport, EtItem} from "../src/expression-tester";
 import {P5Service, P5File, CritiqueResponse, CritiqueViolation} from "./p5-service";
 import {monitor, Monitor} from "./monitor";
 import {Key, Rect, Size, Point} from "./common";
+import {EditorDomBinder} from "./editor-dom-binder";
 
 export class CodeEditor {
     code: string;
@@ -29,41 +30,24 @@ export class CodeEditor {
     tokens: Token[];
     caretPos: File2Pos;
     sourceFile: File2;
+    binder: EditorDomBinder;
 
 
     tokenToElement: Map<Token, HTMLElement> = new Map<Token, HTMLElement>();
-    scrollEl: HTMLElement = document.body;
-    lineNumbersEl: HTMLElement;
-    lineTemplate: JQuery;
-    caretEl: HTMLElement;
 
-    lineHeight = 15;
-    fontWidth = 7.19;
 
     init() {
         this.lines = [];
-        this.scrollEl = $(".code-view")[0];
-        this.lineNumbersEl = $(".lines")[0];
         this.initKeyBindings();
+        if (this.binder == null) {
+            this.binder = new EditorDomBinder();
+            this.binder.editor = this;
+        }
+        this.binder.init();
     }
 
-    getLineEl(line: number): HTMLElement {
-        return <HTMLElement>this.lineNumbersEl.childNodes.item(line - 1);
-    }
     getLine(line: number): CvLine {
         return this.lines[line - 1];
-    }
-    renderLineNumbers() {
-        if (this.lineTemplate == null)
-            this.lineTemplate = $(".line").first().remove();
-
-        $(this.lineNumbersEl).empty()[0];
-        this.lines.forEach((line, i) => {
-            let div = this.lineTemplate.clone();
-            let lineNumber = i + 1;
-            div.find(".line-number").text(lineNumber.toString()).attr({ name: "L" + lineNumber, href: "javascript:void(0)" });
-            this.lineNumbersEl.appendChild(div[0]);
-        });
     }
 
 
@@ -101,43 +85,12 @@ export class CodeEditor {
     }
 
     initCaret() {
-        this.caretEl = $(".caret")[0];
-        this.caretEl.focus();
         this.caretPos = new File2Pos();
         this.caretPos.column = 1;
         this.caretPos.line = 1;
         this.caretPos.index = 0;
-        $(window).keydown(e => {
-            this.window_keydown(e);
-        });
-        $(this.scrollEl).mousedown(e => this.scrollEl_mousedown(e));
-        this.renderCaretPos();
-    }
-    renderCaretPos() {
-        if (this.caretPos.line > this.lines.length)
-            this.caretPos.line = this.lines.length;
-        else if (this.caretPos.line < 1)
-            this.caretPos.line = 1;
-        if (this.caretPos.column < 1)
-            this.caretPos.column = 1;
-        $(this.caretEl).css({ left: (this.caretPos.column - 1) * this.fontWidth, top: (this.caretPos.line - 1) * this.lineHeight });
-        this.scrollToPosIfNeeded(this.caretPos);
-    }
-    scrollEl_mousedown(e: JQueryMouseEventObject) {
-        let pos = this.screenToPos(new Point(e.offsetX, e.offsetY));
-        this.caretPos.line = pos.y;
-        this.caretPos.column = pos.x;
-        this.renderCaretPos();
-    }
-    window_keydown(e: JQueryKeyEventObject) {
-        let keyName = this.getKeyName(e);
-        if (keyName == null)
-            return;
-        let handler = this.keyBindings[keyName];
-        if (handler != null) {
-            e.preventDefault();
-            handler(e);
-        }
+        this.binder.initCaret();
+
     }
 
     keyBindings: { [key: string]: (e: JQueryKeyEventObject) => void };
@@ -196,7 +149,7 @@ export class CodeEditor {
     }
     caretNextChar() {
         this.caretPos.column++;
-        this.renderCaretPos();
+        this.binder.renderCaretPos();
     }
     caretNextWord() {
         let line = this.getCurrentLineText().substr(this.caretPos.column - 1);
@@ -211,23 +164,23 @@ export class CodeEditor {
         else {
             //TODO: next line
         }
-        this.renderCaretPos();
+        this.binder.renderCaretPos();
     }
     caretPrevChar() {
         this.caretPos.column--;
         if (this.caretPos.column < 1)
             this.caretPos.column = 1;
-        this.renderCaretPos();
+        this.binder.renderCaretPos();
     }
     caretPrevLine() {
         this.caretPos.line--;
         if (this.caretPos.line < 1)
             this.caretPos.line = 1;
-        this.renderCaretPos();
+        this.binder.renderCaretPos();
     }
     caretNextLine() {
         this.caretPos.line++;
-        this.renderCaretPos();
+        this.binder.renderCaretPos();
     }
     caretPrevPage() {
         let firstLine = this.getFirstVisibleLineNumber();
@@ -240,7 +193,7 @@ export class CodeEditor {
         this.caretPos.line = newLine;
         if (offset <= lineCount)
             this.setFirstVisibleLineNumber(newLine - offset);
-        this.renderCaretPos();
+        this.binder.renderCaretPos();
     }
     caretNextPage() {
         let firstLine = this.getFirstVisibleLineNumber();
@@ -253,7 +206,7 @@ export class CodeEditor {
         this.caretPos.line = newLine;
         if (offset <= lineCount)
             this.setFirstVisibleLineNumber(newLine - offset);
-        this.renderCaretPos();
+        this.binder.renderCaretPos();
     }
     caretLineStart() {
         let text = this.getCurrentLineText();
@@ -262,21 +215,21 @@ export class CodeEditor {
             this.caretPos.column = res.index + 1;
         else
             this.caretPos.column = 1;
-        this.renderCaretPos();
+        this.binder.renderCaretPos();
     }
     caretLineEnd() {
         let text = this.getCurrentLineText();
         this.caretPos.column = text.length + 1;
-        this.renderCaretPos();
+        this.binder.renderCaretPos();
     }
     caretDocStart() {
         this.caretPos.line = 1;
-        this.renderCaretPos();
+        this.binder.renderCaretPos();
     }
     caretDocEnd() {
         let text = this.getCurrentLineText();
         this.caretPos.line = this.lines.length;
-        this.renderCaretPos();
+        this.binder.renderCaretPos();
     }
     caretSelectAll() {
         let range = document.createRange();
@@ -322,7 +275,7 @@ export class CodeEditor {
             codeEl.appendChild(span);
             this.tokenToElement.set(token, span);
         });
-        this.renderLineNumbers();
+        this.binder.renderLineNumbers();
 
     }
 
@@ -343,8 +296,8 @@ export class CodeEditor {
         let range = tokens.select(t => this.tokenToElement.get(t)).exceptNulls();
         let span = $.create("span.collapsable");
         this.wrap(span[0], range);
-        let lineStartEl = $(this.getLineEl(lineStart));
-        let lineEndEl = $(this.getLineEl(lineEnd));
+        let lineStartEl = $(this.binder.getLineEl(lineStart));
+        let lineEndEl = $(this.binder.getLineEl(lineEnd));
 
         let btnExpander = lineStartEl.getAppend(".expander-container").getAppend("button.expander.expanded");
         let exp: Expander = {
@@ -353,7 +306,7 @@ export class CodeEditor {
                     collapsed = !exp.isCollapsed();
                 span.toggleClass("collapsed", collapsed);
                 btnExpander.toggleClass("collapsed", collapsed);
-                Array.generateNumbers(lineStart + 1, lineEnd).forEach(line => $(this.getLineEl(line)).toggleClass("collapsed", collapsed)); //TODO: inner collapsing (subs within subs will not work correctly)
+                Array.generateNumbers(lineStart + 1, lineEnd).forEach(line => $(this.binder.getLineEl(line)).toggleClass("collapsed", collapsed)); //TODO: inner collapsing (subs within subs will not work correctly)
             },
             isCollapsed: () => span.hasClass("collapsed"),
         }
@@ -369,73 +322,18 @@ export class CodeEditor {
 
 
     scrollToLine(line: number) {
-        let el = this.getLineEl(line);
-        this.scrollToElement(el);
+        let el = this.binder.getLineEl(line);
+        this.binder.scrollToElement(el);
     }
 
-    elToOffsetRect(el: HTMLElement): Rect {
-        return new Rect(this.elToOffsetPoint(el), new Size(el.offsetWidth, el.offsetHeight));
-    }
-    elToOffsetPoint(el: HTMLElement): Point {
-        return new Point(el.offsetLeft, el.offsetTop);
-    }
 
-    screenToPos(p: Point): Point {
-        return p.div(this.projectionRatio).floor().add(new Point(1, 1));
-    }
-    posToScreen(p: Point): Point {
-        return p.subtract(new Point(1, 1)).mul(this.projectionRatio);
-    }
-    projectionRatio: Point = new Point(this.fontWidth, this.lineHeight);
-
-    getFirstVisibleLineNumber(): number {
-        let y = Math.ceil(this.scrollEl.scrollTop / this.lineHeight) + 1;
-        return y;
-    }
     getLastVisibleLineNumber(): number {
         return this.getFirstVisibleLineNumber() + this.getVisibleLineCount();
-    }
-    setFirstVisibleLineNumber(line: number) {
-        let el = this.getLineEl(line);
-        if (el == null)
-            return;
-        this.scrollEl.scrollTop = el.offsetTop;
     }
     setLastVisibleLineNumber(line: number) {
         this.setFirstVisibleLineNumber(line - this.getVisibleLineCount());
     }
-    getVisibleLineCount(): number {
-        let lines = Math.floor(this.scrollEl.clientHeight / this.lineHeight) - 1;
-        return lines;
-    }
 
-    scrollToElement(el: HTMLElement) {
-        let point = this.elToOffsetPoint(el);
-        let rect = this.elToOffsetRect(this.scrollEl);
-
-        let diff = this.smallestOffsetNeededToInclude(this.scrollEl.scrollTop, this.scrollEl.offsetHeight, el.offsetTop + el.offsetHeight);
-        if (diff != 0) {
-            console.log(diff);
-            let scrollTop = this.scrollEl.scrollTop + diff;
-            if (scrollTop < 0)
-                scrollTop = 0;
-            this.scrollEl.scrollTop = scrollTop;
-        }
-        //console.log("scrollToElement", point, rect);
-        //if (point.isInside(rect)) {
-        //    console.log("isInside");
-        //    return;
-        //}
-        //let diff = point.subtract(rect.topLeft);
-        //let diff2 = point.subtract(rect.bottomLeft);
-        //console.log("diff", diff, diff2);
-        //// let diff = rect.distanceTo(point);
-        //this.scrollEl.scrollLeft += diff2.x;
-        //this.scrollEl.scrollTop += diff2.y;
-
-
-        //        this.scrollEl.scrollTop = el.offsetTop;// - this.lineHeight;//pos.top;// - this.scrollOffset.top;
-    }
     scrollToPosIfNeeded(p: File2Pos) {
         let firstLine = this.getFirstVisibleLineNumber();
         let lastLine = this.getLastVisibleLineNumber();
@@ -449,17 +347,6 @@ export class CodeEditor {
         }
     }
 
-    smallestOffsetNeededToInclude(from: number, to: number, index: number) {
-        let length = to - from;
-        let diff = index - from;
-        if (diff > 0) {
-            if (diff > length)
-                diff -= length;
-            else
-                return 0;
-        }
-        return diff;
-    }
 
     hyperlinkNode(node: AstNode, opts?: HyperlinkCodeOptions): HTMLAnchorElement {
         let tokens = this.collectTokens2(node);
@@ -523,7 +410,15 @@ export class CodeEditor {
         return this.tokens.slice(start, end + 1);
     }
 
+
+    getFirstVisibleLineNumber(): number { return this.binder.getFirstVisibleLineNumber(); }
+    setFirstVisibleLineNumber(line: number) { return this.binder.setFirstVisibleLineNumber(line); }
+    getVisibleLineCount(): number { return this.binder.getVisibleLineCount(); }
+
 }
+
+
+
 
 export interface HyperlinkCodeOptions {
     href?: string;

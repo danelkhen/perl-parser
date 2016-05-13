@@ -120,7 +120,7 @@ export class IndexPage {
         $(".code-container").addClass("git-blame-mode");
         this.service.gitBlame(this.file.path).then(items => {
             items.forEach(item => {
-                let line = this.editor.getLineEl(parseInt(item.line_num));
+                let line = this.editor.binder.getLineEl(parseInt(item.line_num));
                 $(line).find(".git-blame").remove();
                 let el = $.create(".git-blame");
                 el.getAppend("span.sha").text(item.sha);
