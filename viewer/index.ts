@@ -613,55 +613,56 @@ $(main);
 //editor.foldCode(CodeMirror.Pos(0, 8), {rangeFinder:CodeMirror.fold.brace});
 //return;
 
-        //this.pageSize = Math.floor(this.scrollEl.offsetHeight / this.lineHeight);
-        //let x = { name: "ggg", phones: [{ number: "asd" }, { number: "dddd" }] };
-        //monitor.methodInvoked.attach(e => console.log("methodInvoked", e));
-        //monitor.propSet.attach(e => console.log("propSet", e));
-        //monitor.register(x, () => true);
-        //x.name = "aaa";
-        //x.phones.push({ number: "aaaaa" });
-        //x.phones.removeAt(1);
-        //console.log(window.location.pathname);
-        //$(".menu").getAppend("button.btn.btnCritique").text("Critique").click(e => this.critique());
-        //$(".menu").getAppend("button.btn.btnExpandOrCollapseAll").text("Expand/Collapse").click(e => this.expandOrCollapseAll());
-        //$(".menu").getAppend("button.btn.btnGitBlame").text("git blame").click(e => this.gitBlame());
-        //this.tbUrl = $("#tbUrl");
-        //this.tbUrl.val(window.location.pathname);
-        //this.urlKey = "perl-parser\turl";
-        //this.tbRegex = $("#tbRegex");
-        //$("#btnRefactor").click(e => this.refactor());
-        //$("#btnTestExpressions").click(e => this.testExpressions());
+//this.pageSize = Math.floor(this.scrollEl.offsetHeight / this.lineHeight);
+//let x = { name: "ggg", phones: [{ number: "asd" }, { number: "dddd" }] };
+//monitor.methodInvoked.attach(e => console.log("methodInvoked", e));
+//monitor.propSet.attach(e => console.log("propSet", e));
+//monitor.register(x, () => true);
+//x.name = "aaa";
+//x.phones.push({ number: "aaaaa" });
+//x.phones.removeAt(1);
+//console.log(window.location.pathname);
+//$(".menu").getAppend("button.btn.btnCritique").text("Critique").click(e => this.critique());
+//$(".menu").getAppend("button.btn.btnExpandOrCollapseAll").text("Expand/Collapse").click(e => this.expandOrCollapseAll());
+//$(".menu").getAppend("button.btn.btnGitBlame").text("git blame").click(e => this.gitBlame());
+//this.tbUrl = $("#tbUrl");
+//this.tbUrl.val(window.location.pathname);
+//this.urlKey = "perl-parser\turl";
+//this.tbRegex = $("#tbRegex");
+//$("#btnRefactor").click(e => this.refactor());
+//$("#btnTestExpressions").click(e => this.testExpressions());
 
-        //this.tbRegex.keyup(e => {
-        //    let s = this.tbRegex.val();
-        //    try {
-        //        let regex = new Function("return " + s + ";")();
-        //        let res = regex.exec(this.code);
-        //        if (res instanceof Array)
-        //            console.log(JSON.stringify(res[0]), { regex: res });
-        //        else
-        //            console.log(res);
-        //    }
-        //    catch (e) {
-        //        console.log(e);
-        //    }
-        //});
-        //this.tbUrl.change(e => this.update());
-        //$("#cbAddParentheses").change(e => this.update());
-        //$("#cbDeparseFriendly").change(e => this.update());
-        //$(".line-numbers").on("click", "a.line-number", e=>e.preventDefault());
-            //if (token.is(TokenTypes.whitespace) && token.value == "\n") {
-            //    line = new CvLine();
-            //    line.tokens = [];
-            //    this.lines.add(line);
-            //}
-            //else {
-            //    let lines = token.value.lines();
-            //    if (lines.length > 1) {
-            //        lines.skip(1).forEach(t => {
-            //            line = new CvLine();
-            //            line.tokens = [token];
-            //            this.lines.add(line);
-            //        });
-            //    }
-            //}
+//this.tbRegex.keyup(e => {
+//    let s = this.tbRegex.val();
+//    try {
+//        let regex = new Function("return " + s + ";")();
+//        let res = regex.exec(this.code);
+//        if (res instanceof Array)
+//            console.log(JSON.stringify(res[0]), { regex: res });
+//        else
+//            console.log(res);
+//    }
+//    catch (e) {
+//        console.log(e);
+//    }
+//});
+//this.tbUrl.change(e => this.update());
+//$("#cbAddParentheses").change(e => this.update());
+//$("#cbDeparseFriendly").change(e => this.update());
+//$(".line-numbers").on("click", "a.line-number", e=>e.preventDefault());
+//if (token.is(TokenTypes.whitespace) && token.value == "\n") {
+//    line = new CvLine();
+//    line.tokens = [];
+//    this.lines.add(line);
+//}
+//else {
+//    let lines = token.value.lines();
+//    if (lines.length > 1) {
+//        lines.skip(1).forEach(t => {
+//            line = new CvLine();
+//            line.tokens = [token];
+//            this.lines.add(line);
+//        });
+//    }
+//}
+

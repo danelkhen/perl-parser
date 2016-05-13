@@ -28,12 +28,15 @@ export class EditorDomBinder {
     lineHeight = 15;
     fontWidth = 7.19;
     lineNumbersEl: HTMLElement;
-    lineTemplate: JQuery;
+    lineTemplate: HTMLElement;
     caretEl: HTMLElement;
+    codeContainerEl: HTMLElement;
 
     init() {
         this.scrollEl = $(".code-view")[0];
         this.lineNumbersEl = $(".lines")[0];
+        this.caretEl = $(".caret")[0];
+        this.codeContainerEl = $(".code-container")[0];
     }
     getLineEl(line: number): HTMLElement {
         return <HTMLElement>this.lineNumbersEl.childNodes.item(line - 1);
@@ -123,11 +126,11 @@ export class EditorDomBinder {
 
     renderLineNumbers() {
         if (this.lineTemplate == null)
-            this.lineTemplate = $(".line").first().remove();
+            this.lineTemplate = $(".line").first().remove()[0];
 
         $(this.lineNumbersEl).empty()[0];
         this.editor.lines.forEach((line, i) => {
-            let div = this.lineTemplate.clone();
+            let div = $(this.lineTemplate).clone();
             let lineNumber = i + 1;
             div.find(".line-number").text(lineNumber.toString()).attr({ name: "L" + lineNumber, href: "javascript:void(0)" });
             this.lineNumbersEl.appendChild(div[0]);
@@ -135,12 +138,11 @@ export class EditorDomBinder {
     }
 
     initCaret() {
-        this.caretEl = $(".caret")[0];
         this.caretEl.focus();
         $(window).keydown(e => {
             this.window_keydown(e);
         });
-        $(this.scrollEl).mousedown(e => this.scrollEl_mousedown(e));
+        $(this.codeContainerEl).mousedown(e => this.scrollEl_mousedown(e));
         this.renderCaretPos();
     }
 
