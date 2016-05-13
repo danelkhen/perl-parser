@@ -461,13 +461,19 @@ export class CodeEditor {
         return diff;
     }
 
-    hyperlinkNode(node: AstNode, href: string, name?: string, title?: string, css?: string): HTMLAnchorElement {
+    hyperlinkNode(node: AstNode, opts?: HyperlinkCodeOptions): HTMLAnchorElement {
         let tokens = this.collectTokens2(node);
-        let a = this.hyperlinkTokens(tokens, href, name, title, css);
+        let a = this.hyperlinkTokens(tokens, opts);
         $(a).data("AstNode", node);
         return a;
     }
-    hyperlinkTokens(tokens: Token[], href: string, name?: string, title?: string, css?: string): HTMLAnchorElement {
+    hyperlinkTokens(tokens: Token[], opts?: HyperlinkCodeOptions): HTMLAnchorElement {
+        if (opts == null)
+            opts = {};
+        let href = opts.href;
+        let css = opts.css;
+        let title = opts.title;
+        let name = opts.name;
         if (href == null)
             href = "javascript:void(0)";
         let els = tokens.select(token => this.tokenToElement.get(token));
@@ -517,7 +523,13 @@ export class CodeEditor {
         return this.tokens.slice(start, end + 1);
     }
 
+}
 
+export interface HyperlinkCodeOptions {
+    href?: string;
+    name?: string;
+    title?: string;
+    css?: string;
 }
 
 
