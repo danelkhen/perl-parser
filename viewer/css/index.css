@@ -77,6 +77,8 @@ a {
 }
 
 .menu {
+    user-select: none;
+    -webkit-user-select: none;
 }
 
 .loading {
@@ -140,11 +142,11 @@ a:target {
     z-index: 0;
     color: #bbb;
     cursor: default;
+    position: absolute;
     -webkit-user-select: none;
     -moz-user-select: none;
     -ms-user-select: none;
     user-select: none;
-    position: absolute;
 }
 
 
@@ -229,7 +231,9 @@ a:target {
 
 
 
-
+.code a {
+    -webkit-user-drag: none;
+}
 /*.code {
     float: left;
 }*/
@@ -404,11 +408,11 @@ a.btn {
     top: 0;
     left: 0;
     /*border: 1px solid black;*/
-    border:none;
+    border: none;
     height: 15px;
-    padding:0;
-    margin:0;
-    z-index:-1;
-    background-color:rgba(0, 200, 0, 0.3);
-    resize:none;
+    padding: 0;
+    margin: 0;
+    z-index: -1;
+    background-color: rgba(0, 200, 0, 0.3);
+    resize: none;
 }

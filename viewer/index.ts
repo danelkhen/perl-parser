@@ -114,6 +114,7 @@ export class IndexPage {
     //verifyInRange<T>(obj:T, prop:(x
     window_keydown(e: JQueryKeyEventObject) {
         let key = e.keyCode;
+        let ch = String.fromCharCode(key);
         let alt = e.altKey;
         let shift = e.shiftKey;
         let ctrl = e.ctrlKey;
@@ -196,6 +197,15 @@ export class IndexPage {
             let text = this.getCurrentLineText();
             this.caretPos.line = this.lines.length;
             this.renderCaretPos();
+        }
+        else if (ch == "A" && ctrl) {
+            e.preventDefault();
+            let range = document.createRange();
+            range.selectNode($(".code")[0]);
+            let sel = getSelection();
+            sel.removeAllRanges();
+            sel.addRange(range);
+
         }
     }
     getCurrentLineText(): string {
