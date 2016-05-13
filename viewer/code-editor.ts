@@ -12,7 +12,7 @@ import {
     ReturnExpression, TrinaryExpression, Unit, UnlessStatement, UseOrNoStatement, UseStatement, ValueExpression, VariableDeclarationExpression, VariableDeclarationStatement, WhileStatement,
     AstQuery, PrecedenceResolver, TokenTypes, Tokenizer, safeTry, TokenReader, Logger, AstNodeFixator,
 } from "../src/index";
-import {CvLine, IndexSelection, PackageResolution, AsyncFunc, TreeNodeData, Expander, Helper} from "./common";
+import {PackageResolution, AsyncFunc, TreeNodeData, Expander, Helper} from "./common";
 import "../src/extensions";
 import {RefArrayToRefUtil} from "../src/refactor";
 import {ExpressionTester, EtReport, EtItem} from "../src/expression-tester";
@@ -40,10 +40,11 @@ export class CodeEditor {
     lineHeight = 15;
     fontWidth = 7.19;
 
-    constructor() {
+    init() {
         this.lines = [];
         this.scrollEl = $(".code-view")[0];
         this.lineNumbersEl = $(".lines")[0];
+        this.initKeyBindings();
     }
 
     getLineEl(line: number): HTMLElement {
@@ -129,101 +130,162 @@ export class CodeEditor {
         this.renderCaretPos();
     }
     window_keydown(e: JQueryKeyEventObject) {
-        let key = e.keyCode;
-        let ch = String.fromCharCode(key);
-        let alt = e.altKey;
-        let shift = e.shiftKey;
-        let ctrl = e.ctrlKey;
-
-        if (key == Key.RIGHT && !ctrl) {
+        let keyName = this.getKeyName(e);
+        if (keyName == null)
+            return;
+        let handler = this.keyBindings[keyName];
+        if (handler != null) {
             e.preventDefault();
-            this.caretPos.column++;
-            this.renderCaretPos();
-        }
-        else if (key == Key.RIGHT && ctrl) {
-            e.preventDefault();
-            let line = this.getCurrentLineText().substr(this.caretPos.column - 1);
-            console.log(line);
-            let res = /(\s+)(\S)/.exec(line);
-            console.log(res);
-            if (res != null) {
-                let index = res.index + res[1].length;
-                console.log(index);
-                this.caretPos.column += index;
-            }
-            else {
-                //TODO: next line
-            }
-            this.renderCaretPos();
-        }
-        else if (key == Key.LEFT) {
-            e.preventDefault();
-            this.caretPos.column--;
-            if (this.caretPos.column < 1)
-                this.caretPos.column = 1;
-            this.renderCaretPos();
-        }
-        else if (key == Key.UP) {
-            e.preventDefault();
-            this.caretPos.line--;
-            if (this.caretPos.line < 1)
-                this.caretPos.line = 1;
-            this.renderCaretPos();
-        }
-        else if (key == Key.DOWN) {
-            e.preventDefault();
-            this.caretPos.line++;
-            this.renderCaretPos();
-        }
-        else if (key == Key.PAGE_UP) {
-            e.preventDefault();
-            this.caretPos.line -= this.getVisibleLineCount();
-            if (this.caretPos.line < 1)
-                this.caretPos.line = 1;
-            this.renderCaretPos();
-        }
-        else if (key == Key.PAGE_DOWN) {
-            e.preventDefault();
-            this.caretPos.line += this.getVisibleLineCount();
-            this.renderCaretPos();
-        }
-        else if (key == Key.HOME && !ctrl) {
-            e.preventDefault();
-            let text = this.getCurrentLineText();
-            let res = /\S/.exec(text);
-            if (res != null && res.index + 1 != this.caretPos.column)
-                this.caretPos.column = res.index + 1;
-            else
-                this.caretPos.column = 1;
-            this.renderCaretPos();
-        }
-        else if (key == Key.END && !ctrl) {
-            e.preventDefault();
-            let text = this.getCurrentLineText();
-            this.caretPos.column = text.length + 1;
-            this.renderCaretPos();
-        }
-        else if (key == Key.HOME && ctrl) {
-            e.preventDefault();
-            this.caretPos.line = 1;
-            this.renderCaretPos();
-        }
-        else if (key == Key.END && ctrl) {
-            e.preventDefault();
-            let text = this.getCurrentLineText();
-            this.caretPos.line = this.lines.length;
-            this.renderCaretPos();
-        }
-        else if (ch == "A" && ctrl) {
-            e.preventDefault();
-            let range = document.createRange();
-            range.selectNode($(".code")[0]);
-            let sel = getSelection();
-            sel.removeAllRanges();
-            sel.addRange(range);
-
+            handler(e);
         }
     }
+
+    keyBindings: { [key: string]: (e: JQueryKeyEventObject) => void };
+    initKeyBindings() {
+        let bindings: KeyBinding[] = [
+            { key: Key.RIGHT, handler: e => this.caretNextChar() },
+            { key: Key.LEFT, handler: e => this.caretPrevChar() },
+            { key: Key.UP, handler: e => this.caretPrevLine() },
+            { key: Key.DOWN, handler: e => this.caretNextLine() },
+
+            { key: Key.PAGE_DOWN, handler: e => this.caretNextPage() },
+            { key: Key.PAGE_UP, handler: e => this.caretPrevPage() },
+
+            { key: Key.HOME, handler: e => this.caretLineStart() },
+            { key: Key.END, handler: e => this.caretLineEnd() },
+
+            { key: [Key.CONTROL, Key.RIGHT], handler: e => this.caretNextWord() },
+            { key: [Key.CONTROL, Key.HOME], handler: e => this.caretDocStart() },
+            { key: [Key.CONTROL, Key.END], handler: e => this.caretDocEnd() },
+
+            { key: [Key.CONTROL, Key.A], handler: e => this.caretSelectAll() },
+        ];
+        this.keyBindings = {};
+
+        bindings.forEach(binding => {
+            let name = this.getKeyName2(binding.key);
+            this.keyBindings[name] = binding.handler;
+        });
+    }
+
+    getKeyName2(key: Key | Key[]): string {
+        if (key instanceof Array) {
+            let keys = <Key[]>key;
+            let keys2 = keys.toArray();
+            keys2.sort();
+            let names = keys2.select(t => this.getKeyName2(t));
+            return names.join("_");
+        }
+        return Key[<number>key];
+    }
+
+    getKeyName(e: { keyCode: number, shiftKey: boolean, altKey: boolean, ctrlKey: boolean }): string {
+        let keyName = Key[e.keyCode];
+        if (keyName == null)
+            return null;
+        let key: Key[] = [e.keyCode];
+        keyName = keyName.toLowerCase();
+        if (e.shiftKey)
+            key.push(Key.SHIFT);
+        if (e.altKey)
+            key.push(Key.ALT);
+        if (e.ctrlKey)
+            key.push(Key.CONTROL);
+        key.sort();
+        return this.getKeyName2(key);
+    }
+    caretNextChar() {
+        this.caretPos.column++;
+        this.renderCaretPos();
+    }
+    caretNextWord() {
+        let line = this.getCurrentLineText().substr(this.caretPos.column - 1);
+        console.log(line);
+        let res = /(\s+)(\S)/.exec(line);
+        console.log(res);
+        if (res != null) {
+            let index = res.index + res[1].length;
+            console.log(index);
+            this.caretPos.column += index;
+        }
+        else {
+            //TODO: next line
+        }
+        this.renderCaretPos();
+    }
+    caretPrevChar() {
+        this.caretPos.column--;
+        if (this.caretPos.column < 1)
+            this.caretPos.column = 1;
+        this.renderCaretPos();
+    }
+    caretPrevLine() {
+        this.caretPos.line--;
+        if (this.caretPos.line < 1)
+            this.caretPos.line = 1;
+        this.renderCaretPos();
+    }
+    caretNextLine() {
+        this.caretPos.line++;
+        this.renderCaretPos();
+    }
+    caretPrevPage() {
+        let firstLine = this.getFirstVisibleLineNumber();
+        let line = this.caretPos.line;
+        let lineCount = this.getVisibleLineCount();
+        let offset = line - firstLine;
+        let newLine = line - lineCount;
+        if (newLine < 1)
+            newLine = 1;
+        this.caretPos.line = newLine;
+        if (offset <= lineCount)
+            this.setFirstVisibleLineNumber(newLine - offset);
+        this.renderCaretPos();
+    }
+    caretNextPage() {
+        let firstLine = this.getFirstVisibleLineNumber();
+        let line = this.caretPos.line;
+        let lineCount = this.getVisibleLineCount();
+        let offset = line - firstLine;
+        let newLine = line + lineCount;
+        if (newLine > this.lines.length)
+            newLine = this.lines.length;
+        this.caretPos.line = newLine;
+        if (offset <= lineCount)
+            this.setFirstVisibleLineNumber(newLine - offset);
+        this.renderCaretPos();
+    }
+    caretLineStart() {
+        let text = this.getCurrentLineText();
+        let res = /\S/.exec(text);
+        if (res != null && res.index + 1 != this.caretPos.column)
+            this.caretPos.column = res.index + 1;
+        else
+            this.caretPos.column = 1;
+        this.renderCaretPos();
+    }
+    caretLineEnd() {
+        let text = this.getCurrentLineText();
+        this.caretPos.column = text.length + 1;
+        this.renderCaretPos();
+    }
+    caretDocStart() {
+        this.caretPos.line = 1;
+        this.renderCaretPos();
+    }
+    caretDocEnd() {
+        let text = this.getCurrentLineText();
+        this.caretPos.line = this.lines.length;
+        this.renderCaretPos();
+    }
+    caretSelectAll() {
+        let range = document.createRange();
+        range.selectNode($(".code")[0]);
+        let sel = getSelection();
+        sel.removeAllRanges();
+        sel.addRange(range);
+    }
+
     getCurrentLineText(): string {
         return this.sourceFile.getLineText(this.caretPos.line);
     }
@@ -459,6 +521,160 @@ export class CodeEditor {
 }
 
 
+export class CvLine {
+    lineNumberEl: HTMLElement;
+    tokens: Token[];
+}
+
+
+export class IndexSelection {
+    ranges: IndexRange[] = [];
+    get lastRange(): IndexRange {
+        return this.ranges.last();
+    }
+    get lastAnchor(): number {
+        let range = this.lastRange;
+        if (range == null)
+            return null;
+        return range.from;
+    }
+    fromParam(s: string) {
+        if (s == null || s.length == 0)
+            return;
+        if (!/^L[1-9]+/.test(s))
+            return;
+        let tokens = s.split(',');
+        this.ranges.clear();
+        tokens.forEach(token => {
+            let subTokens = token.split("-");
+            if (subTokens.length == 1) {
+                let x = parseInt(subTokens[0].substr(1));
+                this.ranges.add(new IndexRange(x));
+            }
+            else {
+                let x = parseInt(subTokens[0].substr(1));
+                let y = parseInt(subTokens[1].substr(1));
+                this.ranges.add(new IndexRange(x, y));
+            }
+        });
+    }
+    toParam(): string {
+        try {
+            return this.getCompactRanges().select(t => this.rangeToParam(t)).join(",");
+        }
+        catch (e) {
+            console.error(e);
+            return "";
+        }
+    }
+    rangeToParam(range: IndexRange): string {
+        if (range.from == range.to)
+            return `L${range.from}`;
+        return `L${range.from}-L${range.to}`;
+    }
+
+
+    toCompact(): IndexSelection {
+        let sel = new IndexSelection();
+        sel.ranges = this.getCompactRanges();
+        return sel;
+    }
+    getCompactRanges(): IndexRange[] {
+        let ranges: IndexRange[] = [];
+        let list = this.getSelectedIndexes();
+        let range: IndexRange;
+        list.forEach(t => {
+            if (range == null) {
+                range = new IndexRange(t);
+                ranges.add(range);
+            }
+            else if (range.to == t - 1) {
+                range.to++;
+            }
+            else {
+                range = new IndexRange(t);
+                ranges.add(range);
+            }
+        });
+        return ranges;
+    }
+
+    normalize() {
+        let anchor = this.lastAnchor;
+        let list = [];
+        this.getSelectedIndexes().forEach(t => {
+            if (t == anchor)
+                return;
+            list.add(new IndexRange(t));
+        });
+        list.add(new IndexRange(anchor));
+        this.ranges = list;
+    }
+    generateNumbers = function (from: number, to: number) {
+        let min = Math.min(from, to);
+        let max = Math.max(from, to);
+        return Number.generate(min, max, 1);
+    };
+
+    getSelectedIndexes(): number[] {
+        let list = this.ranges.selectMany(t => this.generateNumbers(t.from, t.to));
+        let res = list.distinct().orderBy(t => t);
+        return res;
+    }
+    click(index: number, ctrl: boolean, shift: boolean) {
+        if (this.lastRange == null) {
+            this.ranges.add(new IndexRange(index));
+        }
+        else if (ctrl && !shift) {
+            this.normalize();
+            let index2 = this.ranges.findIndex(t => t.from == index);
+            if (index2 == null || index2 < 0) {
+                this.ranges.add(new IndexRange(index));
+            }
+            else {
+                this.ranges.removeAt(index2);
+            }
+        }
+        else if (!ctrl && !shift) {
+            this.ranges.clear();
+            this.ranges.add(new IndexRange(index));
+        }
+        else if (!ctrl && shift) {
+            let last = this.lastRange;
+            this.ranges.clear();
+            last.to = index;
+            this.ranges.add(last);
+        }
+        else if (ctrl && shift) {
+            let last = this.lastRange;
+            last.to = index;
+        }
+        else
+            console.error("Not Implemented", { index, ctrl, shift });
+    }
+
+}
+
+export class IndexRange {
+    constructor(from?: number, to?: number) {
+        if (from == null)
+            return;
+        if (to == null)
+            to = from;
+        this.from = from;
+        this.to = to;
+    }
+    from: number;
+    to: number;
+    contains(x: number): boolean {
+        let min = Math.min(this.from, this.to);
+        let max = Math.max(this.from, this.to);
+        return x >= min && x <= max;
+    }
+}
+
+
+
 export class TokenUtils {
     static collectTokens(obj: any): Token[] {
         let tokens: Token[] = [];
@@ -484,4 +700,9 @@ export class TokenUtils {
             this._collectTokens(res, tokens);
         }
     }
+}
+
+export interface KeyBinding {
+    key: Key | Key[];
+    handler: (e: JQueryKeyEventObject) => void;
 }

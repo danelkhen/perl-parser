@@ -12,7 +12,7 @@ import {
     ReturnExpression, TrinaryExpression, Unit, UnlessStatement, UseOrNoStatement, UseStatement, ValueExpression, VariableDeclarationExpression, VariableDeclarationStatement, WhileStatement,
     AstQuery, PrecedenceResolver, TokenTypes, Tokenizer, safeTry, TokenReader, Logger, AstNodeFixator,
 } from "../src/index";
-import {CvLine, IndexSelection, PackageResolution, AsyncFunc, TreeNodeData, Expander, Helper} from "./common";
+import {PackageResolution, AsyncFunc, TreeNodeData, Expander, Helper} from "./common";
 
 import "../src/extensions";
 import {RefArrayToRefUtil} from "../src/refactor";
@@ -20,7 +20,7 @@ import {ExpressionTester, EtReport, EtItem} from "../src/expression-tester";
 import {P5Service, P5File, CritiqueResponse, CritiqueViolation} from "./p5-service";
 import {monitor, Monitor} from "./monitor";
 import {Key, Rect, Size, Point} from "./common";
-import {CodeEditor, TokenUtils} from "./code-editor";
+import {CodeEditor, CvLine, IndexSelection, TokenUtils} from "./code-editor";
 
 export class IndexPage {
     constructor() {
@@ -64,6 +64,7 @@ export class IndexPage {
     monitor: Monitor;
     main() {
         this.editor = new CodeEditor();
+        this.editor.init();
 
         this.monitor = monitor;
         $(".lines").mousedown(e => this.onLineNumberMouseDown(e));
@@ -356,8 +357,8 @@ export class IndexPage {
         //new FindEvalsWithout1AtTheEnd().process(this.unit);
         new RefArrayToRefUtil(this.editor.unit).process();
         this.generateCode();
-        this.editor.render();
-        this.renderSelection();
+        //this.editor.render();
+        //this.renderSelection();
     }
 
     getTokens(obj: any, deep: boolean): Token[] {
