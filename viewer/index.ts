@@ -20,7 +20,7 @@ import {ExpressionTester, EtReport, EtItem} from "../src/expression-tester";
 import {P5Service, P5File, CritiqueResponse, CritiqueViolation} from "./p5-service";
 import {monitor, Monitor} from "./monitor";
 import {Key, Rect, Size, Point} from "./common";
-import {CodeEditor, CvLine, IndexSelection, TokenUtils} from "./code-editor";
+import {Editor, CvLine, IndexSelection, TokenUtils} from "./editor";
 
 export class IndexPage {
     constructor() {
@@ -29,7 +29,7 @@ export class IndexPage {
         this.selection = new IndexSelection();
     }
 
-    editor: CodeEditor;
+    editor: Editor;
 
 
 
@@ -63,7 +63,7 @@ export class IndexPage {
     }
     monitor: Monitor;
     main() {
-        this.editor = new CodeEditor();
+        this.editor = new Editor();
         this.editor.init();
 
         this.monitor = monitor;

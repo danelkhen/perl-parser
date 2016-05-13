@@ -19,11 +19,11 @@ import {ExpressionTester, EtReport, EtItem} from "../src/expression-tester";
 import {P5Service, P5File, CritiqueResponse, CritiqueViolation} from "./p5-service";
 import {monitor, Monitor} from "./monitor";
 import {Key, Rect, Size, Point} from "./common";
-import {CodeEditor} from "./code-editor";
+import {Editor} from "./editor";
 
 export class EditorDomBinder {
     el: HTMLElement;
-    editor: CodeEditor;
+    editor: Editor;
     scrollEl: HTMLElement;
     lineHeight = 15;
     fontWidth = 7.19;

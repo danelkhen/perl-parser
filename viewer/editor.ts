@@ -21,7 +21,7 @@ import {monitor, Monitor} from "./monitor";
 import {Key, Rect, Size, Point} from "./common";
 import {EditorDomBinder} from "./editor-dom-binder";
 
-export class CodeEditor {
+export class Editor {
     code: string;
     firstTime: boolean = true;
     lines: CvLine[];
