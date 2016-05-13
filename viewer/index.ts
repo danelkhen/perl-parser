@@ -68,45 +68,9 @@ export class IndexPage {
     monitor: Monitor;
     main() {
         this.scrollEl = $(".code-view")[0];
-        //this.pageSize = Math.floor(this.scrollEl.offsetHeight / this.lineHeight);
+        this.lineNumbersEl = $(".lines")[0];
 
         this.monitor = monitor;
-        //let x = { name: "ggg", phones: [{ number: "asd" }, { number: "dddd" }] };
-        //monitor.methodInvoked.attach(e => console.log("methodInvoked", e));
-        //monitor.propSet.attach(e => console.log("propSet", e));
-        //monitor.register(x, () => true);
-        //x.name = "aaa";
-        //x.phones.push({ number: "aaaaa" });
-        //x.phones.removeAt(1);
-        //console.log(window.location.pathname);
-        //$(".menu").getAppend("button.btn.btnCritique").text("Critique").click(e => this.critique());
-        //$(".menu").getAppend("button.btn.btnExpandOrCollapseAll").text("Expand/Collapse").click(e => this.expandOrCollapseAll());
-        //$(".menu").getAppend("button.btn.btnGitBlame").text("git blame").click(e => this.gitBlame());
-        //this.tbUrl = $("#tbUrl");
-        //this.tbUrl.val(window.location.pathname);
-        //this.urlKey = "perl-parser\turl";
-        //this.tbRegex = $("#tbRegex");
-        //$("#btnRefactor").click(e => this.refactor());
-        //$("#btnTestExpressions").click(e => this.testExpressions());
-
-        //this.tbRegex.keyup(e => {
-        //    let s = this.tbRegex.val();
-        //    try {
-        //        let regex = new Function("return " + s + ";")();
-        //        let res = regex.exec(this.code);
-        //        if (res instanceof Array)
-        //            console.log(JSON.stringify(res[0]), { regex: res });
-        //        else
-        //            console.log(res);
-        //    }
-        //    catch (e) {
-        //        console.log(e);
-        //    }
-        //});
-        //this.tbUrl.change(e => this.update());
-        //$("#cbAddParentheses").change(e => this.update());
-        //$("#cbDeparseFriendly").change(e => this.update());
-        //$(".line-numbers").on("click", "a.line-number", e=>e.preventDefault());
         $(".lines").mousedown(e => this.onLineNumberMouseDown(e));
         $(".lines").mouseover(e => this.onLineNumberMouseOver(e));
         $(".lines").mouseup(e => this.onLineNumberMouseUp(e));
@@ -115,7 +79,6 @@ export class IndexPage {
         this.update();
 
         $(window).on("urlchange", e => this.update());
-        this.initCaret();
     }
     caretEl: HTMLElement;
     caretPos: File2Pos;
@@ -129,22 +92,51 @@ export class IndexPage {
         $(window).keydown(e => {
             this.window_keydown(e);
         });
+        $(this.scrollEl).mousedown(e => this.scrollEl_mousedown(e));
         this.renderCaretPos();
     }
     renderCaretPos() {
+        if (this.caretPos.line > this.lines.length)
+            this.caretPos.line = this.lines.length;
+        else if (this.caretPos.line < 1)
+            this.caretPos.line = 1;
+        if (this.caretPos.column < 1)
+            this.caretPos.column = 1;
         $(this.caretEl).css({ left: (this.caretPos.column - 1) * this.fontWidth, top: (this.caretPos.line - 1) * this.lineHeight });
         this.scrollToPosIfNeeded(this.caretPos);
-        //this.scrollToElement(this.caretEl);
     }
+    scrollEl_mousedown(e: JQueryMouseEventObject) {
+        let pos = this.screenToPos(new Point(e.offsetX, e.offsetY));
+        this.caretPos.line = pos.y;
+        this.caretPos.column = pos.x;
+        this.renderCaretPos();
+    }
+    //verifyInRange<T>(obj:T, prop:(x
     window_keydown(e: JQueryKeyEventObject) {
         let key = e.keyCode;
         let alt = e.altKey;
         let shift = e.shiftKey;
         let ctrl = e.ctrlKey;
 
-        if (key == Key.RIGHT) {
+        if (key == Key.RIGHT && !ctrl) {
             e.preventDefault();
             this.caretPos.column++;
+            this.renderCaretPos();
+        }
+        else if (key == Key.RIGHT && ctrl) {
+            e.preventDefault();
+            let line = this.getCurrentLineText().substr(this.caretPos.column - 1);
+            console.log(line);
+            let res = /(\s+)(\S)/.exec(line);
+            console.log(res);
+            if (res != null) {
+                let index = res.index + res[1].length;
+                console.log(index);
+                this.caretPos.column += index;
+            }
+            else {
+                //TODO: next line
+            }
             this.renderCaretPos();
         }
         else if (key == Key.LEFT) {
@@ -168,21 +160,46 @@ export class IndexPage {
         }
         else if (key == Key.PAGE_UP) {
             e.preventDefault();
-            this.caretPos.line -= this.getVisibleLines();
+            this.caretPos.line -= this.getVisibleLineCount();
             if (this.caretPos.line < 1)
                 this.caretPos.line = 1;
             this.renderCaretPos();
         }
         else if (key == Key.PAGE_DOWN) {
             e.preventDefault();
-            this.caretPos.line += this.getVisibleLines();
+            this.caretPos.line += this.getVisibleLineCount();
             this.renderCaretPos();
         }
-        else if (key == Key.HOME) {
+        else if (key == Key.HOME && !ctrl) {
             e.preventDefault();
-            this.caretPos.column = 1;
+            let text = this.getCurrentLineText();
+            let res = /\S/.exec(text);
+            if (res != null && res.index + 1 != this.caretPos.column)
+                this.caretPos.column = res.index + 1;
+            else
+                this.caretPos.column = 1;
             this.renderCaretPos();
         }
+        else if (key == Key.END && !ctrl) {
+            e.preventDefault();
+            let text = this.getCurrentLineText();
+            this.caretPos.column = text.length + 1;
+            this.renderCaretPos();
+        }
+        else if (key == Key.HOME && ctrl) {
+            e.preventDefault();
+            this.caretPos.line = 1;
+            this.renderCaretPos();
+        }
+        else if (key == Key.END && ctrl) {
+            e.preventDefault();
+            let text = this.getCurrentLineText();
+            this.caretPos.line = this.lines.length;
+            this.renderCaretPos();
+        }
+    }
+    getCurrentLineText(): string {
+        return this.sourceFile.getLineText(this.caretPos.line);
     }
     //pageSize: number;
 
@@ -376,6 +393,7 @@ export class IndexPage {
             //$(".dir-view").toggleClass("active", this.file.children != null);
             //$(".code-view").toggleClass("active", this.file.children == null);
             this.dataBind();
+            this.initCaret();
         });
         this.dataBind();
     }
@@ -410,7 +428,7 @@ export class IndexPage {
         if (this.lineTemplate == null)
             this.lineTemplate = $(".line").first().remove();
 
-        this.lineNumbersEl = $(".lines").empty()[0];
+        $(this.lineNumbersEl).empty()[0];
         this.lines.forEach((line, i) => {
             let div = this.lineTemplate.clone();
             let lineNumber = i + 1;
@@ -522,10 +540,10 @@ export class IndexPage {
     //scrollOffset: JQueryCoordinates = { left: 0, top: 30 };
     lineHeight = 15;
     screenToPos(p: Point): Point {
-        return p.div(this.projectionRatio).floor();
+        return p.div(this.projectionRatio).floor().add(new Point(1, 1));
     }
     posToScreen(p: Point): Point {
-        return p.mul(this.projectionRatio);
+        return p.subtract(new Point(1, 1)).mul(this.projectionRatio);
     }
     fontWidth = 7.19;
     projectionRatio: Point = new Point(this.fontWidth, this.lineHeight);
@@ -534,8 +552,20 @@ export class IndexPage {
         let y = Math.ceil(this.scrollEl.scrollTop / this.lineHeight) + 1;
         return y;
     }
-    getVisibleLines(): number {
-        let lines = Math.floor(this.scrollEl.offsetHeight / this.lineHeight) - 1;
+    getLastVisibleLineNumber(): number {
+        return this.getFirstVisibleLineNumber() + this.getVisibleLineCount();
+    }
+    setFirstVisibleLineNumber(line: number) {
+        let el = this.getLineEl(line);
+        if (el == null)
+            return;
+        this.scrollEl.scrollTop = el.offsetTop;
+    }
+    setLastVisibleLineNumber(line: number) {
+        this.setFirstVisibleLineNumber(line - this.getVisibleLineCount());
+    }
+    getVisibleLineCount(): number {
+        let lines = Math.floor(this.scrollEl.clientHeight / this.lineHeight) - 1;
         return lines;
     }
 
@@ -568,15 +598,25 @@ export class IndexPage {
     }
     scrollToPosIfNeeded(p: File2Pos) {
         let firstLine = this.getFirstVisibleLineNumber();
-        let diff = this.smallestOffsetNeededToInclude(firstLine, firstLine + this.getVisibleLines(), p.line);
-        console.log(firstLine, this.getVisibleLines(), p.line, "diff=" + diff);
-        if (diff != 0) {
-            let diff2 = diff * this.lineHeight;
-            let scrollTop = this.scrollEl.scrollTop + diff2;
-            if (scrollTop < 0)
-                scrollTop = 0;
-            this.scrollEl.scrollTop = scrollTop;
+        let lastLine = this.getLastVisibleLineNumber();
+        let line = p.line;
+        if (line < firstLine)
+            this.setFirstVisibleLineNumber(p.line);
+        else if (line > lastLine) {
+            this.setLastVisibleLineNumber(p.line);
         }
+        else {
+        }
+
+        //let diff = this.smallestOffsetNeededToInclude(firstLine, firstLine + this.getVisibleLineCount(), p.line);
+        ////console.log(firstLine, this.getVisibleLines(), p.line, "diff=" + diff);
+        //if (diff != 0) {
+        //    let diff2 = diff * this.lineHeight;
+        //    let scrollTop = this.scrollEl.scrollTop + diff2;
+        //    if (scrollTop < 0)
+        //        scrollTop = 0;
+        //    this.scrollEl.scrollTop = scrollTop;
+        //}
     }
 
     smallestOffsetNeededToInclude(from: number, to: number, index: number) {
@@ -631,21 +671,6 @@ export class IndexPage {
                 line.tokens = [token];
                 this.lines.add(line);
             }
-            //if (token.is(TokenTypes.whitespace) && token.value == "\n") {
-            //    line = new CvLine();
-            //    line.tokens = [];
-            //    this.lines.add(line);
-            //}
-            //else {
-            //    let lines = token.value.lines();
-            //    if (lines.length > 1) {
-            //        lines.skip(1).forEach(t => {
-            //            line = new CvLine();
-            //            line.tokens = [token];
-            //            this.lines.add(line);
-            //        });
-            //    }
-            //}
         });
         this.tokens.forEach(token => {
             let span = document.createElement("span");
@@ -1035,3 +1060,55 @@ $(main);
 //editor.foldCode(CodeMirror.Pos(0, 8), {rangeFinder:CodeMirror.fold.brace});
 //return;
 
+        //this.pageSize = Math.floor(this.scrollEl.offsetHeight / this.lineHeight);
+        //let x = { name: "ggg", phones: [{ number: "asd" }, { number: "dddd" }] };
+        //monitor.methodInvoked.attach(e => console.log("methodInvoked", e));
+        //monitor.propSet.attach(e => console.log("propSet", e));
+        //monitor.register(x, () => true);
+        //x.name = "aaa";
+        //x.phones.push({ number: "aaaaa" });
+        //x.phones.removeAt(1);
+        //console.log(window.location.pathname);
+        //$(".menu").getAppend("button.btn.btnCritique").text("Critique").click(e => this.critique());
+        //$(".menu").getAppend("button.btn.btnExpandOrCollapseAll").text("Expand/Collapse").click(e => this.expandOrCollapseAll());
+        //$(".menu").getAppend("button.btn.btnGitBlame").text("git blame").click(e => this.gitBlame());
+        //this.tbUrl = $("#tbUrl");
+        //this.tbUrl.val(window.location.pathname);
+        //this.urlKey = "perl-parser\turl";
+        //this.tbRegex = $("#tbRegex");
+        //$("#btnRefactor").click(e => this.refactor());
+        //$("#btnTestExpressions").click(e => this.testExpressions());
+
+        //this.tbRegex.keyup(e => {
+        //    let s = this.tbRegex.val();
+        //    try {
+        //        let regex = new Function("return " + s + ";")();
+        //        let res = regex.exec(this.code);
+        //        if (res instanceof Array)
+        //            console.log(JSON.stringify(res[0]), { regex: res });
+        //        else
+        //            console.log(res);
+        //    }
+        //    catch (e) {
+        //        console.log(e);
+        //    }
+        //});
+        //this.tbUrl.change(e => this.update());
+        //$("#cbAddParentheses").change(e => this.update());
+        //$("#cbDeparseFriendly").change(e => this.update());
+        //$(".line-numbers").on("click", "a.line-number", e=>e.preventDefault());
+            //if (token.is(TokenTypes.whitespace) && token.value == "\n") {
+            //    line = new CvLine();
+            //    line.tokens = [];
+            //    this.lines.add(line);
+            //}
+            //else {
+            //    let lines = token.value.lines();
+            //    if (lines.length > 1) {
+            //        lines.skip(1).forEach(t => {
+            //            line = new CvLine();
+            //            line.tokens = [token];
+            //            this.lines.add(line);
+            //        });
+            //    }
+            //}
