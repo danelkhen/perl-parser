@@ -20,36 +20,32 @@ import {ExpressionTester, EtReport, EtItem} from "../src/expression-tester";
 import {P5Service, P5File, CritiqueResponse, CritiqueViolation} from "./p5-service";
 import {monitor, Monitor} from "./monitor";
 import {Key, Rect, Size, Point} from "./common";
+import {CodeEditor, TokenUtils} from "./code-editor";
 
 export class IndexPage {
     constructor() {
-        this.lines = [];
-        this.selection = new IndexSelection();
         let win: any = window;
         this.service = new P5Service();
+        this.selection = new IndexSelection();
     }
 
-    tbUrl: JQuery;
-    tbRegex: JQuery;
-    urlKey: string;
-    code: string;
-    firstTime: boolean = true;
-    cvBaseUrl = "/";
-    lines: CvLine[];
+    editor: CodeEditor;
+
+
+
+    isMouseDown = false;
     selection: IndexSelection;
     service: P5Service;
     file: P5File;
-    lastUrl: string;
-    isAllCollapsed: boolean;
-    isMouseDown = false;
-    unit: Unit;
-    tokens: Token[];
-    generatedCode: string;
-
-    tokenToElement: Map<Token, HTMLElement> = new Map<Token, HTMLElement>();
+    cvBaseUrl = "/";
     includes = [
         "lib/",
     ];
+
+
+    lastUrl: string;
+    generatedCode: string;
+
 
     getCvUrlForIncludeAndPacakge(include: string, packageName: string) {
         let url = Helper.urlJoin([this.cvBaseUrl, include, packageName.split("::")]) + ".pm";
@@ -67,8 +63,7 @@ export class IndexPage {
     }
     monitor: Monitor;
     main() {
-        this.scrollEl = $(".code-view")[0];
-        this.lineNumbersEl = $(".lines")[0];
+        this.editor = new CodeEditor();
 
         this.monitor = monitor;
         $(".lines").mousedown(e => this.onLineNumberMouseDown(e));
@@ -80,143 +75,8 @@ export class IndexPage {
 
         $(window).on("urlchange", e => this.update());
     }
-    caretEl: HTMLElement;
-    caretPos: File2Pos;
-    initCaret() {
-        this.caretEl = $(".caret")[0];
-        this.caretEl.focus();
-        this.caretPos = new File2Pos();
-        this.caretPos.column = 1;
-        this.caretPos.line = 1;
-        this.caretPos.index = 0;
-        $(window).keydown(e => {
-            this.window_keydown(e);
-        });
-        $(this.scrollEl).mousedown(e => this.scrollEl_mousedown(e));
-        this.renderCaretPos();
-    }
-    renderCaretPos() {
-        if (this.caretPos.line > this.lines.length)
-            this.caretPos.line = this.lines.length;
-        else if (this.caretPos.line < 1)
-            this.caretPos.line = 1;
-        if (this.caretPos.column < 1)
-            this.caretPos.column = 1;
-        $(this.caretEl).css({ left: (this.caretPos.column - 1) * this.fontWidth, top: (this.caretPos.line - 1) * this.lineHeight });
-        this.scrollToPosIfNeeded(this.caretPos);
-    }
-    scrollEl_mousedown(e: JQueryMouseEventObject) {
-        let pos = this.screenToPos(new Point(e.offsetX, e.offsetY));
-        this.caretPos.line = pos.y;
-        this.caretPos.column = pos.x;
-        this.renderCaretPos();
-    }
-    //verifyInRange<T>(obj:T, prop:(x
-    window_keydown(e: JQueryKeyEventObject) {
-        let key = e.keyCode;
-        let ch = String.fromCharCode(key);
-        let alt = e.altKey;
-        let shift = e.shiftKey;
-        let ctrl = e.ctrlKey;
-
-        if (key == Key.RIGHT && !ctrl) {
-            e.preventDefault();
-            this.caretPos.column++;
-            this.renderCaretPos();
-        }
-        else if (key == Key.RIGHT && ctrl) {
-            e.preventDefault();
-            let line = this.getCurrentLineText().substr(this.caretPos.column - 1);
-            console.log(line);
-            let res = /(\s+)(\S)/.exec(line);
-            console.log(res);
-            if (res != null) {
-                let index = res.index + res[1].length;
-                console.log(index);
-                this.caretPos.column += index;
-            }
-            else {
-                //TODO: next line
-            }
-            this.renderCaretPos();
-        }
-        else if (key == Key.LEFT) {
-            e.preventDefault();
-            this.caretPos.column--;
-            if (this.caretPos.column < 1)
-                this.caretPos.column = 1;
-            this.renderCaretPos();
-        }
-        else if (key == Key.UP) {
-            e.preventDefault();
-            this.caretPos.line--;
-            if (this.caretPos.line < 1)
-                this.caretPos.line = 1;
-            this.renderCaretPos();
-        }
-        else if (key == Key.DOWN) {
-            e.preventDefault();
-            this.caretPos.line++;
-            this.renderCaretPos();
-        }
-        else if (key == Key.PAGE_UP) {
-            e.preventDefault();
-            this.caretPos.line -= this.getVisibleLineCount();
-            if (this.caretPos.line < 1)
-                this.caretPos.line = 1;
-            this.renderCaretPos();
-        }
-        else if (key == Key.PAGE_DOWN) {
-            e.preventDefault();
-            this.caretPos.line += this.getVisibleLineCount();
-            this.renderCaretPos();
-        }
-        else if (key == Key.HOME && !ctrl) {
-            e.preventDefault();
-            let text = this.getCurrentLineText();
-            let res = /\S/.exec(text);
-            if (res != null && res.index + 1 != this.caretPos.column)
-                this.caretPos.column = res.index + 1;
-            else
-                this.caretPos.column = 1;
-            this.renderCaretPos();
-        }
-        else if (key == Key.END && !ctrl) {
-            e.preventDefault();
-            let text = this.getCurrentLineText();
-            this.caretPos.column = text.length + 1;
-            this.renderCaretPos();
-        }
-        else if (key == Key.HOME && ctrl) {
-            e.preventDefault();
-            this.caretPos.line = 1;
-            this.renderCaretPos();
-        }
-        else if (key == Key.END && ctrl) {
-            e.preventDefault();
-            let text = this.getCurrentLineText();
-            this.caretPos.line = this.lines.length;
-            this.renderCaretPos();
-        }
-        else if (ch == "A" && ctrl) {
-            e.preventDefault();
-            let range = document.createRange();
-            range.selectNode($(".code")[0]);
-            let sel = getSelection();
-            sel.removeAllRanges();
-            sel.addRange(range);
-
-        }
-    }
-    getCurrentLineText(): string {
-        return this.sourceFile.getLineText(this.caretPos.line);
-    }
     //pageSize: number;
 
-    expandOrCollapseAll() {
-        this.isAllCollapsed = !this.isAllCollapsed;
-        this.getExpanders().forEach(t => t.toggle(this.isAllCollapsed));
-    }
 
     critiqueRes: CritiqueResponse;
     critique() {
@@ -234,7 +94,7 @@ export class IndexPage {
                 let tokens = this.findTokens(pos, violation.source.code.length);
                 if (tokens == null)
                     return;
-                let hl = this.hyperlinkTokens(tokens, null, null, null, "hl hl-violation");
+                let hl = this.editor.hyperlinkTokens(tokens, null, null, null, "hl hl-violation");
                 this.tooltip({ target: hl, content: `${violation.description}\n${violation.policy}\nseverity:${violation.severity}`, });
                 //if (firstViolationLine == null)
                 //    firstViolationLine = violation.source.location.line;
@@ -259,7 +119,7 @@ export class IndexPage {
         $(".code-container").addClass("git-blame-mode");
         this.service.gitBlame(this.file.path).then(items => {
             items.forEach(item => {
-                let line = this.getLineEl(parseInt(item.line_num));
+                let line = this.editor.getLineEl(parseInt(item.line_num));
                 $(line).find(".git-blame").remove();
                 let el = $.create(".git-blame");
                 el.getAppend("span.sha").text(item.sha);
@@ -283,9 +143,9 @@ export class IndexPage {
         let token = this.findToken(pos);
         if (token == null)
             return [];
-        let index = this.tokens.indexOf(token);
+        let index = this.editor.tokens.indexOf(token);
         let took = 0;
-        let list = this.tokens.skip(index).takeWhile(t => {
+        let list = this.editor.tokens.skip(index).takeWhile(t => {
             took += t.value.length;
             if (took >= length)
                 return false;
@@ -295,7 +155,7 @@ export class IndexPage {
 
     }
     findToken(pos: File2Pos): Token {
-        return this.tokens.first(t => t.range != null && t.range.start.line == pos.line && t.range.start.column == pos.column);
+        return this.editor.tokens.first(t => t.range != null && t.range.start.line == pos.line && t.range.start.column == pos.column);
     }
 
     getLineFromLineNumberEl(el: HTMLElement) {
@@ -345,11 +205,11 @@ export class IndexPage {
         //this.renderSelectionTimeout = window.setTimeout(t => { this.renderSelectionTimeout = null; this.renderSelection(); }, 0);
     }
     renderSelectionTimeout: number;
-
-
     onLineNumberMouseUp(e: JQueryMouseEventObject) {
         this.isMouseDown = false;
     }
+
+
     clickLine(line: number, ctrl: boolean, shift: boolean) {
         this.selection.click(line, ctrl, shift);
         this.renderSelection();
@@ -396,14 +256,16 @@ export class IndexPage {
             else {
                 this.service.src(url).then(data => {
                     this.file.src = data;
-                    this.parse(url, data);
+                    this.editor.parse(url, data);
+                    this.resolveAndHighlightUsedPackages();
+                    this.navigateToHash();
                     this.dataBind();
                 });
             }
             //$(".dir-view").toggleClass("active", this.file.children != null);
             //$(".code-view").toggleClass("active", this.file.children == null);
             this.dataBind();
-            this.initCaret();
+            this.editor.initCaret();
         });
         this.dataBind();
     }
@@ -426,63 +288,9 @@ export class IndexPage {
 
     violation_click(e: JQueryEventObject, violation: CritiqueViolation) {
         console.log(e, violation);
-        this.scrollToLine(violation.source.location.line);
+        this.editor.scrollToLine(violation.source.location.line);
     }
 
-    lineNumbersEl: HTMLElement;
-    getLineEl(line: number): HTMLElement {
-        return <HTMLElement>this.lineNumbersEl.childNodes.item(line - 1);
-    }
-    lineTemplate: JQuery;
-    renderLineNumbers() {
-        if (this.lineTemplate == null)
-            this.lineTemplate = $(".line").first().remove();
-
-        $(this.lineNumbersEl).empty()[0];
-        this.lines.forEach((line, i) => {
-            let div = this.lineTemplate.clone();
-            let lineNumber = i + 1;
-            div.find(".line-number").text(lineNumber.toString()).attr({ name: "L" + lineNumber, href: "javascript:void(0)" });
-            this.lineNumbersEl.appendChild(div[0]);
-        });
-    }
-
-
-    parse(filename: string, data: string) {
-        //if (localStorage.getItem("pause") == "1" && this.firstTime) {
-        //    console.warn("not running parse, last time crashed unexpectedly");
-        //    this.firstTime = false;
-        //    return;
-        //}
-        this.firstTime = false;
-        this.code = data;
-        let codeEl = $(".code").empty().text(data);
-        $(".ta-code").val(data);
-        this.sourceFile = new File2(filename, data);
-        let tok = new Tokenizer();
-        tok.file = this.sourceFile;
-        localStorage.setItem("pause", "1");
-        tok.main();
-        let parser = new Parser();
-        parser.logger = new Logger();
-        parser.reader = new TokenReader();
-        parser.reader.logger = parser.logger;
-        parser.reader.tokens = tok.tokens;
-        parser.init();
-
-        this.tokens = tok.tokens;
-        this.renderTokens();
-
-        var statements = parser.parse();
-        let unit = new Unit();
-        unit.statements = statements;
-        this.unit = unit;
-        console.log(unit);
-        new AstNodeFixator().process(this.unit);
-        this.resolveAndHighlightUsedPackages();
-        this.navigateToHash();
-    }
-    sourceFile: File2;
     navigateToHash() {
         let hash = window.location.hash.substr(1);
         if (hash == "")
@@ -506,7 +314,7 @@ export class IndexPage {
         //    //console.log("onExpressionFound", expressions.length);
         //    //fs.writeFileSync(expressionsFilename, expressions.select(t=> t.trim()).distinct().orderBy([t=> t.contains("\n"), t=> t.length, t=> t]).join("\n------------------------------------------------------------------------\n"));
         //};
-        return tester.testUnit(this.unit).then(list => {
+        return tester.testUnit(this.editor.unit).then(list => {
             console.log("Finished", list);
             console.log("Finished: ", list.where(t => t.success).length, "/", list.length);
             let report = new EtReport();
@@ -531,175 +339,25 @@ export class IndexPage {
 
     }
 
-    scrollToLine(line: number) {
-        let el = this.getLineEl(line);
-        this.scrollToElement(el);
-        //if (el.previousSibling != null)
-        //    el = <HTMLElement>el.previousSibling;
-        //el.scrollIntoView();
-    }
-
-    elToOffsetRect(el: HTMLElement): Rect {
-        return new Rect(this.elToOffsetPoint(el), new Size(el.offsetWidth, el.offsetHeight));
-    }
-    elToOffsetPoint(el: HTMLElement): Point {
-        return new Point(el.offsetLeft, el.offsetTop);
-    }
-
-    scrollEl: HTMLElement = document.body;
-    //scrollOffset: JQueryCoordinates = { left: 0, top: 30 };
-    lineHeight = 15;
-    screenToPos(p: Point): Point {
-        return p.div(this.projectionRatio).floor().add(new Point(1, 1));
-    }
-    posToScreen(p: Point): Point {
-        return p.subtract(new Point(1, 1)).mul(this.projectionRatio);
-    }
-    fontWidth = 7.19;
-    projectionRatio: Point = new Point(this.fontWidth, this.lineHeight);
-
-    getFirstVisibleLineNumber(): number {
-        let y = Math.ceil(this.scrollEl.scrollTop / this.lineHeight) + 1;
-        return y;
-    }
-    getLastVisibleLineNumber(): number {
-        return this.getFirstVisibleLineNumber() + this.getVisibleLineCount();
-    }
-    setFirstVisibleLineNumber(line: number) {
-        let el = this.getLineEl(line);
-        if (el == null)
-            return;
-        this.scrollEl.scrollTop = el.offsetTop;
-    }
-    setLastVisibleLineNumber(line: number) {
-        this.setFirstVisibleLineNumber(line - this.getVisibleLineCount());
-    }
-    getVisibleLineCount(): number {
-        let lines = Math.floor(this.scrollEl.clientHeight / this.lineHeight) - 1;
-        return lines;
-    }
-
-    scrollToElement(el: HTMLElement) {
-        let point = this.elToOffsetPoint(el);
-        let rect = this.elToOffsetRect(this.scrollEl);
-
-        let diff = this.smallestOffsetNeededToInclude(this.scrollEl.scrollTop, this.scrollEl.offsetHeight, el.offsetTop + el.offsetHeight);
-        if (diff != 0) {
-            console.log(diff);
-            let scrollTop = this.scrollEl.scrollTop + diff;
-            if (scrollTop < 0)
-                scrollTop = 0;
-            this.scrollEl.scrollTop = scrollTop;
-        }
-        //console.log("scrollToElement", point, rect);
-        //if (point.isInside(rect)) {
-        //    console.log("isInside");
-        //    return;
-        //}
-        //let diff = point.subtract(rect.topLeft);
-        //let diff2 = point.subtract(rect.bottomLeft);
-        //console.log("diff", diff, diff2);
-        //// let diff = rect.distanceTo(point);
-        //this.scrollEl.scrollLeft += diff2.x;
-        //this.scrollEl.scrollTop += diff2.y;
-
-
-        //        this.scrollEl.scrollTop = el.offsetTop;// - this.lineHeight;//pos.top;// - this.scrollOffset.top;
-    }
-    scrollToPosIfNeeded(p: File2Pos) {
-        let firstLine = this.getFirstVisibleLineNumber();
-        let lastLine = this.getLastVisibleLineNumber();
-        let line = p.line;
-        if (line < firstLine)
-            this.setFirstVisibleLineNumber(p.line);
-        else if (line > lastLine) {
-            this.setLastVisibleLineNumber(p.line);
-        }
-        else {
-        }
-
-        //let diff = this.smallestOffsetNeededToInclude(firstLine, firstLine + this.getVisibleLineCount(), p.line);
-        ////console.log(firstLine, this.getVisibleLines(), p.line, "diff=" + diff);
-        //if (diff != 0) {
-        //    let diff2 = diff * this.lineHeight;
-        //    let scrollTop = this.scrollEl.scrollTop + diff2;
-        //    if (scrollTop < 0)
-        //        scrollTop = 0;
-        //    this.scrollEl.scrollTop = scrollTop;
-        //}
-    }
-
-    smallestOffsetNeededToInclude(from: number, to: number, index: number) {
-        let length = to - from;
-        let diff = index - from;
-        if (diff > 0) {
-            if (diff > length)
-                diff -= length;
-            else
-                return 0;
-        }
-        return diff;
-    }
-
     generateCode() {
-        new AstNodeFixator().process(this.unit);
+        new AstNodeFixator().process(this.editor.unit);
 
         let writer = new AstWriter();
         writer.addParentheses = $("#cbAddParentheses").prop("checked");
         writer.deparseFriendly = $("#cbDeparseFriendly").prop("checked");
 
         writer.main();
-        writer.write(this.unit);
+        writer.write(this.editor.unit);
         this.generatedCode = writer.sb.join("");
     }
 
-    getLine(line: number): CvLine {
-        return this.lines[line - 1];
-    }
-    render() {
-        $(".code").empty().text(this.code);
-        this.renderTokens();
-    }
-
-
-    renderTokens() {
-        let codeEl = $(".code")[0];
-        codeEl.innerHTML = "";
-        this.lines.clear();
-        if (this.tokens == null || this.tokens.length == 0)
-            return;
-        //this.splitNewLineTokens();
-
-        let line = new CvLine();
-        line.tokens = [];
-        this.lines.add(line);
-        this.tokens.forEach(token => {
-            line.tokens.push(token);
-            let lineCount = token.range.end.line - token.range.start.line;
-            for (let i = 0; i < lineCount; i++) {
-                line = new CvLine();
-                line.tokens = [token];
-                this.lines.add(line);
-            }
-        });
-        this.tokens.forEach(token => {
-            let span = document.createElement("span");
-            span.className = token.type.name;
-            span.textContent = token.value;
-            codeEl.appendChild(span);
-            this.tokenToElement.set(token, span);
-        });
-        this.renderLineNumbers();
-        this.renderSelection();
-
-    }
-
     refactor() {
-        new AstNodeFixator().process(this.unit);
+        new AstNodeFixator().process(this.editor.unit);
         //new FindEvalsWithout1AtTheEnd().process(this.unit);
-        new RefArrayToRefUtil(this.unit).process();
+        new RefArrayToRefUtil(this.editor.unit).process();
         this.generateCode();
-        this.render();
+        this.editor.render();
+        this.renderSelection();
     }
 
     getTokens(obj: any, deep: boolean): Token[] {
@@ -725,7 +383,7 @@ export class IndexPage {
     }
 
     resolveAndHighlightUsedPackages() {
-        let pkgRefs = this.findPackageRefs(this.unit);
+        let pkgRefs = this.findPackageRefs(this.editor.unit);
         console.log(pkgRefs.select(t => t.toCode().trim()).distinct());
         let inUse: NamedMemberExpression[] = [];
         let refs: NamedMemberExpression[] = [];
@@ -749,15 +407,15 @@ export class IndexPage {
         let subs = this.findSubs();
         subs.where(t => t.name != null).forEach(node => {
             let name = node.name.toCode().trim();
-            this.hyperlinkNode(node.name, "#sub:" + name, "sub:" + name);
+            this.editor.hyperlinkNode(node.name, "#sub:" + name, "sub:" + name);
         });
         builtins.forEach(node => {
             let name = node.toCode().trim();
-            this.hyperlinkNode(node, "http://perldoc.perl.org/functions/" + name + ".html", name, "(builtin function) " + name, "builtin-function");
+            this.editor.hyperlinkNode(node, "http://perldoc.perl.org/functions/" + name + ".html", name, "(builtin function) " + name, "builtin-function");
         });
         pragmas.forEach(node => {
             let name = node.toCode().trim();
-            this.hyperlinkNode(node, "http://perldoc.perl.org/" + name + ".html", name, "(pragma) " + name);
+            this.editor.hyperlinkNode(node, "http://perldoc.perl.org/" + name + ".html", name, "(pragma) " + name);
         });
 
         let resolutions: PackageResolution[] = inUse.select(node => ({ node: node, name: node.toCode().trim() }));
@@ -770,7 +428,7 @@ export class IndexPage {
                         href = this.getCvUrlForIncludeAndPacakge(pkg.resolvedIncludePath, pkg.name);
                     else
                         href = "https://metacpan.org/pod/" + pkg.name;
-                    this.hyperlinkNode(pkg.node, href, pkg.name, "(package) " + pkg.name, "package-name");
+                    this.editor.hyperlinkNode(pkg.node, href, pkg.name, "(package) " + pkg.name, "package-name");
                 });
         });
         let packages = resolutions.select(t => t.name);
@@ -778,14 +436,14 @@ export class IndexPage {
             let pkg = node.toCode();
             let pkg2 = resolutions.first(t => t.name == pkg);
             if (pkg2 != null) {
-                this.hyperlinkNode(node, "#" + pkg);
+                this.editor.hyperlinkNode(node, "#" + pkg);
             }
         });
         subs.forEach(sub => {
-            let x = this.collectTokens2(sub.block);
-            this.collapsable(x);
+            let x = this.editor.collectTokens2(sub.block);
+            this.editor.collapsable(x);
         });
-        this.findConsecutiveRepetitions(this.tokens, (x, y) => x.isAny([TokenTypes.comment, TokenTypes.whitespace]) && y.isAny([TokenTypes.comment, TokenTypes.whitespace])).forEach(comments => {
+        this.findConsecutiveRepetitions(this.editor.tokens, (x, y) => x.isAny([TokenTypes.comment, TokenTypes.whitespace]) && y.isAny([TokenTypes.comment, TokenTypes.whitespace])).forEach(comments => {
             while (comments.length > 0 && comments.last().is(TokenTypes.whitespace))
                 comments.removeLast();
             while (comments.length > 0 && comments.first().is(TokenTypes.whitespace))
@@ -794,11 +452,11 @@ export class IndexPage {
                 return;
             let text = comments.select(t => t.value).join("");
             if (text.lines().length > 3) {
-                this.collapsable(comments);
+                this.editor.collapsable(comments);
             }
         });
-        this.tokens.where(t => t.is(TokenTypes.pod) && t.value.lines().length > 3).forEach(pod => {
-            this.collapsable([pod]);
+        this.editor.tokens.where(t => t.is(TokenTypes.pod) && t.value.lines().length > 3).forEach(pod => {
+            this.editor.collapsable([pod]);
         });
     }
 
@@ -822,44 +480,7 @@ export class IndexPage {
     }
 
 
-    hyperlinkNode(node: AstNode, href: string, name?: string, title?: string, css?: string): HTMLAnchorElement {
-        let tokens = this.collectTokens2(node);
-        let a = this.hyperlinkTokens(tokens, href, name, title, css);
-        $(a).data("AstNode", node);
-        return a;
-    }
-    hyperlinkTokens(tokens: Token[], href: string, name?: string, title?: string, css?: string): HTMLAnchorElement {
-        if (href == null)
-            href = "javascript:void(0)";
-        let els = tokens.select(token => this.tokenToElement.get(token));
-        let a = $(els).closest("a");
-        if (a.length > 0) {
-            console.warn("already hyperlinked");
-            return <HTMLAnchorElement>a[0];
-        }
-        a = $(els[0]).closest("a");
-        if (a.length > 0) {
-            console.warn("already hyperlinked 2");
-            return <HTMLAnchorElement>a[0];
-        }
-        //console.log("hyperlinkNode", els);
-        a = $.create("a").insertBefore(els[0]);
-        if (title != null)
-            a.attr("title", title);
-        if (css != null)
-            a.addClass(css);
-        a.append(els);
-        a.attr({ href, name });
-        return <HTMLAnchorElement>a[0];
-    }
 
-    highlightNode(node: AstNode) {
-        let tokens = this.collectTokens2(node);
-        tokens.forEach(token => {
-            let el = this.tokenToElement.get(token);
-            el.classList.add("highlight");
-        });
-    }
 
 
     findUsedPackages(node: AstNode): Expression[] {
@@ -869,7 +490,7 @@ export class IndexPage {
         return new AstQuery(node).getDescendants().ofType(NamedMemberExpression).where(t => this.isPackageName(t));
     }
     findSubs(): SubroutineExpression[] {
-        return new AstQuery(this.unit).getDescendants().ofType(SubroutineExpression);
+        return new AstQuery(this.editor.unit).getDescendants().ofType(SubroutineExpression);
     }
     isPackageName(node: NamedMemberExpression): boolean {
         if (node.arrow)
@@ -897,84 +518,8 @@ export class IndexPage {
     }
 
 
-    collectTokens2(obj: any): Token[] {
-        let list = this.collectTokens(obj);
-        if (list.length <= 1)
-            return list;
-        let list2 = this.getTokenRange(list.first(), list.last());
-        return list2;
-    }
-
-    collectTokens(obj: any): Token[] {
-        let tokens: Token[] = [];
-        this._collectTokens(obj, tokens);
-        return tokens;
-    }
-    _collectTokens(obj: any, tokens: Token[]) {
-        if (obj instanceof Token) {
-            tokens.add(obj);
-        }
-        else if (obj instanceof Array) {
-            obj.forEach(t => this._collectTokens(t, tokens));
-        }
-        else if (obj instanceof AstNode) {
-            let writer = new AstWriter();
-            writer.main();
-            let func = writer.map.get(obj.constructor);
-            if (func == null) {
-                console.warn("no ast writer handler for node", obj);
-                return;
-            }
-            let res = func(obj);
-            this._collectTokens(res, tokens);
-        }
-    }
-
-    getTokenRange(from: Token, until: Token) {
-        let start = this.tokens.indexOf(from);
-        let end = this.tokens.indexOf(until);
-        if (start < 0 || end < 0)
-            return null;
-        return this.tokens.slice(start, end + 1);
-    }
 
 
-    wrap(wrapper: HTMLElement, els: HTMLElement[]) {
-        $(els[0]).before(wrapper);
-        $(wrapper).append(els);
-    }
-
-    collapsable(tokens: Token[]) {
-        while (tokens.last().is(TokenTypes.whitespace, "\n"))
-            tokens.removeLast();
-        let lineStart = tokens[0].range.start.line;
-        let lineEnd = tokens.last().range.end.line;
-        let range = tokens.select(t => this.tokenToElement.get(t)).exceptNulls();
-        let span = $.create("span.collapsable");
-        this.wrap(span[0], range);
-        let lineStartEl = $(this.getLineEl(lineStart));
-        let lineEndEl = $(this.getLineEl(lineEnd));
-
-        let btnExpander = lineStartEl.getAppend(".expander-container").getAppend("button.expander.expanded");
-        let exp: Expander = {
-            toggle: (collapsed?: boolean) => {
-                if (collapsed == null)
-                    collapsed = !exp.isCollapsed();
-                span.toggleClass("collapsed", collapsed);
-                btnExpander.toggleClass("collapsed", collapsed);
-                Array.generateNumbers(lineStart + 1, lineEnd).forEach(line => $(this.getLineEl(line)).toggleClass("collapsed", collapsed)); //TODO: inner collapsing (subs within subs will not work correctly)
-            },
-            isCollapsed: () => span.hasClass("collapsed"),
-        }
-
-        btnExpander.dataItem(exp);
-        btnExpander.mousedown(e => exp.toggle());
-        //toggle();
-    }
-
-    getExpanders(): Expander[] {
-        return $(".expander").toArray$().select(t => t.dataItem());
-    }
 
     isFolder(file?: P5File) {
         if (arguments.length == 0)
