@@ -176,6 +176,10 @@ a:target {
     box-sizing: border-box;
 }
 
+.code-container .code{
+    cursor:text;
+}
+
 .tooltip.git-blame {
 }
 

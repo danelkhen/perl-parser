@@ -30,16 +30,10 @@ export class Editor {
     caretPos: File2Pos;
     sourceFile: File2;
     binder: EditorDomBinder;
-    watchable: Watchable<this>;
-    constructor() {
-        this.watchable = new Watchable(this);
-        //this.watchable(t => [t.code, t.lines, t.isAllCollapsed, t.unit, t.tokens, t.caretPos, t.sourceFile, t.binder]);
-    }
+    codeHyperlinks: CodeHyperlink[] = [];
+    visibleLineCount = 10;
+    firstVisibleLineNumber = 1;
 
-    watchProps(props: (x: this) => Array<any>, handler: PropChangedHandler<this>) { this.watchable.props(props, handler); }
-
-
-    tokenToElement: Map<Token, HTMLElement> = new Map<Token, HTMLElement>();
 
 
     init() {
@@ -151,7 +145,6 @@ export class Editor {
     }
     caretNextChar() {
         this.caretPos.column++;
-        this.binder.renderCaretPos();
     }
     caretNextWord() {
         let line = this.getCurrentLineText().substr(this.caretPos.column - 1);
@@ -166,49 +159,53 @@ export class Editor {
         else {
             //TODO: next line
         }
-        this.binder.renderCaretPos();
     }
     caretPrevChar() {
         this.caretPos.column--;
         if (this.caretPos.column < 1)
             this.caretPos.column = 1;
-        this.binder.renderCaretPos();
     }
     caretPrevLine() {
-        this.caretPos.line--;
-        if (this.caretPos.line < 1)
-            this.caretPos.line = 1;
-        this.binder.renderCaretPos();
+        let line = this.caretPos.line;
+        line--;
+        if (line < 1)
+            line = 1;
+        this.caretPos.line = line;
+        this.verifyCaretInView();
+        //if (line < this.firstVisibleLineNumber)
+        //    this.firstVisibleLineNumber = line;
     }
     caretNextLine() {
-        this.caretPos.line++;
-        this.binder.renderCaretPos();
+        let line = this.caretPos.line;
+        line++;
+        if (line > this.lines.length)
+            line = this.lines.length;
+        this.caretPos.line = line;
+        this.verifyCaretInView();
     }
     caretPrevPage() {
-        let firstLine = this.getFirstVisibleLineNumber();
+        let firstLine = this.firstVisibleLineNumber;
         let line = this.caretPos.line;
-        let lineCount = this.getVisibleLineCount();
+        let lineCount = this.visibleLineCount;
         let offset = line - firstLine;
         let newLine = line - lineCount;
         if (newLine < 1)
             newLine = 1;
         this.caretPos.line = newLine;
         if (offset <= lineCount)
-            this.setFirstVisibleLineNumber(newLine - offset);
-        this.binder.renderCaretPos();
+            this.firstVisibleLineNumber = newLine - offset;
     }
     caretNextPage() {
-        let firstLine = this.getFirstVisibleLineNumber();
+        let firstLine = this.firstVisibleLineNumber;
         let line = this.caretPos.line;
-        let lineCount = this.getVisibleLineCount();
+        let lineCount = this.visibleLineCount;
         let offset = line - firstLine;
         let newLine = line + lineCount;
         if (newLine > this.lines.length)
             newLine = this.lines.length;
         this.caretPos.line = newLine;
         if (offset <= lineCount)
-            this.setFirstVisibleLineNumber(newLine - offset);
-        this.binder.renderCaretPos();
+            this.firstVisibleLineNumber = newLine - offset;
     }
     caretLineStart() {
         let text = this.getCurrentLineText();
@@ -217,21 +214,19 @@ export class Editor {
             this.caretPos.column = res.index + 1;
         else
             this.caretPos.column = 1;
-        this.binder.renderCaretPos();
     }
     caretLineEnd() {
         let text = this.getCurrentLineText();
         this.caretPos.column = text.length + 1;
-        this.binder.renderCaretPos();
     }
     caretDocStart() {
         this.caretPos.line = 1;
-        this.binder.renderCaretPos();
+        this.verifyCaretInView();
     }
     caretDocEnd() {
         let text = this.getCurrentLineText();
         this.caretPos.line = this.lines.length;
-        this.binder.renderCaretPos();
+        this.verifyCaretInView();
     }
     caretSelectAll() {
         let range = document.createRange();
@@ -262,18 +257,21 @@ export class Editor {
 
 
     getLastVisibleLineNumber(): number {
-        return this.getFirstVisibleLineNumber() + this.getVisibleLineCount();
+        return this.firstVisibleLineNumber + this.visibleLineCount;
     }
     setLastVisibleLineNumber(line: number) {
-        this.setFirstVisibleLineNumber(line - this.getVisibleLineCount());
+        this.firstVisibleLineNumber = line - this.visibleLineCount;
     }
 
-    scrollToPosIfNeeded(p: File2Pos) {
-        let firstLine = this.getFirstVisibleLineNumber();
+    verifyCaretInView() {
+        this.verifyPosInView(this.caretPos);
+    }
+    verifyPosInView(p: File2Pos) {
+        let firstLine = this.firstVisibleLineNumber;
         let lastLine = this.getLastVisibleLineNumber();
         let line = p.line;
         if (line < firstLine)
-            this.setFirstVisibleLineNumber(p.line);
+            this.firstVisibleLineNumber = p.line;
         else if (line > lastLine) {
             this.setLastVisibleLineNumber(p.line);
         }
@@ -282,7 +280,6 @@ export class Editor {
     }
 
 
-    codeHyperlinks: CodeHyperlink[] = [];
 
     hyperlinkNode(opts: CodeHyperlink): HTMLAnchorElement {
         this.codeHyperlinks.push(opts);
@@ -290,13 +287,13 @@ export class Editor {
     }
 
 
-    highlightNode(node: AstNode) {
-        let tokens = this.collectTokens2(node);
-        tokens.forEach(token => {
-            let el = this.tokenToElement.get(token);
-            el.classList.add("highlight");
-        });
-    }
+    //highlightNode(node: AstNode) {
+    //    let tokens = this.collectTokens2(node);
+    //    tokens.forEach(token => {
+    //        let el = this.binder.tokenToElement.get(token);
+    //        el.classList.add("highlight");
+    //    });
+    //}
 
     collectTokens2(obj: any): Token[] {
         let list = TokenUtils.collectTokens(obj);
@@ -315,9 +312,6 @@ export class Editor {
     }
 
 
-    getFirstVisibleLineNumber(): number { return this.binder.getFirstVisibleLineNumber(); }
-    setFirstVisibleLineNumber(line: number) { return this.binder.setFirstVisibleLineNumber(line); }
-    getVisibleLineCount(): number { return this.binder.getVisibleLineCount(); }
 
 }
 
@@ -608,7 +602,7 @@ export class Watchable<T>{
             handlers.push(handler);
             if (this.data.hasOwnProperty(prop))
                 return;
-            this.data[prop] = this[prop];
+            this.data[prop] = this.obj[prop];
             Object.defineProperty(this.obj, prop, {
                 get: () => this.data[prop],
                 set: value => {

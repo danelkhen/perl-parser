@@ -31,6 +31,7 @@ export class EditorDomBinder {
     lineTemplate: HTMLElement;
     caretEl: HTMLElement;
     codeContainerEl: HTMLElement;
+    tokenToElement: Map<Token, HTMLElement> = new Map<Token, HTMLElement>();
 
     init() {
         this.scrollEl = $(".code-view")[0];
@@ -38,13 +39,14 @@ export class EditorDomBinder {
         this.caretEl = $(".caret")[0];
         this.codeContainerEl = $(".code-container")[0];
 
-        this.editor.watchProps(t => [t.code], e => $(".ta-code").val(e.value));
-        this.editor.watchProps(t => [t.tokens], e => this.renderTokens());
+        this.editor.visibleLineCount = this.getVisibleLineCount(); //TODO: update on resize
 
-        //this.editor.lines = [];
-        Watchable.from(this.editor.collapsables).methods(t => t.push, e => this.collapsable(e.args[0]));
-        Watchable.from(this.editor.codeHyperlinks).methods(t => t.push, e => this.hyperlinkNode(e.args[0]));
-        //this.editor.lines.push({lineNumberEl:null, tokens:null, });
+        Watchable.from(this.editor).prop(t => t.code, e => $(".ta-code").val(e.value));
+        Watchable.from(this.editor).prop(t => t.tokens, e => this.renderTokens());
+        Watchable.from(this.editor).prop(t => t.firstVisibleLineNumber, e => { console.log("firstVisibleLineNumber", this.editor.firstVisibleLineNumber); this.setFirstVisibleLineNumber(this.editor.firstVisibleLineNumber); });
+        Watchable.from(this.editor.collapsables).method(t => t.push, e => this.collapsable(e.args[0]));
+        Watchable.from(this.editor.codeHyperlinks).method(t => t.push, e => this.hyperlinkNode(e.args[0]));
+
     }
 
     collapsable(collapsable: Collapsable) {
@@ -53,7 +55,7 @@ export class EditorDomBinder {
             tokens.removeLast();
         let lineStart = tokens[0].range.start.line;
         let lineEnd = tokens.last().range.end.line;
-        let range = tokens.select(t => this.editor.tokenToElement.get(t)).exceptNulls();
+        let range = tokens.select(t => this.tokenToElement.get(t)).exceptNulls();
         let span = $.create("span.collapsable");
         this.wrap(span[0], range);
         let lineStartEl = $(this.getLineEl(lineStart));
@@ -102,7 +104,7 @@ export class EditorDomBinder {
             span.className = token.type.name;
             span.textContent = token.value;
             codeEl.appendChild(span);
-            this.editor.tokenToElement.set(token, span);
+            this.tokenToElement.set(token, span);
         });
         this.renderLineNumbers();
 
@@ -112,20 +114,21 @@ export class EditorDomBinder {
         return <HTMLElement>this.lineNumbersEl.childNodes.item(line - 1);
     }
 
-    getFirstVisibleLineNumber(): number {
+    private getFirstVisibleLineNumber(): number {
         let y = Math.ceil(this.scrollEl.scrollTop / this.lineHeight) + 1;
         return y;
     }
-    setFirstVisibleLineNumber(line: number) {
+    private setFirstVisibleLineNumber(line: number) {
         let el = this.getLineEl(line);
         if (el == null)
             return;
         this.scrollEl.scrollTop = el.offsetTop;
     }
-    getVisibleLineCount(): number {
+    private getVisibleLineCount(): number {
         let lines = Math.floor(this.scrollEl.clientHeight / this.lineHeight) - 1;
         return lines;
     }
+
 
     scrollToElement(el: HTMLElement) {
         let point = this.elToOffsetPoint(el);
@@ -191,7 +194,6 @@ export class EditorDomBinder {
         if (this.editor.caretPos.column < 1)
             this.editor.caretPos.column = 1;
         $(this.caretEl).css({ left: (this.editor.caretPos.column - 1) * this.fontWidth, top: (this.editor.caretPos.line - 1) * this.lineHeight });
-        this.editor.scrollToPosIfNeeded(this.editor.caretPos);
     }
 
     renderLineNumbers() {
@@ -207,12 +209,13 @@ export class EditorDomBinder {
         });
     }
 
+    renderCaretPosTimer: Timer;
     initCaret() {
+        this.renderCaretPosTimer = new Timer(() => this.renderCaretPos());
         this.caretEl.focus();
-        $(window).keydown(e => {
-            this.window_keydown(e);
-        });
+        $(window).keydown(e => this.window_keydown(e));
         $(this.codeContainerEl).mousedown(e => this.scrollEl_mousedown(e));
+        Watchable.from(this.editor.caretPos).props(t => [t.line, t.column], e => this.renderCaretPosTimer.set(0));
         this.renderCaretPos();
     }
 
@@ -222,7 +225,7 @@ export class EditorDomBinder {
         let pos = this.screenToPos(new Point(e.offsetX, e.offsetY));
         this.editor.caretPos.line = pos.y;
         this.editor.caretPos.column = pos.x;
-        this.renderCaretPos();
+        //this.renderCaretPos();
     }
     window_keydown(e: JQueryKeyEventObject) {
         let keyName = this.editor.getKeyName(e);
@@ -251,7 +254,7 @@ export class EditorDomBinder {
         let name = opts.name;
         if (href == null)
             href = "javascript:void(0)";
-        let els = tokens.select(token => this.editor.tokenToElement.get(token));
+        let els = tokens.select(token => this.tokenToElement.get(token));
         let a = $(els).closest("a");
         opts.anchorEl = <HTMLAnchorElement>a[0];
         if (a.length > 0) {
