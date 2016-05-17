@@ -74,7 +74,7 @@ export class IndexPage {
 
         this.update();
 
-        $(window).on("urlchange", e => this.update());
+        $(window).on("urlchange", e => {console.log(e); this.update(); });
     }
     //pageSize: number;
 
@@ -95,7 +95,7 @@ export class IndexPage {
                 let tokens = this.findTokens(pos, violation.source.code.length);
                 if (tokens == null)
                     return;
-                let hl = this.editor.hyperlinkTokens(tokens, { css: "hl hl-violation" });
+                let hl = this.editor.hyperlinkNode({ tokens, css: "hl hl-violation" });
                 this.tooltip({ target: hl, content: `${violation.description}\n${violation.policy}\nseverity:${violation.severity}`, });
                 //if (firstViolationLine == null)
                 //    firstViolationLine = violation.source.location.line;
@@ -408,15 +408,15 @@ export class IndexPage {
         let subs = this.findSubs();
         subs.where(t => t.name != null).forEach(node => {
             let name = node.name.toCode().trim();
-            this.editor.hyperlinkNode(node.name, { href: "#sub:" + name, name: "sub:" + name });
+            this.editor.hyperlinkNode({ node:node.name, href: "#sub:" + name, name: "sub:" + name });
         });
         builtins.forEach(node => {
             let name = node.toCode().trim();
-            this.editor.hyperlinkNode(node, { href: "http://perldoc.perl.org/functions/" + name + ".html", name, title: "(builtin function) " + name, css: "builtin-function" });
+            this.editor.hyperlinkNode({ node, href: "http://perldoc.perl.org/functions/" + name + ".html", name, title: "(builtin function) " + name, css: "builtin-function" });
         });
         pragmas.forEach(node => {
             let name = node.toCode().trim();
-            this.editor.hyperlinkNode(node, { href: "http://perldoc.perl.org/" + name + ".html", name, title: "(pragma) " + name });
+            this.editor.hyperlinkNode({ node, href: "http://perldoc.perl.org/" + name + ".html", name, title: "(pragma) " + name });
         });
 
         let resolutions: PackageResolution[] = inUse.select(node => ({ node: node, name: node.toCode().trim() }));
@@ -429,7 +429,7 @@ export class IndexPage {
                         href = this.getCvUrlForIncludeAndPacakge(pkg.resolvedIncludePath, pkg.name);
                     else
                         href = "https://metacpan.org/pod/" + pkg.name;
-                    this.editor.hyperlinkNode(pkg.node, { href, name: pkg.name, title: "(package) " + pkg.name, css: "package-name" });
+                    this.editor.hyperlinkNode({ node:pkg.node, href, name: pkg.name, title: "(package) " + pkg.name, css: "package-name" });
                 });
         });
         let packages = resolutions.select(t => t.name);
@@ -437,7 +437,7 @@ export class IndexPage {
             let pkg = node.toCode();
             let pkg2 = resolutions.first(t => t.name == pkg);
             if (pkg2 != null) {
-                this.editor.hyperlinkNode(node, { href: "#" + pkg });
+                this.editor.hyperlinkNode({ node, href: "#" + pkg });
             }
         });
         subs.forEach(sub => {

@@ -50,7 +50,7 @@
                         <a class="btn btnUp" href="../" _if="isFolder()">up</a>
                         <a class="btn btnUp" href="./" _if="isFile()">up</a>
                         <button class="btn" _onclick="e => this.critique()">critique</button>
-                        <button class="btn" _onclick="e => this.expandOrCollapseAll()">toggle</button>
+                        <button class="btn" _onclick="e => this.editor.expandOrCollapseAll()">toggle</button>
                         <button class="btn" _onclick="e => this.gitBlame()">blame</button>
                     </div>
                 </div>

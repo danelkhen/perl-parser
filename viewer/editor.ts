@@ -30,19 +30,13 @@ export class Editor {
     caretPos: File2Pos;
     sourceFile: File2;
     binder: EditorDomBinder;
+    watchable: Watchable<this>;
     constructor() {
+        this.watchable = new Watchable(this);
         //this.watchable(t => [t.code, t.lines, t.isAllCollapsed, t.unit, t.tokens, t.caretPos, t.sourceFile, t.binder]);
     }
 
-    data: Object;
-    watchable(props: (x: this) => Array<any>) {
-        let code = props.toString();
-        let props2 = code.split(/[\,\[\] ]/).map(t => t.split(".").last());
-        props2.forEach(p => {
-            Object.defineProperty(this, p, { get: () => this.data[p], set: value => this.data[p] = value });
-        });
-
-    }
+    watchProps(props: (x: this) => Array<any>, handler: PropChangedHandler<this>) { this.watchable.props(props, handler); }
 
 
     tokenToElement: Map<Token, HTMLElement> = new Map<Token, HTMLElement>();
@@ -70,8 +64,6 @@ export class Editor {
         //    return;
         //}
         this.code = data;
-        let codeEl = $(".code").empty().text(data);
-        $(".ta-code").val(data);
         this.sourceFile = new File2(filename, data);
         let tok = new Tokenizer();
         tok.file = this.sourceFile;
@@ -85,7 +77,6 @@ export class Editor {
         parser.init();
 
         this.tokens = tok.tokens;
-        this.renderTokens();
 
         var statements = parser.parse();
         let unit = new Unit();
@@ -254,83 +245,15 @@ export class Editor {
         return this.sourceFile.getLineText(this.caretPos.line);
     }
 
-    render() {
-        $(".code").empty().text(this.code);
-        this.renderTokens();
-    }
-
-    renderTokens() {
-        let codeEl = $(".code")[0];
-        codeEl.innerHTML = "";
-        this.lines.clear();
-        if (this.tokens == null || this.tokens.length == 0)
-            return;
-        //this.splitNewLineTokens();
-
-        let line = new CvLine();
-        line.tokens = [];
-        this.lines.add(line);
-        this.tokens.forEach(token => {
-            line.tokens.push(token);
-            let lineCount = token.range.end.line - token.range.start.line;
-            for (let i = 0; i < lineCount; i++) {
-                line = new CvLine();
-                line.tokens = [token];
-                this.lines.add(line);
-            }
-        });
-        this.tokens.forEach(token => {
-            let span = document.createElement("span");
-            span.className = token.type.name;
-            span.textContent = token.value;
-            codeEl.appendChild(span);
-            this.tokenToElement.set(token, span);
-        });
-        this.binder.renderLineNumbers();
-
-    }
-
     expandOrCollapseAll() {
         this.isAllCollapsed = !this.isAllCollapsed;
-        this.getExpanders().forEach(t => t.toggle(this.isAllCollapsed));
-    }
-    wrap(wrapper: HTMLElement, els: HTMLElement[]) {
-        $(els[0]).before(wrapper);
-        $(wrapper).append(els);
+        this.collapsables.forEach(t => t.isCollapsed = this.isAllCollapsed);
     }
 
+    collapsables: Collapsable[] = [];
     collapsable(tokens: Token[]) {
-        while (tokens.last().is(TokenTypes.whitespace, "\n"))
-            tokens.removeLast();
-        let lineStart = tokens[0].range.start.line;
-        let lineEnd = tokens.last().range.end.line;
-        let range = tokens.select(t => this.tokenToElement.get(t)).exceptNulls();
-        let span = $.create("span.collapsable");
-        this.wrap(span[0], range);
-        let lineStartEl = $(this.binder.getLineEl(lineStart));
-        let lineEndEl = $(this.binder.getLineEl(lineEnd));
-
-        let btnExpander = lineStartEl.getAppend(".expander-container").getAppend("button.expander.expanded");
-        let exp: Expander = {
-            toggle: (collapsed?: boolean) => {
-                if (collapsed == null)
-                    collapsed = !exp.isCollapsed();
-                span.toggleClass("collapsed", collapsed);
-                btnExpander.toggleClass("collapsed", collapsed);
-                Array.generateNumbers(lineStart + 1, lineEnd).forEach(line => $(this.binder.getLineEl(line)).toggleClass("collapsed", collapsed)); //TODO: inner collapsing (subs within subs will not work correctly)
-            },
-            isCollapsed: () => span.hasClass("collapsed"),
-        }
-
-        btnExpander.dataItem(exp);
-        btnExpander.mousedown(e => exp.toggle());
-        //toggle();
+        this.collapsables.push({ tokens, isCollapsed: false });
     }
-
-    getExpanders(): Expander[] {
-        return $(".expander").toArray$().select(t => t.dataItem());
-    }
-
 
     scrollToLine(line: number) {
         let el = this.binder.getLineEl(line);
@@ -359,41 +282,11 @@ export class Editor {
     }
 
 
-    hyperlinkNode(node: AstNode, opts?: HyperlinkCodeOptions): HTMLAnchorElement {
-        let tokens = this.collectTokens2(node);
-        let a = this.hyperlinkTokens(tokens, opts);
-        $(a).data("AstNode", node);
-        return a;
-    }
-    hyperlinkTokens(tokens: Token[], opts?: HyperlinkCodeOptions): HTMLAnchorElement {
-        if (opts == null)
-            opts = {};
-        let href = opts.href;
-        let css = opts.css;
-        let title = opts.title;
-        let name = opts.name;
-        if (href == null)
-            href = "javascript:void(0)";
-        let els = tokens.select(token => this.tokenToElement.get(token));
-        let a = $(els).closest("a");
-        if (a.length > 0) {
-            console.warn("already hyperlinked");
-            return <HTMLAnchorElement>a[0];
-        }
-        a = $(els[0]).closest("a");
-        if (a.length > 0) {
-            console.warn("already hyperlinked 2");
-            return <HTMLAnchorElement>a[0];
-        }
-        //console.log("hyperlinkNode", els);
-        a = $.create("a").insertBefore(els[0]);
-        if (title != null)
-            a.attr("title", title);
-        if (css != null)
-            a.addClass(css);
-        a.append(els);
-        a.attr({ href, name });
-        return <HTMLAnchorElement>a[0];
+    codeHyperlinks: CodeHyperlink[] = [];
+
+    hyperlinkNode(opts: CodeHyperlink): HTMLAnchorElement {
+        this.codeHyperlinks.push(opts);
+        return opts.anchorEl;
     }
 
 
@@ -431,11 +324,15 @@ export class Editor {
 
 
 
-export interface HyperlinkCodeOptions {
+export interface CodeHyperlink {
+    node?: AstNode;
+    tokens?: Token[];
     href?: string;
     name?: string;
     title?: string;
     css?: string;
+    anchorEl?: HTMLAnchorElement;
+    //tooltip?:TooltipOptions;
 }
 
 
@@ -624,3 +521,119 @@ export interface KeyBinding {
     key: Key | Key[];
     handler: (e: JQueryKeyEventObject) => void;
 }
+
+
+export interface PropChangedHandler<T> { (e: PropChangedEvent<T>): void; }
+
+export interface PropChangedEvent<T> {
+    obj: T;
+    prop: string;
+    prevValue: any;
+    value: any;
+}
+export interface MethodInvokedHandler<T> { (e: MethodInvokedEvent<T>): void; }
+export interface MethodInvokedEvent<T> {
+    obj: T;
+    prop: string;
+    func: Function;
+    args: ArrayLike<any>;
+
+}
+
+
+export interface Watched<T> {
+    watchable: Watchable<T>;
+}
+export class Watchable<T>{
+    constructor(public obj: T) {
+    }
+    static from<T>(obj: T): Watchable<T> {
+        let watched = <Watched<T>><any>obj;
+        if (watched.watchable == null)
+            watched.watchable = new Watchable<T>(obj);
+        return watched.watchable;
+    }
+
+    private extractNames(code: string) {
+        let sub = code.substringBetween("return ", ";");
+        let names = sub.split(/[\,\[\] ]/).map(t => t.split(".").last()).where(t => t != "");
+        return names;
+    }
+    methods(methods: (x: T) => Array<Function> | Function, handler: MethodInvokedHandler<T>): void {
+        if (this.watchedMethods == null)
+            this.watchedMethods = {};
+        if (this.data == null)
+            this.data = {};
+        let watchMethodHandlers = this.watchedMethods;
+        let methods2 = this.extractNames(methods.toString());
+        let data = this.data;
+        let obj = this.obj;
+        methods2.forEach(prop => {
+            let handlers = this.watchedMethods[prop];
+            if (handlers == null) {
+                handlers = [];
+                this.watchedMethods[prop] = handlers;
+            }
+            handlers.push(handler);
+            if (this.data.hasOwnProperty(prop))
+                return;
+            this.data[prop] = obj[prop];
+            obj[prop] = function () {
+                let func = <Function>data[prop];
+                let res = func.apply(obj, arguments);
+                let handlers2 = watchMethodHandlers[prop];
+                if (handlers2 == null || handlers2.length == 0)
+                    return res;
+                let e: MethodInvokedEvent<T> = { obj, prop, args: arguments, func: obj[prop] };
+                handlers2.forEach(t => t(e));
+                return res;
+            }
+        });
+    }
+
+    prop(prop: (x: T) => any, handler: PropChangedHandler<T>): void { return this.props(prop, handler); }
+    method(method: (x: T) => Function, handler: MethodInvokedHandler<T>): void { return this.methods(method, handler); }
+    props(props: (x: T) => Array<any> | any, handler: PropChangedHandler<T>): void {
+        if (this.watchedProps == null)
+            this.watchedProps = {};
+        if (this.data == null)
+            this.data = {};
+        let props2 = this.extractNames(props.toString());
+        props2.forEach(prop => {
+            let handlers = this.watchedProps[prop];
+            if (handlers == null) {
+                handlers = [];
+                this.watchedProps[prop] = handlers;
+            }
+            handlers.push(handler);
+            if (this.data.hasOwnProperty(prop))
+                return;
+            this.data[prop] = this[prop];
+            Object.defineProperty(this.obj, prop, {
+                get: () => this.data[prop],
+                set: value => {
+                    let prevValue = this.data[prop];
+                    this.data[prop] = value;
+                    let handlers2 = this.watchedProps[prop];
+                    if (handlers == null || handlers.length == 0)
+                        return;
+                    let e: PropChangedEvent<T> = { obj: this.obj, prop, prevValue, value };
+                    handlers2.forEach(handler => handler(e));
+                }
+            });
+        });
+    }
+
+    private data: Object;
+    private watchedProps: { [key: string]: Array<PropChangedHandler<T>> };
+    private watchedMethods: { [key: string]: Array<MethodInvokedHandler<T>> };
+
+}
+
+
+export interface Collapsable {
+    tokens: Token[];
+    isCollapsed: boolean;
+}
+
+

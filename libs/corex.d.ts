@@ -274,7 +274,7 @@ interface String {
     padLeft(totalWidth: any, paddingChar?: any): any;
     toLambda(): any;
     toSelector(): any;
-    substringBetween(start: any, end: any): any;
+    substringBetween(start: string, end: string): string;
     all(predicate: any): any;
     every(): any;
     isInt(): any;

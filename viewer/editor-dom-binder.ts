@@ -19,7 +19,7 @@ import {ExpressionTester, EtReport, EtItem} from "../src/expression-tester";
 import {P5Service, P5File, CritiqueResponse, CritiqueViolation} from "./p5-service";
 import {monitor, Monitor} from "./monitor";
 import {Key, Rect, Size, Point} from "./common";
-import {Editor} from "./editor";
+import {Editor, Watchable, CvLine, Collapsable, CodeHyperlink} from "./editor";
 
 export class EditorDomBinder {
     el: HTMLElement;
@@ -37,7 +37,77 @@ export class EditorDomBinder {
         this.lineNumbersEl = $(".lines")[0];
         this.caretEl = $(".caret")[0];
         this.codeContainerEl = $(".code-container")[0];
+
+        this.editor.watchProps(t => [t.code], e => $(".ta-code").val(e.value));
+        this.editor.watchProps(t => [t.tokens], e => this.renderTokens());
+
+        //this.editor.lines = [];
+        Watchable.from(this.editor.collapsables).methods(t => t.push, e => this.collapsable(e.args[0]));
+        Watchable.from(this.editor.codeHyperlinks).methods(t => t.push, e => this.hyperlinkNode(e.args[0]));
+        //this.editor.lines.push({lineNumberEl:null, tokens:null, });
     }
+
+    collapsable(collapsable: Collapsable) {
+        let tokens = collapsable.tokens;
+        while (tokens.last().is(TokenTypes.whitespace, "\n"))
+            tokens.removeLast();
+        let lineStart = tokens[0].range.start.line;
+        let lineEnd = tokens.last().range.end.line;
+        let range = tokens.select(t => this.editor.tokenToElement.get(t)).exceptNulls();
+        let span = $.create("span.collapsable");
+        this.wrap(span[0], range);
+        let lineStartEl = $(this.getLineEl(lineStart));
+        let lineEndEl = $(this.getLineEl(lineEnd));
+
+        let btnExpander = lineStartEl.getAppend(".expander-container").getAppend("button.expander.expanded");
+        let exp: Expander = {
+            toggle: (collapsed?: boolean) => {
+                if (collapsed == null)
+                    collapsed = !exp.isCollapsed();
+                span.toggleClass("collapsed", collapsed);
+                btnExpander.toggleClass("collapsed", collapsed);
+                Array.generateNumbers(lineStart + 1, lineEnd).forEach(line => $(this.getLineEl(line)).toggleClass("collapsed", collapsed)); //TODO: inner collapsing (subs within subs will not work correctly)
+            },
+            isCollapsed: () => span.hasClass("collapsed"),
+        }
+
+        Watchable.from(collapsable).prop(t => t.isCollapsed, e => exp.toggle(e.obj.isCollapsed));
+        btnExpander.dataItem(exp);
+        btnExpander.mousedown(e => { e.preventDefault(); collapsable.isCollapsed = !collapsable.isCollapsed; });
+    }
+
+
+    renderTokens() {
+        let codeEl = $(".code")[0];
+        codeEl.innerHTML = "";
+        this.editor.lines.clear();
+        if (this.editor.tokens == null || this.editor.tokens.length == 0)
+            return;
+        //this.splitNewLineTokens();
+
+        let line = new CvLine();
+        line.tokens = [];
+        this.editor.lines.add(line);
+        this.editor.tokens.forEach(token => {
+            line.tokens.push(token);
+            let lineCount = token.range.end.line - token.range.start.line;
+            for (let i = 0; i < lineCount; i++) {
+                line = new CvLine();
+                line.tokens = [token];
+                this.editor.lines.add(line);
+            }
+        });
+        this.editor.tokens.forEach(token => {
+            let span = document.createElement("span");
+            span.className = token.type.name;
+            span.textContent = token.value;
+            codeEl.appendChild(span);
+            this.editor.tokenToElement.set(token, span);
+        });
+        this.renderLineNumbers();
+
+    }
+
     getLineEl(line: number): HTMLElement {
         return <HTMLElement>this.lineNumbersEl.childNodes.item(line - 1);
     }
@@ -147,6 +217,8 @@ export class EditorDomBinder {
     }
 
     scrollEl_mousedown(e: JQueryMouseEventObject) {
+        if (e.isDefaultPrevented())
+            return;
         let pos = this.screenToPos(new Point(e.offsetX, e.offsetY));
         this.editor.caretPos.line = pos.y;
         this.editor.caretPos.column = pos.x;
@@ -163,6 +235,49 @@ export class EditorDomBinder {
         }
     }
 
+
+    wrap(wrapper: HTMLElement, els: HTMLElement[]) {
+        $(els[0]).before(wrapper);
+        $(wrapper).append(els);
+    }
+
+    hyperlinkNode(opts: CodeHyperlink): HTMLAnchorElement {
+        if (opts.tokens == null && opts.node != null)
+            opts.tokens = this.editor.collectTokens2(opts.node);
+        let tokens = opts.tokens;
+        let href = opts.href;
+        let css = opts.css;
+        let title = opts.title;
+        let name = opts.name;
+        if (href == null)
+            href = "javascript:void(0)";
+        let els = tokens.select(token => this.editor.tokenToElement.get(token));
+        let a = $(els).closest("a");
+        opts.anchorEl = <HTMLAnchorElement>a[0];
+        if (a.length > 0) {
+            console.warn("already hyperlinked");
+            return <HTMLAnchorElement>a[0];
+        }
+        a = $(els[0]).closest("a");
+        opts.anchorEl = <HTMLAnchorElement>a[0];
+        if (a.length > 0) {
+            console.warn("already hyperlinked 2");
+            return <HTMLAnchorElement>a[0];
+        }
+        //console.log("hyperlinkNode", els);
+        a = $.create("a").insertBefore(els[0]);
+        opts.anchorEl = <HTMLAnchorElement>a[0];
+        if (title != null)
+            a.attr("title", title);
+        if (css != null)
+            a.addClass(css);
+        a.append(els);
+        a.attr({ href, name });
+        if (opts.node != null)
+            $(a).data("AstNode", opts.node);
+
+        return <HTMLAnchorElement>a[0];
+    }
 
 
 }
