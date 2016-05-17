@@ -31,24 +31,54 @@ export class EditorDomBinder {
     lineTemplate: HTMLElement;
     caretEl: HTMLElement;
     codeContainerEl: HTMLElement;
+    codeEl: HTMLElement;
     tokenToElement: Map<Token, HTMLElement> = new Map<Token, HTMLElement>();
+    renderCaretPosAndFirstVisibleLineTimer: Timer;
 
     init() {
         this.scrollEl = $(".code-view")[0];
         this.lineNumbersEl = $(".lines")[0];
         this.caretEl = $(".caret")[0];
+        this.codeEl = $(".code")[0];
         this.codeContainerEl = $(".code-container")[0];
 
-        this.editor.visibleLineCount = this.getVisibleLineCount(); //TODO: update on resize
+        this.renderCaretPosAndFirstVisibleLineTimer = new Timer(() => this.renderCaretPosAndFirstVisibleLine());
+        this.updateVisibleLineCount();
 
-        Watchable.from(this.editor).prop(t => t.code, e => $(".ta-code").val(e.value));
+        $(window).resize(e => this.updateVisibleLineCount());
+
+        Watchable.from(this.editor).prop(t => t.code, e => $(this.codeEl).text(e.value));
         Watchable.from(this.editor).prop(t => t.tokens, e => this.renderTokens());
-        Watchable.from(this.editor).prop(t => t.firstVisibleLineNumber, e => { console.log("firstVisibleLineNumber", this.editor.firstVisibleLineNumber); this.setFirstVisibleLineNumber(this.editor.firstVisibleLineNumber); });
+        Watchable.from(this.editor).prop(t => t.firstVisibleLineNumber, e => this.renderCaretPosAndFirstVisibleLineTimer.set(0));
+
+        Watchable.from(this.editor.caretPos).props(t => [t.line, t.column], e => this.renderCaretPosAndFirstVisibleLineTimer.set(0));
         Watchable.from(this.editor.collapsables).method(t => t.push, e => this.collapsable(e.args[0]));
         Watchable.from(this.editor.codeHyperlinks).method(t => t.push, e => this.hyperlinkNode(e.args[0]));
 
+        this.caretEl.focus();
+
+        $(window).keydown(e => this.window_keydown(e));
+        $(this.codeContainerEl).mousedown(e => this.scrollEl_mousedown(e));
+
+        this.renderCaretPos();
     }
 
+    notifyPossibleChanges() {
+        this.updateVisibleLineCount();
+    }
+
+    updateVisibleLineCount() {
+        let lines = this.calcVisibleLineCount();
+        let lines2 = this.editor.visibleLineCount;
+        if (lines == lines2)
+            return;
+        console.log("updateVisibleLineCount", lines2, " -> ", lines);
+        this.editor.visibleLineCount = lines;
+    }
+    renderCaretPosAndFirstVisibleLine() {
+        this.renderCaretPos();
+        this.setFirstVisibleLineNumber(this.editor.firstVisibleLineNumber);
+    }
     collapsable(collapsable: Collapsable) {
         let tokens = collapsable.tokens;
         while (tokens.last().is(TokenTypes.whitespace, "\n"))
@@ -114,7 +144,7 @@ export class EditorDomBinder {
         return <HTMLElement>this.lineNumbersEl.childNodes.item(line - 1);
     }
 
-    private getFirstVisibleLineNumber(): number {
+    private calcFirstVisibleLineNumber(): number {
         let y = Math.ceil(this.scrollEl.scrollTop / this.lineHeight) + 1;
         return y;
     }
@@ -124,8 +154,13 @@ export class EditorDomBinder {
             return;
         this.scrollEl.scrollTop = el.offsetTop;
     }
-    private getVisibleLineCount(): number {
+    private calcVisibleLineCount(): number {
+        let clientHeight = this.scrollEl.clientHeight;
+        if (clientHeight == 0)
+            return 10;
         let lines = Math.floor(this.scrollEl.clientHeight / this.lineHeight) - 1;
+        if (lines < 0)
+            return 10;
         return lines;
     }
 
@@ -209,15 +244,6 @@ export class EditorDomBinder {
         });
     }
 
-    renderCaretPosTimer: Timer;
-    initCaret() {
-        this.renderCaretPosTimer = new Timer(() => this.renderCaretPos());
-        this.caretEl.focus();
-        $(window).keydown(e => this.window_keydown(e));
-        $(this.codeContainerEl).mousedown(e => this.scrollEl_mousedown(e));
-        Watchable.from(this.editor.caretPos).props(t => [t.line, t.column], e => this.renderCaretPosTimer.set(0));
-        this.renderCaretPos();
-    }
 
     scrollEl_mousedown(e: JQueryMouseEventObject) {
         if (e.isDefaultPrevented())
@@ -275,9 +301,18 @@ export class EditorDomBinder {
         if (css != null)
             a.addClass(css);
         a.append(els);
-        a.attr({ href, name });
+        a.attr({ "data-href": href, name });
         if (opts.node != null)
             $(a).data("AstNode", opts.node);
+        a.mouseover(e => $(a).toggleClass("ctrl", e.ctrlKey)); //TODO: apply generically on top element
+        a.mouseout(e => $(a).toggleClass("ctrl", e.ctrlKey));
+
+        a.click(e => {
+            if (!e.ctrlKey)
+                return;
+            e.preventDefault();
+            window.open(a.attr("data-href"));
+        });
 
         return <HTMLAnchorElement>a[0];
     }

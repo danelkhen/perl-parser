@@ -39,6 +39,11 @@ export class Editor {
     init() {
         this.lines = [];
         this.initKeyBindings();
+        this.caretPos = new File2Pos();
+        this.caretPos.column = 1;
+        this.caretPos.line = 1;
+        this.caretPos.index = 0;
+        
         if (this.binder == null) {
             this.binder = new EditorDomBinder();
             this.binder.editor = this;
@@ -52,16 +57,10 @@ export class Editor {
 
 
     parse(filename: string, data: string) {
-        //if (localStorage.getItem("pause") == "1" && this.firstTime) {
-        //    console.warn("not running parse, last time crashed unexpectedly");
-        //    this.firstTime = false;
-        //    return;
-        //}
         this.code = data;
         this.sourceFile = new File2(filename, data);
         let tok = new Tokenizer();
         tok.file = this.sourceFile;
-        localStorage.setItem("pause", "1");
         tok.main();
         let parser = new Parser();
         parser.logger = new Logger();
@@ -80,14 +79,6 @@ export class Editor {
         new AstNodeFixator().process(this.unit);
     }
 
-    initCaret() {
-        this.caretPos = new File2Pos();
-        this.caretPos.column = 1;
-        this.caretPos.line = 1;
-        this.caretPos.index = 0;
-        this.binder.initCaret();
-
-    }
 
     keyBindings: { [key: string]: (e: JQueryKeyEventObject) => void };
     initKeyBindings() {
@@ -172,8 +163,6 @@ export class Editor {
             line = 1;
         this.caretPos.line = line;
         this.verifyCaretInView();
-        //if (line < this.firstVisibleLineNumber)
-        //    this.firstVisibleLineNumber = line;
     }
     caretNextLine() {
         let line = this.caretPos.line;

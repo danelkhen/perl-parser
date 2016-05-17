@@ -74,7 +74,7 @@ export class IndexPage {
 
         this.update();
 
-        $(window).on("urlchange", e => {console.log(e); this.update(); });
+        $(window).on("urlchange", e => { console.log(e); this.update(); });
     }
     //pageSize: number;
 
@@ -257,16 +257,19 @@ export class IndexPage {
             else {
                 this.service.src(url).then(data => {
                     this.file.src = data;
-                    this.editor.parse(url, data);
-                    this.resolveAndHighlightUsedPackages();
-                    this.navigateToHash();
-                    this.dataBind();
+                    this.editor.code = data;
+                    window.setTimeout(() => {
+                        this.editor.parse(url, data);
+                        this.resolveAndHighlightUsedPackages();
+                        this.navigateToHash();
+                        this.dataBind();
+                    }, 10);
                 });
             }
             //$(".dir-view").toggleClass("active", this.file.children != null);
             //$(".code-view").toggleClass("active", this.file.children == null);
             this.dataBind();
-            this.editor.initCaret();
+            //this.editor.initCaret();
         });
         this.dataBind();
     }
@@ -285,6 +288,7 @@ export class IndexPage {
 
     dataBindNow() {
         Helper.dataBind(document.body, this, this);
+        this.editor.binder.notifyPossibleChanges();
     }
 
     violation_click(e: JQueryEventObject, violation: CritiqueViolation) {
@@ -408,15 +412,15 @@ export class IndexPage {
         let subs = this.findSubs();
         subs.where(t => t.name != null).forEach(node => {
             let name = node.name.toCode().trim();
-            this.editor.hyperlinkNode({ node:node.name, href: "#sub:" + name, name: "sub:" + name });
+            this.editor.hyperlinkNode({ node: node.name, href: "#sub:" + name, name: "sub:" + name });
         });
         builtins.forEach(node => {
             let name = node.toCode().trim();
-            this.editor.hyperlinkNode({ node, href: "http://perldoc.perl.org/functions/" + name + ".html", name, title: "(builtin function) " + name, css: "builtin-function" });
+            this.editor.hyperlinkNode({ node, href: "http://perldoc.perl.org/functions/" + name + ".html", name, title: "(builtin function) "+name+"\nctrl+click to open documentation", css: "builtin-function" });
         });
         pragmas.forEach(node => {
             let name = node.toCode().trim();
-            this.editor.hyperlinkNode({ node, href: "http://perldoc.perl.org/" + name + ".html", name, title: "(pragma) " + name });
+            this.editor.hyperlinkNode({ node, href: "http://perldoc.perl.org/" + name + ".html", name, title: "(pragma) "+name+"\nctrl+click to open documentation" });
         });
 
         let resolutions: PackageResolution[] = inUse.select(node => ({ node: node, name: node.toCode().trim() }));
@@ -429,7 +433,7 @@ export class IndexPage {
                         href = this.getCvUrlForIncludeAndPacakge(pkg.resolvedIncludePath, pkg.name);
                     else
                         href = "https://metacpan.org/pod/" + pkg.name;
-                    this.editor.hyperlinkNode({ node:pkg.node, href, name: pkg.name, title: "(package) " + pkg.name, css: "package-name" });
+                    this.editor.hyperlinkNode({ node: pkg.node, href, name: pkg.name, title: "(package) " + pkg.name + "\nctrl+click to open documentation", css: "package-name" });
                 });
         });
         let packages = resolutions.select(t => t.name);
