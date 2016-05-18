@@ -53,11 +53,15 @@ export class Editor {
     }
 
 
+    toPct(x: number) {
+        return (x*100).toFixed(0)+"%";
+    }
     tokenizeAsync(filename: string, data: string): Promise<any> {
         this.code = data;
         let start = new Date();
         this.sourceFile = new File2(filename, data);
         let tok = new Tokenizer();
+        tok.onStatus = () => console.log("Tokenizer status: ", this.toPct(tok.cursor.index / tok.file.text.length));
         tok.file = this.sourceFile;
         //tok.process();
         return tok.processAsync().then(() => {
@@ -66,7 +70,7 @@ export class Editor {
             this.tokens = tok.tokens;
         });
     }
-    
+
     parse() {
         let parser = new Parser();
         parser.logger = new Logger();

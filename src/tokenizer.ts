@@ -39,26 +39,35 @@ export class Tokenizer {
         }
     }
     private resolve: Function;
+    private lastStatusTime: number;
+    onStatus() {
+    }
     processAsync(): Promise<any> {
         this.tokens = [];
         this.cursor = new Cursor(this.file.startPos);
         return new Promise((resolve, reject) => {
             this.resolve = resolve;
+            this.lastStatusTime = Date.now();
             this.continueProcessAsync();
         });
     }
     private continueProcessAsync() {
         let timeout = 15;
-        let start = Date.now(); //performance.now();
+        let continued = Date.now(); //performance.now();
         while (!this.isEof()) {
             this.next();
             let now = Date.now(); //performance.now();
-            if (now - start > timeout)
+            if (now - continued > timeout)
                 break;
+            if (now - this.lastStatusTime > 1000) {
+                this.lastStatusTime = now;
+                this.onStatus();
+            }
         }
         if (this.isEof()) {
             let resolve = this.resolve;
             this.resolve = null;
+            this.lastStatusTime = null;
             resolve();
         }
         else {
