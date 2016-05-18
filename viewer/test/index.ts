@@ -100,7 +100,7 @@ export class IndexPage {
         let tok = new Tokenizer();
         tok.file = file;
         localStorage.setItem("pause", "1");
-        safeTry(() => tok.main()).catch(e=> console.error(e)).then(() => {
+        safeTry(() => tok.process()).catch(e=> console.error(e)).then(() => {
             let parser = new Parser();
             parser.logger = new Logger();
             parser.reader = new TokenReader();

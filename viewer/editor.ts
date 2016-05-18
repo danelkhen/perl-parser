@@ -53,20 +53,28 @@ export class Editor {
     }
 
 
-    parse(filename: string, data: string) {
+    tokenizeAsync(filename: string, data: string): Promise<any> {
         this.code = data;
+        let start = new Date();
         this.sourceFile = new File2(filename, data);
         let tok = new Tokenizer();
         tok.file = this.sourceFile;
-        tok.main();
+        //tok.process();
+        return tok.processAsync().then(() => {
+            let end = new Date();
+            console.log("tokenization took " + (end.valueOf() - start.valueOf()) + "ms");
+            this.tokens = tok.tokens;
+        });
+    }
+    
+    parse() {
         let parser = new Parser();
         parser.logger = new Logger();
         parser.reader = new TokenReader();
         parser.reader.logger = parser.logger;
-        parser.reader.tokens = tok.tokens;
+        parser.reader.tokens = this.tokens;
         parser.init();
 
-        this.tokens = tok.tokens;
 
         var statements = parser.parse();
         let unit = new Unit();

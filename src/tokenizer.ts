@@ -30,13 +30,44 @@ export class Tokenizer {
         if (tt == null)
             throw new Error();
     }
-    main() {
+    process() {
         this.tokens = [];
         this.cursor = new Cursor(this.file.startPos);
         let cursor = this.cursor;
         while (cursor.index < this.file.text.length) {
             this.next();
         }
+    }
+    private resolve: Function;
+    processAsync(): Promise<any> {
+        this.tokens = [];
+        this.cursor = new Cursor(this.file.startPos);
+        return new Promise((resolve, reject) => {
+            this.resolve = resolve;
+            this.continueProcessAsync();
+        });
+    }
+    private continueProcessAsync() {
+        let timeout = 15;
+        let start = Date.now(); //performance.now();
+        while (!this.isEof()) {
+            this.next();
+            let now = Date.now(); //performance.now();
+            if (now - start > timeout)
+                break;
+        }
+        if (this.isEof()) {
+            let resolve = this.resolve;
+            this.resolve = null;
+            resolve();
+        }
+        else {
+            window.setTimeout(() => this.continueProcessAsync(), 0);
+        }
+    }
+
+    isEof(): boolean {
+        return this.cursor.index >= this.file.text.length;
     }
 
     tokens: Token[];

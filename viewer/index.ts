@@ -259,10 +259,14 @@ export class IndexPage {
                     this.file.src = data;
                     this.editor.code = data;
                     window.setTimeout(() => {
-                        this.editor.parse(url, data);
-                        this.resolveAndHighlightUsedPackages();
-                        this.navigateToHash();
-                        this.dataBind();
+                        this.editor.tokenizeAsync(url, data).then(() => {
+                            window.setTimeout(() => {
+                                this.editor.parse();
+                                this.resolveAndHighlightUsedPackages();
+                                this.navigateToHash();
+                                this.dataBind();
+                            });
+                        });
                     }, 10);
                 });
             }
@@ -388,6 +392,8 @@ export class IndexPage {
     }
 
     resolveAndHighlightUsedPackages() {
+        if (this.editor.unit == null)
+            return;
         let pkgRefs = this.findPackageRefs(this.editor.unit);
         console.log(pkgRefs.select(t => t.toCode().trim()).distinct());
         let inUse: NamedMemberExpression[] = [];
@@ -416,11 +422,11 @@ export class IndexPage {
         });
         builtins.forEach(node => {
             let name = node.toCode().trim();
-            this.editor.hyperlinkNode({ node, href: "http://perldoc.perl.org/functions/" + name + ".html", name, title: "(builtin function) "+name+"\nctrl+click to open documentation", css: "builtin-function", target:"_blank" });
+            this.editor.hyperlinkNode({ node, href: "http://perldoc.perl.org/functions/" + name + ".html", name, title: "(builtin function) " + name + "\nctrl+click to open documentation", css: "builtin-function", target: "_blank" });
         });
         pragmas.forEach(node => {
             let name = node.toCode().trim();
-            this.editor.hyperlinkNode({ node, href: "http://perldoc.perl.org/" + name + ".html", name, title: "(pragma) "+name+"\nctrl+click to open documentation", target:"_blank" });
+            this.editor.hyperlinkNode({ node, href: "http://perldoc.perl.org/" + name + ".html", name, title: "(pragma) " + name + "\nctrl+click to open documentation", target: "_blank" });
         });
 
         let resolutions: PackageResolution[] = inUse.select(node => ({ node: node, name: node.toCode().trim() }));
