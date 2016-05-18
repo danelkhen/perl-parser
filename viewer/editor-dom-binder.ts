@@ -19,7 +19,7 @@ import {ExpressionTester, EtReport, EtItem} from "../src/expression-tester";
 import {P5Service, P5File, CritiqueResponse, CritiqueViolation} from "./p5-service";
 import {monitor, Monitor} from "./monitor";
 import {Key, Rect, Size, Point} from "./common";
-import {Editor, Watchable, CvLine, Collapsable, CodeHyperlink} from "./editor";
+import {Editor, Watchable, CvLine, Collapsable, CodeHyperlink, EditorPos} from "./editor";
 
 export class EditorDomBinder {
     el: HTMLElement;
@@ -35,6 +35,9 @@ export class EditorDomBinder {
     tokenToElement: Map<Token, HTMLElement> = new Map<Token, HTMLElement>();
     renderCaretPosAndFirstVisibleLineTimer: Timer;
 
+    //scrollEndTimer: Timer;
+
+    _firstVisibleLineNumber;
     init() {
         this.scrollEl = $(".code-view")[0];
         this.lineNumbersEl = $(".lines")[0];
@@ -43,15 +46,29 @@ export class EditorDomBinder {
         this.codeContainerEl = $(".code-container")[0];
 
         this.renderCaretPosAndFirstVisibleLineTimer = new Timer(() => this.renderCaretPosAndFirstVisibleLine());
+        //this.scrollEndTimer = new Timer(() => this.scrollEl_scrollEnd());
         this.updateVisibleLineCount();
 
         $(window).resize(e => this.updateVisibleLineCount());
+        $(this.scrollEl).scroll(e => this.editor.firstVisibleVisualLineNumber = null);//{ console.log("scroll"); this.scrollEndTimer.set(100); });
 
         Watchable.from(this.editor).prop(t => t.code, e => $(this.codeEl).text(e.value));
         Watchable.from(this.editor).prop(t => t.tokens, e => this.renderTokens());
-        Watchable.from(this.editor).prop(t => t.firstVisibleLineNumber, e => this.renderCaretPosAndFirstVisibleLineTimer.set(0));
+        Watchable.from(this.editor).redfineProp(t => t.firstVisibleVisualLineNumber, {
+            get: () => {
+                if (this._firstVisibleLineNumber == null)
+                    this._firstVisibleLineNumber = this.calcFirstVisibleLineNumber();
+                return this._firstVisibleLineNumber;
+            },
+            set: value => {
+                this._firstVisibleLineNumber = value;
+                if (value == null)
+                    return;
+                this.renderCaretPosAndFirstVisibleLineTimer.set(0);
+            }
+        });
 
-        Watchable.from(this.editor.caretPos).props(t => [t.line, t.column], e => this.renderCaretPosAndFirstVisibleLineTimer.set(0));
+        Watchable.from(this.editor.caretVisualPos).props(t => [t.line, t.column], e => this.renderCaretPosAndFirstVisibleLineTimer.set(0));
         Watchable.from(this.editor.collapsables).method(t => t.push, e => this.collapsable(e.args[0]));
         Watchable.from(this.editor.codeHyperlinks).method(t => t.push, e => this.hyperlinkNode(e.args[0]));
 
@@ -62,6 +79,9 @@ export class EditorDomBinder {
 
         this.renderCaretPos();
     }
+    //scrollEl_scrollEnd() {
+    //    this.editor.firstVisibleLineNumber = this.calcFirstVisibleLineNumber();
+    //}
 
     notifyPossibleChanges() {
         this.updateVisibleLineCount();
@@ -77,7 +97,7 @@ export class EditorDomBinder {
     }
     renderCaretPosAndFirstVisibleLine() {
         this.renderCaretPos();
-        this.setFirstVisibleLineNumber(this.editor.firstVisibleLineNumber);
+        this.setFirstVisibleLineNumber(this.editor.firstVisibleVisualLineNumber);
     }
     collapsable(collapsable: Collapsable) {
         let tokens = collapsable.tokens;
@@ -98,14 +118,17 @@ export class EditorDomBinder {
                     collapsed = !exp.isCollapsed();
                 span.toggleClass("collapsed", collapsed);
                 btnExpander.toggleClass("collapsed", collapsed);
-                Array.generateNumbers(lineStart + 1, lineEnd).forEach(line => $(this.getLineEl(line)).toggleClass("collapsed", collapsed)); //TODO: inner collapsing (subs within subs will not work correctly)
+                Array.generateNumbers(lineStart + 1, lineEnd).forEach(line => this.editor.getLine(line).visible = !collapsed);
             },
             isCollapsed: () => span.hasClass("collapsed"),
         }
 
         Watchable.from(collapsable).prop(t => t.isCollapsed, e => exp.toggle(e.obj.isCollapsed));
         btnExpander.dataItem(exp);
-        btnExpander.mousedown(e => { e.preventDefault(); collapsable.isCollapsed = !collapsable.isCollapsed; });
+        btnExpander.mousedown(e => {
+            e.preventDefault();
+            collapsable.isCollapsed = !collapsable.isCollapsed;
+        });
     }
 
 
@@ -137,7 +160,13 @@ export class EditorDomBinder {
             this.tokenToElement.set(token, span);
         });
         this.renderLineNumbers();
-
+        this.editor.lines.forEach(line => {
+            Watchable.from(line).prop(t => t.visible, e => {
+                if (line.lineNumberEl == null)
+                    return;
+                $(line.lineNumberEl).toggleClass("collapsed", !e.obj.visible);
+            });
+        });
     }
 
     getLineEl(line: number): HTMLElement {
@@ -149,7 +178,8 @@ export class EditorDomBinder {
         return y;
     }
     private setFirstVisibleLineNumber(line: number) {
-        let el = this.getLineEl(line);
+        let pos = this.visualToLogicalPos({column:1, line});
+        let el = this.getLineEl(pos.line);
         if (el == null)
             return;
         this.scrollEl.scrollTop = el.offsetTop;
@@ -213,22 +243,23 @@ export class EditorDomBinder {
         return new Point(el.offsetLeft, el.offsetTop);
     }
 
-    screenToPos(p: Point): Point {
+    screenToVisualPos(p: Point): Point {
         return p.div(this.projectionRatio).floor().add(new Point(1, 1));
     }
-    posToScreen(p: Point): Point {
+    visualPosToScreen(p: Point): Point {
         return p.subtract(new Point(1, 1)).mul(this.projectionRatio);
     }
     projectionRatio: Point = new Point(this.fontWidth, this.lineHeight);
 
     renderCaretPos() {
-        if (this.editor.caretPos.line > this.editor.lines.length)
-            this.editor.caretPos.line = this.editor.lines.length;
-        else if (this.editor.caretPos.line < 1)
-            this.editor.caretPos.line = 1;
-        if (this.editor.caretPos.column < 1)
-            this.editor.caretPos.column = 1;
-        $(this.caretEl).css({ left: (this.editor.caretPos.column - 1) * this.fontWidth, top: (this.editor.caretPos.line - 1) * this.lineHeight });
+        if (this.editor.caretVisualPos.line > this.editor.lines.length)
+            this.editor.caretVisualPos.line = this.editor.lines.length;
+        else if (this.editor.caretVisualPos.line < 1)
+            this.editor.caretVisualPos.line = 1;
+        if (this.editor.caretVisualPos.column < 1)
+            this.editor.caretVisualPos.column = 1;
+        $(this.caretEl).css({ left: (this.editor.caretVisualPos.column - 1) * this.fontWidth, top: (this.editor.caretVisualPos.line - 1) * this.lineHeight });
+        //console.log(this.editor.logicalCaretPos);
     }
 
     renderLineNumbers() {
@@ -240,17 +271,33 @@ export class EditorDomBinder {
             let div = $(this.lineTemplate).clone();
             let lineNumber = i + 1;
             div.find(".line-number").text(lineNumber.toString()).attr({ name: "L" + lineNumber, href: "javascript:void(0)" });
+            line.lineNumberEl = div[0];
             this.lineNumbersEl.appendChild(div[0]);
         });
     }
 
 
+    visualToLogicalPos(p: EditorPos): EditorPos {
+        let visibles = 0;
+        let logicalLine = 1;
+        let visualLine = p.line;
+
+        this.editor.lines.some((t, i) => {
+            if (t.visible) {
+                visibles++;
+                logicalLine = i + 1;
+            }
+            return visibles == visualLine;
+        });
+        return { column: p.column, line: logicalLine };
+    }
     scrollEl_mousedown(e: JQueryMouseEventObject) {
         if (e.isDefaultPrevented())
             return;
-        let pos = this.screenToPos(new Point(e.offsetX, e.offsetY));
-        this.editor.caretPos.line = pos.y;
-        this.editor.caretPos.column = pos.x;
+        let pos = this.screenToVisualPos(new Point(e.offsetX, e.offsetY));
+        //let pos2 = this.visualToLogicalPos(pos);
+        this.editor.caretVisualPos.line = pos.y;
+        this.editor.caretVisualPos.column = pos.x;
         //this.renderCaretPos();
     }
     window_keydown(e: JQueryKeyEventObject) {

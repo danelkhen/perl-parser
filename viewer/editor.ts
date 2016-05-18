@@ -27,23 +27,20 @@ export class Editor {
     isAllCollapsed: boolean;
     unit: Unit;
     tokens: Token[];
-    caretPos: File2Pos;
+    caretVisualPos: EditorPos;
     sourceFile: File2;
     binder: EditorDomBinder;
     codeHyperlinks: CodeHyperlink[] = [];
     visibleLineCount = 10;
-    firstVisibleLineNumber = 1;
+    firstVisibleVisualLineNumber = 1;
 
 
 
     init() {
         this.lines = [];
         this.initKeyBindings();
-        this.caretPos = new File2Pos();
-        this.caretPos.column = 1;
-        this.caretPos.line = 1;
-        this.caretPos.index = 0;
-        
+        this.caretVisualPos = { line: 1, column: 1 };
+
         if (this.binder == null) {
             this.binder = new EditorDomBinder();
             this.binder.editor = this;
@@ -135,86 +132,86 @@ export class Editor {
         return this.getKeyName2(key);
     }
     caretNextChar() {
-        this.caretPos.column++;
+        this.caretVisualPos.column++;
     }
     caretNextWord() {
-        let line = this.getCurrentLineText().substr(this.caretPos.column - 1);
+        let line = this.getCurrentLineText().substr(this.caretVisualPos.column - 1);
         console.log(line);
         let res = /(\s+)(\S)/.exec(line);
         console.log(res);
         if (res != null) {
             let index = res.index + res[1].length;
             console.log(index);
-            this.caretPos.column += index;
+            this.caretVisualPos.column += index;
         }
         else {
             //TODO: next line
         }
     }
     caretPrevChar() {
-        this.caretPos.column--;
-        if (this.caretPos.column < 1)
-            this.caretPos.column = 1;
+        this.caretVisualPos.column--;
+        if (this.caretVisualPos.column < 1)
+            this.caretVisualPos.column = 1;
     }
     caretPrevLine() {
-        let line = this.caretPos.line;
+        let line = this.caretVisualPos.line;
         line--;
         if (line < 1)
             line = 1;
-        this.caretPos.line = line;
+        this.caretVisualPos.line = line;
         this.verifyCaretInView();
     }
     caretNextLine() {
-        let line = this.caretPos.line;
+        let line = this.caretVisualPos.line;
         line++;
         if (line > this.lines.length)
             line = this.lines.length;
-        this.caretPos.line = line;
+        this.caretVisualPos.line = line;
         this.verifyCaretInView();
     }
     caretPrevPage() {
-        let firstLine = this.firstVisibleLineNumber;
-        let line = this.caretPos.line;
+        let firstLine = this.firstVisibleVisualLineNumber;
+        let line = this.caretVisualPos.line;
         let lineCount = this.visibleLineCount;
         let offset = line - firstLine;
         let newLine = line - lineCount;
         if (newLine < 1)
             newLine = 1;
-        this.caretPos.line = newLine;
+        this.caretVisualPos.line = newLine;
         if (offset <= lineCount)
-            this.firstVisibleLineNumber = newLine - offset;
+            this.firstVisibleVisualLineNumber = newLine - offset;
     }
     caretNextPage() {
-        let firstLine = this.firstVisibleLineNumber;
-        let line = this.caretPos.line;
+        let firstLine = this.firstVisibleVisualLineNumber;
+        let line = this.caretVisualPos.line;
         let lineCount = this.visibleLineCount;
         let offset = line - firstLine;
         let newLine = line + lineCount;
         if (newLine > this.lines.length)
             newLine = this.lines.length;
-        this.caretPos.line = newLine;
+        this.caretVisualPos.line = newLine;
         if (offset <= lineCount)
-            this.firstVisibleLineNumber = newLine - offset;
+            this.firstVisibleVisualLineNumber = newLine - offset;
     }
     caretLineStart() {
         let text = this.getCurrentLineText();
         let res = /\S/.exec(text);
-        if (res != null && res.index + 1 != this.caretPos.column)
-            this.caretPos.column = res.index + 1;
+        if (res != null && res.index + 1 != this.caretVisualPos.column)
+            this.caretVisualPos.column = res.index + 1;
         else
-            this.caretPos.column = 1;
+            this.caretVisualPos.column = 1;
     }
     caretLineEnd() {
         let text = this.getCurrentLineText();
-        this.caretPos.column = text.length + 1;
+        this.caretVisualPos.column = text.length + 1;
     }
     caretDocStart() {
-        this.caretPos.line = 1;
+        this.caretVisualPos.line = 1;
         this.verifyCaretInView();
     }
     caretDocEnd() {
         let text = this.getCurrentLineText();
-        this.caretPos.line = this.lines.length;
+        this.caretVisualPos.line = this.lines.length;
         this.verifyCaretInView();
     }
     caretSelectAll() {
@@ -226,7 +223,7 @@ export class Editor {
     }
 
     getCurrentLineText(): string {
-        return this.sourceFile.getLineText(this.caretPos.line);
+        return this.sourceFile.getLineText(this.caretLogicalPos.line);
     }
 
     expandOrCollapseAll() {
@@ -245,24 +242,24 @@ export class Editor {
     }
 
 
-    getLastVisibleLineNumber(): number {
-        return this.firstVisibleLineNumber + this.visibleLineCount;
+    getLastVisibleVisualLineNumber(): number {
+        return this.firstVisibleVisualLineNumber + this.visibleLineCount;
     }
-    setLastVisibleLineNumber(line: number) {
-        this.firstVisibleLineNumber = line - this.visibleLineCount;
+    setLastVisibleVisualLineNumber(line: number) {
+        this.firstVisibleVisualLineNumber = line - this.visibleLineCount;
     }
 
     verifyCaretInView() {
-        this.verifyPosInView(this.caretPos);
+        this.verifyPosInView(this.caretVisualPos);
     }
-    verifyPosInView(p: File2Pos) {
-        let firstLine = this.firstVisibleLineNumber;
-        let lastLine = this.getLastVisibleLineNumber();
+    verifyPosInView(p: EditorPos) {
+        let firstLine = this.firstVisibleVisualLineNumber;
+        let lastLine = this.getLastVisibleVisualLineNumber();
         let line = p.line;
         if (line < firstLine)
-            this.firstVisibleLineNumber = p.line;
+            this.firstVisibleVisualLineNumber = p.line;
         else if (line > lastLine) {
-            this.setLastVisibleLineNumber(p.line);
+            this.setLastVisibleVisualLineNumber(p.line);
         }
         else {
         }
@@ -300,7 +297,9 @@ export class Editor {
         return this.tokens.slice(start, end + 1);
     }
 
-
+    get caretLogicalPos(): EditorPos {
+        return this.binder.visualToLogicalPos(this.caretVisualPos);
+    }
 
 }
 
@@ -322,6 +321,7 @@ export interface CodeHyperlink {
 export class CvLine {
     lineNumberEl: HTMLElement;
     tokens: Token[];
+    visible: boolean = true;
 }
 
 
@@ -574,6 +574,10 @@ export class Watchable<T>{
         });
     }
 
+    redfineProp(prop: (x: T) => any, propDesc: PropertyDescriptor): void {
+        let propName = this.extractNames(prop.toString()).first();
+        return Object.defineProperty(this.obj, propName, propDesc);
+    }
     prop(prop: (x: T) => any, handler: PropChangedHandler<T>): void { return this.props(prop, handler); }
     method(method: (x: T) => Function, handler: MethodInvokedHandler<T>): void { return this.methods(method, handler); }
     props(props: (x: T) => Array<any> | any, handler: PropChangedHandler<T>): void {
@@ -620,3 +624,7 @@ export interface Collapsable {
 }
 
 
+export interface EditorPos {
+    line: number;
+    column: number;
+}
