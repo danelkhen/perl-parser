@@ -132,7 +132,7 @@ export class EditorDomBinder {
                     collapsed = !exp.isCollapsed();
                 span.toggleClass("collapsed", collapsed);
                 btnExpander.toggleClass("collapsed", collapsed);
-                if(lineEnd>lineStart)
+                if (lineEnd > lineStart)
                     Array.generateNumbers(lineStart + 1, lineEnd).forEach(line => this.editor.getLine(line).visible = !collapsed);
             },
             isCollapsed: () => span.hasClass("collapsed"),
@@ -302,13 +302,43 @@ export class EditorDomBinder {
         });
         return { column: p.column, line: logicalLine };
     }
+
+    findFirstTextNode(node: Node): Text {
+        if (node.nodeType == 3)
+            return <Text>node;
+        let ch = node.firstChild;
+        while (ch != null) {
+            let ch2 = this.findFirstTextNode(ch);
+            if (ch2 != null)
+                return ch2;
+            ch = ch.nextSibling;
+        }
+        return null;
+    }
     scrollEl_mousedown(e: JQueryMouseEventObject) {
         if (e.isDefaultPrevented())
             return;
         let pos = this.screenToVisualPos(new Point(e.offsetX, e.offsetY));
-        //let pos2 = this.visualToLogicalPos(pos);
         this.editor.caretVisualPos.line = pos.y;
         this.editor.caretVisualPos.column = pos.x;
+        //let token = this.editor.getCaretToken();
+        //if (token == null)
+        //    return;
+        //let tokenEl = this.tokenToElement.get(token);
+        //if (tokenEl == null)
+        //    return;
+        //let textNode = this.findFirstTextNode(tokenEl);
+        //if (textNode == null)
+        //    return;
+        //let range = document.createRange();
+        //console.log(tokenEl, tokenEl.textContent, tokenEl.textContent.length);
+        //range.selectNode(textNode);
+        //range.setStart(textNode, 0);
+        //range.collapse(true);
+        //document.getSelection().removeAllRanges();
+        //document.getSelection().addRange(range);
+        //console.log(document.getSelection());
+        //e.preventDefault();
         //this.renderCaretPos();
     }
     window_keydown(e: JQueryKeyEventObject) {

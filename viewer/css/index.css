@@ -25,6 +25,7 @@ a {
     text-decoration: none;
     color: #1378FF;
 }
+
 .layout {
     table-layout: fixed;
     border-collapse: collapse;
@@ -175,8 +176,8 @@ a:target {
     box-sizing: border-box;
 }
 
-.code-container .code{
-    cursor:text;
+.code-container .code {
+    cursor: text;
 }
 
 .tooltip.git-blame {
@@ -237,12 +238,13 @@ a:target {
 .code a {
     -webkit-user-drag: none;
 }
-.code a:hover{
-    text-decoration:underline;
+
+.code a:hover {
+    text-decoration: underline;
 }
 
-.code a.ctrl:hover{
-    cursor:pointer;
+.code a.ctrl:hover {
+    cursor: pointer;
 }
 
 /*.code {
@@ -285,9 +287,10 @@ a:target {
     -webkit-text-fill-color: transparent;
     outline:none;*/
 }
-/*.ta-code::selection{
-    background-color:rgba(107, 166, 255, 0.2);
-}*/
+
+.code::selection, .code *::selection {
+    background-color: rgba(107, 166, 255, 0.2);
+}
 
 
 .collapsable {
@@ -428,14 +431,14 @@ a.btn {
     resize: none;
 }
 
-.debug{
-    position:absolute;
-    top:0;
-    right:50px;
-    background-color:rgba(100, 100, 100, 0.7);
-    height:200px;
-    width:300px;
-    white-space:pre;
-    z-index:100;
-    display:none;
+.debug {
+    position: absolute;
+    top: 0;
+    right: 50px;
+    background-color: rgba(100, 100, 100, 0.7);
+    height: 200px;
+    width: 300px;
+    white-space: pre;
+    z-index: 100;
+    display: none;
 }

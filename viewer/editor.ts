@@ -116,7 +116,7 @@ export class Editor {
         if (hl.href == null)
             return;
         console.log("navigating to", hl.href);
-        if(hl.target=="_blank")
+        if (hl.target == "_blank")
             window.open(hl.href);
         else
             window.location.href = hl.href;
@@ -134,7 +134,12 @@ export class Editor {
     }
     getCaretToken(): Token {
         let pos = this.caretLogicalPos;
-        let token = this.tokens.first(token => this.rangeContainsPos(token.range, pos));
+        if (pos == null)
+            return null;
+        let line = this.getLine(pos.line);
+        if (line == null)
+            return null;
+        let token = line.tokens.first(token => this.rangeContainsPos(token.range, pos));
         return token;
     }
 
@@ -244,11 +249,13 @@ export class Editor {
     }
     caretDocStart() {
         this.caretVisualPos.line = 1;
+        this.caretVisualPos.column = 1;
         this.verifyCaretInView();
     }
     caretDocEnd() {
         let text = this.getCurrentLineText();
         this.caretVisualPos.line = this.lines.length;
+        this.caretVisualPos.column = text.length;
         this.verifyCaretInView();
     }
     caretSelectAll() {
@@ -351,7 +358,7 @@ export interface CodeHyperlink {
     title?: string;
     css?: string;
     anchorEl?: HTMLAnchorElement;
-    target?:string;
+    target?: string;
     //tooltip?:TooltipOptions;
 }
 
