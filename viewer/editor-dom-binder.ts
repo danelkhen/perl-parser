@@ -54,7 +54,7 @@ export class EditorDomBinder {
         $(window).resize(e => this.updateVisibleLineCount());
         $(this.scrollEl).scroll(e => this.editor.topVisualLine = null);//{ console.log("scroll"); this.scrollEndTimer.set(100); });
 
-        Watchable.from(this.editor).prop(t => t.code, e => $(this.codeEl).text(e.value));
+        Watchable.from(this.editor).prop(t => t.code, e => { $(this.codeEl).text(e.value); this.renderLineNumbers(); });
         Watchable.from(this.editor).prop(t => t.tokens, e => this.renderTokens());
         Watchable.from(this.editor).redfineProp(t => t.topVisualLine, {
             get: () => {
@@ -148,23 +148,26 @@ export class EditorDomBinder {
 
 
     renderTokens() {
-        let codeEl = $(".code")[0];
+        let codeEl = this.codeEl;
         codeEl.innerHTML = "";
-        this.editor.lines.clear();
+        //this.editor.lines.clear();
         if (this.editor.tokens == null || this.editor.tokens.length == 0)
             return;
         //this.splitNewLineTokens();
 
-        let line = new CvLine();
+        let lineIndex = 0;
+        let line = this.editor.lines[lineIndex];//new CvLine();
         line.tokens = [];
         this.editor.lines.add(line);
         this.editor.tokens.forEach(token => {
             line.tokens.push(token);
             let lineCount = token.range.end.line - token.range.start.line;
             for (let i = 0; i < lineCount; i++) {
-                line = new CvLine();
+                lineIndex++;
+                line = this.editor.lines[lineIndex];
+                //line = new CvLine();
                 line.tokens = [token];
-                this.editor.lines.add(line);
+                //this.editor.lines.add(line);
             }
         });
         this.editor.tokens.forEach(token => {
@@ -174,14 +177,14 @@ export class EditorDomBinder {
             codeEl.appendChild(span);
             this.tokenToElement.set(token, span);
         });
-        this.renderLineNumbers();
-        this.editor.lines.forEach(line => {
-            Watchable.from(line).prop(t => t.visible, e => {
-                if (line.lineNumberEl == null)
-                    return;
-                $(line.lineNumberEl).toggleClass("collapsed", !e.obj.visible);
-            });
-        });
+        //this.renderLineNumbers();
+        //this.editor.lines.forEach(line => {
+        //    Watchable.from(line).prop(t => t.visible, e => {
+        //        if (line.lineNumberEl == null)
+        //            return;
+        //        $(line.lineNumberEl).toggleClass("collapsed", !e.obj.visible);
+        //    });
+        //});
     }
 
     getLineEl(line: number): HTMLElement {
@@ -276,6 +279,9 @@ export class EditorDomBinder {
     renderLineNumbers() {
         if (this.lineTemplate == null)
             this.lineTemplate = $(".line").first().remove()[0];
+        let lines = this.editor.code.lines().select(t => new CvLine());
+        this.editor.lines.clear();
+        this.editor.lines.addRange(lines);
 
         $(this.lineNumbersEl).empty()[0];
         this.editor.lines.forEach((line, i) => {
@@ -284,6 +290,13 @@ export class EditorDomBinder {
             div.find(".line-number").text(lineNumber.toString()).attr({ name: "L" + lineNumber, href: "javascript:void(0)" });
             line.lineNumberEl = div[0];
             this.lineNumbersEl.appendChild(div[0]);
+        });
+        this.editor.lines.forEach(line => {
+            Watchable.from(line).prop(t => t.visible, e => {
+                if (line.lineNumberEl == null)
+                    return;
+                $(line.lineNumberEl).toggleClass("collapsed", !e.obj.visible);
+            });
         });
     }
 
