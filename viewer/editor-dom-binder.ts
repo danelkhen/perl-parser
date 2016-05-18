@@ -33,42 +33,50 @@ export class EditorDomBinder {
     codeContainerEl: HTMLElement;
     codeEl: HTMLElement;
     tokenToElement: Map<Token, HTMLElement> = new Map<Token, HTMLElement>();
-    renderCaretPosAndFirstVisibleLineTimer: Timer;
+    //renderCaretPosAndFirstVisibleLineTimer: Timer;
+    debugEl: HTMLElement;
 
     //scrollEndTimer: Timer;
 
-    _firstVisibleLineNumber;
+    _topVisualLine;
     init() {
         this.scrollEl = $(".code-view")[0];
         this.lineNumbersEl = $(".lines")[0];
         this.caretEl = $(".caret")[0];
         this.codeEl = $(".code")[0];
         this.codeContainerEl = $(".code-container")[0];
+        this.debugEl = $(".debug")[0];
 
-        this.renderCaretPosAndFirstVisibleLineTimer = new Timer(() => this.renderCaretPosAndFirstVisibleLine());
+        //this.renderCaretPosAndFirstVisibleLineTimer = new Timer(() => this.renderCaretPosAndFirstVisibleLine());
         //this.scrollEndTimer = new Timer(() => this.scrollEl_scrollEnd());
         this.updateVisibleLineCount();
 
         $(window).resize(e => this.updateVisibleLineCount());
-        $(this.scrollEl).scroll(e => this.editor.firstVisibleVisualLineNumber = null);//{ console.log("scroll"); this.scrollEndTimer.set(100); });
+        $(this.scrollEl).scroll(e => this.editor.topVisualLine = null);//{ console.log("scroll"); this.scrollEndTimer.set(100); });
 
         Watchable.from(this.editor).prop(t => t.code, e => $(this.codeEl).text(e.value));
         Watchable.from(this.editor).prop(t => t.tokens, e => this.renderTokens());
-        Watchable.from(this.editor).redfineProp(t => t.firstVisibleVisualLineNumber, {
+        Watchable.from(this.editor).redfineProp(t => t.topVisualLine, {
             get: () => {
-                if (this._firstVisibleLineNumber == null)
-                    this._firstVisibleLineNumber = this.calcFirstVisibleLineNumber();
-                return this._firstVisibleLineNumber;
+                if (this._topVisualLine == null)
+                    this._topVisualLine = this.calcTopVisualLine();
+                return this._topVisualLine;
             },
             set: value => {
-                this._firstVisibleLineNumber = value;
+                this._topVisualLine = value;
                 if (value == null)
                     return;
-                this.renderCaretPosAndFirstVisibleLineTimer.set(0);
+                //this.renderCaretPosAndFirstVisibleLine();
+                this.renderTopVisualLine();
+                //this.renderCaretPosAndFirstVisibleLineTimer.set(0);
             }
         });
 
-        Watchable.from(this.editor.caretVisualPos).props(t => [t.line, t.column], e => this.renderCaretPosAndFirstVisibleLineTimer.set(0));
+        Watchable.from(this.editor.caretVisualPos).props(t => [t.line, t.column], e => {
+            this.renderCaretPos();
+            //this.renderCaretPosAndFirstVisibleLine();
+            //this.renderCaretPosAndFirstVisibleLineTimer.set(0); 
+        });
         Watchable.from(this.editor.collapsables).method(t => t.push, e => this.collapsable(e.args[0]));
         Watchable.from(this.editor.codeHyperlinks).method(t => t.push, e => this.hyperlinkNode(e.args[0]));
 
@@ -89,15 +97,21 @@ export class EditorDomBinder {
 
     updateVisibleLineCount() {
         let lines = this.calcVisibleLineCount();
-        let lines2 = this.editor.visibleLineCount;
+        let lines2 = this.editor.visualLineCount;
         if (lines == lines2)
             return;
         console.log("updateVisibleLineCount", lines2, " -> ", lines);
-        this.editor.visibleLineCount = lines;
+        this.editor.visualLineCount = lines;
     }
     renderCaretPosAndFirstVisibleLine() {
         this.renderCaretPos();
-        this.setFirstVisibleLineNumber(this.editor.firstVisibleVisualLineNumber);
+    }
+    renderTopVisualLine() {
+        let pos = this.visualToLogicalPos({ column: 1, line: this.editor.topVisualLine });
+        let el = this.getLineEl(pos.line);
+        if (el == null)
+            return;
+        this.scrollEl.scrollTop = el.offsetTop;
     }
     collapsable(collapsable: Collapsable) {
         let tokens = collapsable.tokens;
@@ -118,7 +132,8 @@ export class EditorDomBinder {
                     collapsed = !exp.isCollapsed();
                 span.toggleClass("collapsed", collapsed);
                 btnExpander.toggleClass("collapsed", collapsed);
-                Array.generateNumbers(lineStart + 1, lineEnd).forEach(line => this.editor.getLine(line).visible = !collapsed);
+                if(lineEnd>lineStart)
+                    Array.generateNumbers(lineStart + 1, lineEnd).forEach(line => this.editor.getLine(line).visible = !collapsed);
             },
             isCollapsed: () => span.hasClass("collapsed"),
         }
@@ -170,19 +185,15 @@ export class EditorDomBinder {
     }
 
     getLineEl(line: number): HTMLElement {
-        return <HTMLElement>this.lineNumbersEl.childNodes.item(line - 1);
+        let line2 = this.editor.lines[line - 1];
+        if (line2 == null)
+            return null;
+        return line2.lineNumberEl;
     }
 
-    private calcFirstVisibleLineNumber(): number {
+    private calcTopVisualLine(): number {
         let y = Math.ceil(this.scrollEl.scrollTop / this.lineHeight) + 1;
         return y;
-    }
-    private setFirstVisibleLineNumber(line: number) {
-        let pos = this.visualToLogicalPos({column:1, line});
-        let el = this.getLineEl(pos.line);
-        if (el == null)
-            return;
-        this.scrollEl.scrollTop = el.offsetTop;
     }
     private calcVisibleLineCount(): number {
         let clientHeight = this.scrollEl.clientHeight;
@@ -252,12 +263,12 @@ export class EditorDomBinder {
     projectionRatio: Point = new Point(this.fontWidth, this.lineHeight);
 
     renderCaretPos() {
-        if (this.editor.caretVisualPos.line > this.editor.lines.length)
-            this.editor.caretVisualPos.line = this.editor.lines.length;
-        else if (this.editor.caretVisualPos.line < 1)
-            this.editor.caretVisualPos.line = 1;
-        if (this.editor.caretVisualPos.column < 1)
-            this.editor.caretVisualPos.column = 1;
+        //if (this.editor.caretVisualPos.line > this.editor.lines.length)
+        //    this.editor.caretVisualPos.line = this.editor.lines.length;
+        //else if (this.editor.caretVisualPos.line < 1)
+        //    this.editor.caretVisualPos.line = 1;
+        //if (this.editor.caretVisualPos.column < 1)
+        //    this.editor.caretVisualPos.column = 1;
         $(this.caretEl).css({ left: (this.editor.caretVisualPos.column - 1) * this.fontWidth, top: (this.editor.caretVisualPos.line - 1) * this.lineHeight });
         //console.log(this.editor.logicalCaretPos);
     }
@@ -358,7 +369,10 @@ export class EditorDomBinder {
             if (!e.ctrlKey)
                 return;
             e.preventDefault();
-            window.open(a.attr("data-href"));
+            if (a.attr("target") == "_blank")
+                window.open(a.attr("data-href"));
+            else
+                window.location.href = a.attr("data-href");
         });
 
         return <HTMLAnchorElement>a[0];

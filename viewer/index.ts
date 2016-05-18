@@ -416,11 +416,11 @@ export class IndexPage {
         });
         builtins.forEach(node => {
             let name = node.toCode().trim();
-            this.editor.hyperlinkNode({ node, href: "http://perldoc.perl.org/functions/" + name + ".html", name, title: "(builtin function) "+name+"\nctrl+click to open documentation", css: "builtin-function" });
+            this.editor.hyperlinkNode({ node, href: "http://perldoc.perl.org/functions/" + name + ".html", name, title: "(builtin function) "+name+"\nctrl+click to open documentation", css: "builtin-function", target:"_blank" });
         });
         pragmas.forEach(node => {
             let name = node.toCode().trim();
-            this.editor.hyperlinkNode({ node, href: "http://perldoc.perl.org/" + name + ".html", name, title: "(pragma) "+name+"\nctrl+click to open documentation" });
+            this.editor.hyperlinkNode({ node, href: "http://perldoc.perl.org/" + name + ".html", name, title: "(pragma) "+name+"\nctrl+click to open documentation", target:"_blank" });
         });
 
         let resolutions: PackageResolution[] = inUse.select(node => ({ node: node, name: node.toCode().trim() }));

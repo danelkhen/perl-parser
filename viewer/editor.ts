@@ -2,7 +2,7 @@
 "use strict";
 
 import {
-    Token, TokenType, File2, File2Pos,
+    Token, TokenType, File2, File2Pos, TextRange2,
     AstWriter, ParserBase, ExpressionParser, Parser,
     AstNode, Expression, Statement, UnresolvedExpression, SimpleName, SubroutineDeclaration, SubroutineExpression, ArrayMemberAccessExpression, ArrayRefDeclaration,
     BarewordExpression, BeginStatement, BinaryExpression, Block, BlockExpression, BlockStatement, ElseStatement, ElsifStatement, EmptyStatement, EndStatement,
@@ -31,8 +31,8 @@ export class Editor {
     sourceFile: File2;
     binder: EditorDomBinder;
     codeHyperlinks: CodeHyperlink[] = [];
-    visibleLineCount = 10;
-    firstVisibleVisualLineNumber = 1;
+    visualLineCount = 10;
+    topVisualLine = 1;
 
 
 
@@ -96,6 +96,7 @@ export class Editor {
             { key: [Key.CONTROL, Key.END], handler: e => this.caretDocEnd() },
 
             { key: [Key.CONTROL, Key.A], handler: e => this.caretSelectAll() },
+            { key: Key.F12, handler: e => this.goToDefinition() },
         ];
         this.keyBindings = {};
 
@@ -103,6 +104,38 @@ export class Editor {
             let name = this.getKeyName2(binding.key);
             this.keyBindings[name] = binding.handler;
         });
+    }
+
+    goToDefinition() {
+        let token = this.getCaretToken();
+        if (token == null)
+            return;
+        let hl = this.codeHyperlinks.first(t => t.tokens.contains(token));
+        if (hl == null)
+            return;
+        if (hl.href == null)
+            return;
+        console.log("navigating to", hl.href);
+        if(hl.target=="_blank")
+            window.open(hl.href);
+        else
+            window.location.href = hl.href;
+    }
+
+    comparePos(x: EditorPos, y: EditorPos): number {
+        if (x.line == y.line)
+            return y.column - x.column;
+        return y.line - x.line;
+    }
+    rangeContainsPos(range: TextRange2, pos: EditorPos): boolean {
+        return this.comparePos(range.start, pos) >= 0 &&
+            this.comparePos(range.end, pos) <= 0;
+
+    }
+    getCaretToken(): Token {
+        let pos = this.caretLogicalPos;
+        let token = this.tokens.first(token => this.rangeContainsPos(token.range, pos));
+        return token;
     }
 
     getKeyName2(key: Key | Key[]): string {
@@ -170,28 +203,32 @@ export class Editor {
         this.verifyCaretInView();
     }
     caretPrevPage() {
-        let firstLine = this.firstVisibleVisualLineNumber;
+        let topVisualLine = this.topVisualLine;
         let line = this.caretVisualPos.line;
-        let lineCount = this.visibleLineCount;
-        let offset = line - firstLine;
+        let lineCount = this.visualLineCount;
+        let offset = line - topVisualLine;
         let newLine = line - lineCount;
         if (newLine < 1)
             newLine = 1;
         this.caretVisualPos.line = newLine;
-        if (offset <= lineCount)
-            this.firstVisibleVisualLineNumber = newLine - offset;
+        let newTopVisualLine = newLine - offset;
+        if (newTopVisualLine < 1)
+            newTopVisualLine = 1;
+        if (offset >= 0 && offset <= lineCount)
+            this.topVisualLine = newTopVisualLine;
+
     }
     caretNextPage() {
-        let firstLine = this.firstVisibleVisualLineNumber;
+        let firstLine = this.topVisualLine;
         let line = this.caretVisualPos.line;
-        let lineCount = this.visibleLineCount;
+        let lineCount = this.visualLineCount;
         let offset = line - firstLine;
         let newLine = line + lineCount;
         if (newLine > this.lines.length)
             newLine = this.lines.length;
         this.caretVisualPos.line = newLine;
         if (offset <= lineCount)
-            this.firstVisibleVisualLineNumber = newLine - offset;
+            this.topVisualLine = newLine - offset;
     }
     caretLineStart() {
         let text = this.getCurrentLineText();
@@ -243,21 +280,21 @@ export class Editor {
 
 
     getLastVisibleVisualLineNumber(): number {
-        return this.firstVisibleVisualLineNumber + this.visibleLineCount;
+        return this.topVisualLine + this.visualLineCount;
     }
     setLastVisibleVisualLineNumber(line: number) {
-        this.firstVisibleVisualLineNumber = line - this.visibleLineCount;
+        this.topVisualLine = line - this.visualLineCount;
     }
 
     verifyCaretInView() {
         this.verifyPosInView(this.caretVisualPos);
     }
     verifyPosInView(p: EditorPos) {
-        let firstLine = this.firstVisibleVisualLineNumber;
+        let firstLine = this.topVisualLine;
         let lastLine = this.getLastVisibleVisualLineNumber();
         let line = p.line;
         if (line < firstLine)
-            this.firstVisibleVisualLineNumber = p.line;
+            this.topVisualLine = p.line;
         else if (line > lastLine) {
             this.setLastVisibleVisualLineNumber(p.line);
         }
@@ -314,6 +351,7 @@ export interface CodeHyperlink {
     title?: string;
     css?: string;
     anchorEl?: HTMLAnchorElement;
+    target?:string;
     //tooltip?:TooltipOptions;
 }
 

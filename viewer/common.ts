@@ -254,27 +254,6 @@ export interface PackageResolution {
 }
 
 
-/*
-TODO:
-
--- integrate real web server
--- builtin functions - send to perldoc.perl.org/...
--- perl operators - send to perlop
--- unresolved packages send to metacpan
--- anchor sub routines and support deep linking
-
-optimize IndexRange to use math instead of arrays
-variable hyperlinking
-use web service to resolve packages
-keyboard support
--- code collapsing
-
-
-Stevan:
-implmement perldoc api: perldoc -T -o html -f return
-
-*/
-
 
 export interface Expander {
     toggle(collapsed?: boolean);

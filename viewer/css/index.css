@@ -427,3 +427,15 @@ a.btn {
     background-color: rgba(0, 200, 0, 0.3);
     resize: none;
 }
+
+.debug{
+    position:absolute;
+    top:0;
+    right:50px;
+    background-color:rgba(100, 100, 100, 0.7);
+    height:200px;
+    width:300px;
+    white-space:pre;
+    z-index:100;
+    display:none;
+}
