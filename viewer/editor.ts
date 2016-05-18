@@ -54,7 +54,7 @@ export class Editor {
 
 
     toPct(x: number) {
-        return (x*100).toFixed(0)+"%";
+        return (x * 100).toFixed(0) + "%";
     }
     tokenizeAsync(filename: string, data: string): Promise<any> {
         this.code = data;
@@ -89,32 +89,32 @@ export class Editor {
     }
 
 
-    keyBindings: { [key: string]: (e: JQueryKeyEventObject) => void };
+    keyBindings: { [key: string]: KeyBinding };
     initKeyBindings() {
         let bindings: KeyBinding[] = [
-            { key: Key.RIGHT, handler: e => this.caretNextChar() },
-            { key: Key.LEFT, handler: e => this.caretPrevChar() },
-            { key: Key.UP, handler: e => this.caretPrevLine() },
-            { key: Key.DOWN, handler: e => this.caretNextLine() },
+            { key: Key.RIGHT, handler: this.caretNextChar },
+            { key: Key.LEFT, handler: this.caretPrevChar },
+            { key: Key.UP, handler: this.caretPrevLine },
+            { key: Key.DOWN, handler: this.caretNextLine },
 
-            { key: Key.PAGE_DOWN, handler: e => this.caretNextPage() },
-            { key: Key.PAGE_UP, handler: e => this.caretPrevPage() },
+            { key: Key.PAGE_DOWN, handler: this.caretNextPage },
+            { key: Key.PAGE_UP, handler: this.caretPrevPage },
 
-            { key: Key.HOME, handler: e => this.caretLineStart() },
-            { key: Key.END, handler: e => this.caretLineEnd() },
+            { key: Key.HOME, handler: this.caretLineStart },
+            { key: Key.END, handler: this.caretLineEnd },
 
-            { key: [Key.CONTROL, Key.RIGHT], handler: e => this.caretNextWord() },
-            { key: [Key.CONTROL, Key.HOME], handler: e => this.caretDocStart() },
-            { key: [Key.CONTROL, Key.END], handler: e => this.caretDocEnd() },
+            { key: [Key.CONTROL, Key.RIGHT], handler: this.caretNextWord },
+            { key: [Key.CONTROL, Key.HOME], handler: this.caretDocStart },
+            { key: [Key.CONTROL, Key.END], handler: this.caretDocEnd },
 
-            { key: [Key.CONTROL, Key.A], handler: e => this.caretSelectAll() },
-            { key: Key.F12, handler: e => this.goToDefinition() },
+            { key: [Key.CONTROL, Key.A], handler: this.caretSelectAll },
+            { key: Key.F12, handler: this.goToDefinition },
         ];
         this.keyBindings = {};
 
         bindings.forEach(binding => {
             let name = this.getKeyName2(binding.key);
-            this.keyBindings[name] = binding.handler;
+            this.keyBindings[name] = binding;
         });
     }
 

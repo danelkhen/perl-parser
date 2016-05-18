@@ -345,11 +345,17 @@ export class EditorDomBinder {
         let keyName = this.editor.getKeyName(e);
         if (keyName == null)
             return;
-        let handler = this.editor.keyBindings[keyName];
-        if (handler != null) {
-            e.preventDefault();
-            handler(e);
+        let binding = this.editor.keyBindings[keyName];
+        if (binding != null && binding.handler != null) {
+            if (!this.manualPreventDefault(binding.handler))
+                e.preventDefault();
+            binding.handler.call(this.editor, e);
         }
+    }
+    manualPreventDefault(func: Function): boolean {
+        return false;
+        //let funcs:Function[] = [this.editor.goToDefinition];
+        //return funcs.contains(func);
     }
 
 
