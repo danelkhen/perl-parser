@@ -119,6 +119,7 @@ export class EditorDomBinder {
             tokens.removeLast();
         let lineStart = tokens[0].range.start.line;
         let lineEnd = tokens.last().range.end.line;
+        console.log("collapsable", { lines: lineStart + "-" + lineEnd, collapsable });
         let range = tokens.select(t => this.tokenToElement.get(t)).exceptNulls();
         let span = $.create("span.collapsable");
         this.wrap(span[0], range);
@@ -132,8 +133,9 @@ export class EditorDomBinder {
                     collapsed = !exp.isCollapsed();
                 span.toggleClass("collapsed", collapsed);
                 btnExpander.toggleClass("collapsed", collapsed);
-                if (lineEnd > lineStart)
-                    Array.generateNumbers(lineStart + 1, lineEnd).forEach(line => this.editor.getLine(line).visible = !collapsed);
+                for (let i = lineStart + 1; i <= lineEnd; i++) {
+                    this.editor.getLine(i).visible = !collapsed
+                }
             },
             isCollapsed: () => span.hasClass("collapsed"),
         }

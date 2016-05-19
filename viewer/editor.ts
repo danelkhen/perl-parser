@@ -288,8 +288,10 @@ export class Editor {
     }
 
     collapsables: Collapsable[] = [];
-    collapsable(tokens: Token[]) {
-        this.collapsables.push({ tokens, isCollapsed: false });
+    collapsable(node: AstNode, tokens?: Token[]) {
+        if (node != null && tokens == null)
+            tokens = this.collectTokens2(node);
+        this.collapsables.push({ node, tokens, isCollapsed: false });
     }
 
     scrollToLine(line: number) {
@@ -676,6 +678,7 @@ export class Watchable<T>{
 
 
 export interface Collapsable {
+    node: AstNode;
     tokens: Token[];
     isCollapsed: boolean;
 }

@@ -40,13 +40,13 @@ export class TokenType {
         return regex2;
     }
     static _words(list: string[]): TokenType {
-        let tt = TokenType._rs(list.map(t=> new RegExp(t + "\\b")));
+        let tt = TokenType._rs(list.map(t => new RegExp(t + "\\b")));
         tt.words = list;
         return tt;
     }
     static _rs(list: RegExp[]): TokenType {
         let tt = new TokenType();
-        list = list.select(t=> TokenType._fixRegex(t));
+        list = list.select(t => TokenType._fixRegex(t));
         tt.regexes = list;
         tt.match = tokenizer => {
             let res = null;
@@ -105,7 +105,7 @@ export class Token {
         return this.is2("keyword") && values.contains(this.value);
     }
     isAny(types: TokenType[]): boolean {
-        return types.any(t=> this.is(t));
+        return types.any(t => this.is(t));
     }
     is(type: TokenType, value?: string) {
         if (this.type.name != type.name)
@@ -177,7 +177,7 @@ export class File2 {
         let line = 1;
         for (let i = 0; i < this.newLineIndexes.length; i++) {
             let li = this.newLineIndexes[i];
-            if (li > index)
+            if (li >= index)
                 break;
             line++;
         }
@@ -190,6 +190,8 @@ export class File2 {
         pos.line = line; //lineIndex + 1;
         pos.column = index - lineIndex + 1;
         pos.index = index;
+        if (pos.column == 0)
+            throw new Error();
         pos.file = this;
         return pos;
     }

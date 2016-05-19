@@ -126,7 +126,7 @@ class PerlParserTool {
         let file = new File2(filename, code);
         let tok = new Tokenizer();
         tok.file = file;
-        tok.main();
+        tok.process();
         let parser = new Parser();
         parser.logger = new Logger();
         parser.reader = new TokenReader();

@@ -417,6 +417,10 @@ export class IndexPage {
 
         let subs = this.findSubs();
         subs.where(t => t.name != null).forEach(node => {
+            if (!(node.parentNode instanceof SubroutineDeclaration))
+                return;
+            //if (node.parentNode.parentNode == null || !(node.parentNode.parentNode instanceof PackageDeclaration))
+            //    return;
             let name = node.name.toCode().trim();
             this.editor.hyperlinkNode({ node: node.name, href: "#sub:" + name, name: "sub:" + name });
         });
@@ -451,8 +455,7 @@ export class IndexPage {
             }
         });
         subs.forEach(sub => {
-            let x = this.editor.collectTokens2(sub.block);
-            this.editor.collapsable(x);
+            this.editor.collapsable(sub.block);
         });
         this.findConsecutiveRepetitions(this.editor.tokens, (x, y) => x.isAny([TokenTypes.comment, TokenTypes.whitespace]) && y.isAny([TokenTypes.comment, TokenTypes.whitespace])).forEach(comments => {
             while (comments.length > 0 && comments.last().is(TokenTypes.whitespace))
@@ -463,11 +466,11 @@ export class IndexPage {
                 return;
             let text = comments.select(t => t.value).join("");
             if (text.lines().length > 3) {
-                this.editor.collapsable(comments);
+                this.editor.collapsable(null, comments);
             }
         });
         this.editor.tokens.where(t => t.is(TokenTypes.pod) && t.value.lines().length > 3).forEach(pod => {
-            this.editor.collapsable([pod]);
+            this.editor.collapsable(null, [pod]);
         });
     }
 
