@@ -1,6 +1,7 @@
 ﻿"use strict";
 
-import {Token, TextFile, Cursor, TokenType} from "./token";
+import {Token, TokenType} from "./token";
+import {TextFile, TextFilePos, TextFileRange, Cursor} from "./text";
 import {TokenTypes} from "./token-types";
 
 export class Tokenizer {

@@ -1,7 +1,8 @@
 ﻿import * as fs from "fs";
 import * as fs2 from "./fs2";
 import "../../../libs/corex";
-import {Token, TokenType, TextFile, } from "../src/token";
+import {Token, TokenType, } from "../src/token";
+import {TextFile, TextFilePos, TextFileRange, Cursor} from "../src/text";
 import {AstWriter} from "../src/ast-writer";
 import {ParserBase} from "../src/parser-base";
 import {ExpressionParser} from "../src/expression-parser";

@@ -2,7 +2,7 @@
 "use strict";
 
 import {
-    Token, TokenType, TextFile, TextFilePos,
+    Token, TokenType, 
     AstWriter, ParserBase, ExpressionParser, Parser,
     AstNode, Expression, Statement, UnresolvedExpression, SimpleName, SubroutineDeclaration, SubroutineExpression, ArrayMemberAccessExpression, ArrayRefDeclaration,
     BarewordExpression, BeginStatement, BinaryExpression, Block, BlockExpression, BlockStatement, ElseStatement, ElsifStatement, EmptyStatement, EndStatement,
@@ -119,7 +119,7 @@ export class EditorDomBinder {
             tokens.removeLast();
         let lineStart = tokens[0].range.start.line;
         let lineEnd = tokens.last().range.end.line;
-        console.log("collapsable", { lines: lineStart + "-" + lineEnd, collapsable });
+        //console.log("collapsable", { lines: lineStart + "-" + lineEnd, collapsable });
         let range = tokens.select(t => this.tokenToElement.get(t)).exceptNulls();
         let span = $.create("span.collapsable");
         this.wrap(span[0], range);

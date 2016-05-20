@@ -1,6 +1,11 @@
 ﻿"use strict";
-import {Token, TokenType, TextFileRange} from "./token";
+import {Token, TokenType, } from "./token";
 import {Tokenizer} from "./tokenizer";
+import {TextFile, TextFilePos, TextFileRange, Cursor} from "./text";
+let _r = TokenType.regex;
+let _rs = TokenType.anyRegex;
+let _custom = TokenType.custom;
+let _words = TokenType.words;
 
 export class HereDocTokenType extends TokenType {
 
@@ -12,7 +17,7 @@ export class HereDocTokenType extends TokenType {
         if (range == null)
             return 0;
         let ender = tokenizer.cursor.captureAny(matchers).text;
-        let newTokenType = TokenType._r(new RegExp("\\r?\\n[\\S\\s]*?\\r?\\n" + ender + "\\r?\\n"));
+        let newTokenType = _r(new RegExp("\\r?\\n[\\S\\s]*?\\r?\\n" + ender + "\\r?\\n"));
         newTokenType.name = "heredocValue";
         tokenizer.tempTokenTypes.push(newTokenType);
         let token = this.create(range);
@@ -22,6 +27,8 @@ export class HereDocTokenType extends TokenType {
     }
 
 }
+
+
 
 
 export class TokenTypes {
@@ -53,22 +60,22 @@ export class TokenTypes {
     // <<EOF                 here-doc            yes*
     // * unless the delimiter is ''.
     static heredoc = new HereDocTokenType();// TokenTypes._custom(TokenTypes.match(/<<"([a-zA-Z0-9]+)"[\s\S]*$/m);
-    static heredocValue = TokenType._custom(t => null);// TokenTypes._custom(TokenTypes.match(/<<"([a-zA-Z0-9]+)"[\s\S]*$/m);
-    static bareString = TokenType._custom(t => {
+    static heredocValue = _custom(t => null);// TokenTypes._custom(TokenTypes.match(/<<"([a-zA-Z0-9]+)"[\s\S]*$/m);
+    static bareString = _custom(t => {
         let lastToken = TokenTypes._findLastNonWhitespaceOrCommentToken(t.tokens);
         if (lastToken != null && lastToken.isAny([TokenTypes.arrow, TokenTypes.packageSeparator]))
             return null;
         let res = t.cursor.capture(/^(\-?[a-zA-Z_]+[a-zA-Z0-9_]*)?\s*?\=>/);
         return res;
     });
-    static qq = TokenType._rs([/qq\s*?\|[^|]*\|/, /qq\s*?\{[^\}]*\}/]);
-    static qw = TokenType._rs([/qw\s*\/[^\/]*\//m, /qw\s*<[^>]*>/m, /qw\s*\([^\)]*\)/m, /qw\s*\[[^\]]*\]/m, /qw\s*\{[^\{]*\}/m]);
-    static qr = TokenType._rs([/qr\/.*\/[a-z]*/, /qr\(.*?\)[a-z]*/, /qr\{.*?\}[a-z]*/]);//Regexp-like quote
-    static qx = TokenType._rs([/qx\/.*\//, /`.*`/]);
-    static tr = TokenType._rs([/tr\/.*\/.*\/[cdsr]*/, /tr\{.*\}\{.*\}/]); //token replace
-    static q = TokenType._rs([/q\{[^\}]*\}/]);
-    static pod = TokenType._custom(TokenTypes._matchPod);
-    //static pod = TokenType._r(/=pod.*=cut/m);
+    static qq = _rs([/qq\s*?\|[^|]*\|/, /qq\s*?\{[^\}]*\}/]);
+    static qw = _rs([/qw\s*\/[^\/]*\//m, /qw\s*<[^>]*>/m, /qw\s*\([^\)]*\)/m, /qw\s*\[[^\]]*\]/m, /qw\s*\{[^\{]*\}/m]);
+    static qr = _rs([/qr\/.*\/[a-z]*/, /qr\(.*?\)[a-z]*/, /qr\{.*?\}[a-z]*/]);//Regexp-like quote
+    static qx = _rs([/qx\/.*\//, /`.*`/]);
+    static tr = _rs([/tr\/.*\/.*\/[cdsr]*/, /tr\{.*\}\{.*\}/]); //token replace
+    static q = _rs([/q\{[^\}]*\}/]);
+    static pod = _custom(TokenTypes._matchPod);
+    //static pod = _r(/=pod.*=cut/m);
 
     static statementModifiers = ["if", "unless", "while", "until", "for", "foreach", "when"];
     static namedUnaryOperators = [
@@ -455,7 +462,7 @@ export class TokenTypes {
     //TODO: exempt from looks like a function rule: return, goto, last, next 
 
 
-    static keyword = TokenType._words([
+    static keyword = _words([
         "BEGIN", "package",
         //"use", "no", removed temporarily
         "my", "our", //"local",
@@ -468,86 +475,86 @@ export class TokenTypes {
 
 
     //, "defined", "ref", "exists"
-    static end = TokenType._r(/__END__/);
-    static whitespace = TokenType._r(/[ \t\r\n]+/);
-    static packageSeparator = TokenType._r(/\:\:/);
-    static semicolon = TokenType._r(/;/);
-    static sigiledIdentifier = TokenType._r(new RegExp("[\\$@%&*]" + TokenTypes.identifierRegex.source));
-    static evalErrorVar = TokenType._r(/\$@/);
-    static listSeparatorVar = TokenType._r(/\$"/);
-    static ctrlCVar = TokenType._r(/\$\^C/);
-    static comment = TokenType._r(/\#.*/);
-    static equals = TokenType._r(/==/);
-    static notEquals = TokenType._r(/!=/);
-    static concatAssign = TokenType._r(/\.=/);
-    static addAssign = TokenType._r(/\+=/);
-    static subtractAssign = TokenType._r(/\-=/);
-    static multiplyAssign = TokenType._r(/\+=/);
-    static divideAssign = TokenType._r(/\/=/);
-    static xorAssign = TokenType._r(/\^=/);
-    static divDivAssign = TokenType._r(/\/\/=/);
+    static end = _r(/__END__/);
+    static whitespace = _r(/[ \t\r\n]+/);
+    static packageSeparator = _r(/\:\:/);
+    static semicolon = _r(/;/);
+    static sigiledIdentifier = _r(new RegExp("[\\$@%&*]" + TokenTypes.identifierRegex.source));
+    static evalErrorVar = _r(/\$@/);
+    static listSeparatorVar = _r(/\$"/);
+    static ctrlCVar = _r(/\$\^C/);
+    static comment = _r(/\#.*/);
+    static equals = _r(/==/);
+    static notEquals = _r(/!=/);
+    static concatAssign = _r(/\.=/);
+    static addAssign = _r(/\+=/);
+    static subtractAssign = _r(/\-=/);
+    static multiplyAssign = _r(/\+=/);
+    static divideAssign = _r(/\/=/);
+    static xorAssign = _r(/\^=/);
+    static divDivAssign = _r(/\/\/=/);
 
-    static orAssign = TokenType._r(/\|\|=/);
-    static comma = TokenType._r(/\,/);
-    static integer = TokenType._r(/[0-9]+/);
-    static parenOpen = TokenType._r(/\(/);
-    static parenClose = TokenType._r(/\)/);
-    static braceOpen = TokenType._r(/\{/);
-    static braceClose = TokenType._r(/\}/);
-    static bracketOpen = TokenType._r(/\[/);
-    static bracketClose = TokenType._r(/\]/);
-    static interpolatedString = TokenType._r(/\"[^"]*\"/);
-    static string = TokenType._r(/\'[^\']*\'/);
-    static regex = TokenType._custom(TokenTypes._matchRegex);//_r(/\/.*\/[a-z]*/);
-    static regexSubstitute = TokenType._rs([/s\/.*\/.*\/[a-z]*/, /s#.*#.*#[a-z]*/, /s\{.*\}\{.*\}[a-z]*/]);  // s/abc/def/mg
-    static regexMatch = TokenType._rs([/m\/.*\/[a-z]*/, /m#.*#[a-z]*/, /m\{.*\}[a-z]*/]);  // s/abc/def/mg
+    static orAssign = _r(/\|\|=/);
+    static comma = _r(/\,/);
+    static integer = _r(/[0-9]+/);
+    static parenOpen = _r(/\(/);
+    static parenClose = _r(/\)/);
+    static braceOpen = _r(/\{/);
+    static braceClose = _r(/\}/);
+    static bracketOpen = _r(/\[/);
+    static bracketClose = _r(/\]/);
+    static interpolatedString = _r(/\"[^"]*\"/);
+    static string = _r(/\'[^\']*\'/);
+    static regex = _custom(TokenTypes._matchRegex);//_r(/\/.*\/[a-z]*/);
+    static regexSubstitute = _rs([/s\/.*\/.*\/[a-z]*/, /s#.*#.*#[a-z]*/, /s\{.*\}\{.*\}[a-z]*/]);  // s/abc/def/mg
+    static regexMatch = _rs([/m\/.*\/[a-z]*/, /m#.*#[a-z]*/, /m\{.*\}[a-z]*/]);  // s/abc/def/mg
 
-    static colon = TokenType._r(/\:/);
-    static question = TokenType._r(/\?/);
+    static colon = _r(/\:/);
+    static question = _r(/\?/);
 
     //unary:
-    static inc = TokenType._r(/\+\+/);
-    static dec = TokenType._r(/\-\-/);
-    //static codeRef = TokenType._r(/\\\&/);
-    static lastIndexVar = TokenType._r(/\$#/);
+    static inc = _r(/\+\+/);
+    static dec = _r(/\-\-/);
+    //static codeRef = _r(/\\\&/);
+    static lastIndexVar = _r(/\$#/);
 
 
     //binary
-    static numericCompare = TokenType._r(/\<=\>/);
-    static smallerThanOrEquals = TokenType._r(/\<=/);
-    static greaterThanOrEquals = TokenType._r(/\>=/);
-    static regexEquals = TokenType._r(/=\~/);
-    static regexNotEquals = TokenType._r(/\!\~/);
-    static smallerThan = TokenType._r(/\</);
-    static greaterThan = TokenType._r(/\>/);
-    static arrow = TokenType._r(/\-\>/);
-    static fatComma = TokenType._r(/\=\>/);
-    static assignment = TokenType._r(/=/);
-    static range3 = TokenType._r(/\.\.\./);
-    static range = TokenType._r(/\.\./);
-    static concat = TokenType._r(/\./);
-    static divDiv = TokenType._r(/\/\//);
-    static tilda = TokenType._r(/\~/);
-    static or = TokenType._r(/\|\|/);
-    static and = TokenType._r(/\&\&/);
-    static minus = TokenType._r(/\-/);
-    static multiply = TokenType._r(/\*/);  //also typeglob
-    static div = TokenType._r(/\//);
-    static plus = TokenType._r(/\+/);
-    static multiplyString = TokenType._r(/x\b/);
+    static numericCompare = _r(/\<=\>/);
+    static smallerThanOrEquals = _r(/\<=/);
+    static greaterThanOrEquals = _r(/\>=/);
+    static regexEquals = _r(/=\~/);
+    static regexNotEquals = _r(/\!\~/);
+    static smallerThan = _r(/\</);
+    static greaterThan = _r(/\>/);
+    static arrow = _r(/\-\>/);
+    static fatComma = _r(/\=\>/);
+    static assignment = _r(/=/);
+    static range3 = _r(/\.\.\./);
+    static range = _r(/\.\./);
+    static concat = _r(/\./);
+    static divDiv = _r(/\/\//);
+    static tilda = _r(/\~/);
+    static or = _r(/\|\|/);
+    static and = _r(/\&\&/);
+    static minus = _r(/\-/);
+    static multiply = _r(/\*/);  //also typeglob
+    static div = _r(/\//);
+    static plus = _r(/\+/);
+    static multiplyString = _r(/x\b/);
 
-    static bitwiseOr = TokenType._r(/\|/);
-    static bitwiseAnd = TokenType._r(/\&/);
-    static bitwiseXor = TokenType._r(/\^/);
-
-
-    //static label = TokenType._r(new RegExp(TokenTypes.identifierRegex.source+"[\t\r\n ]*\:"));
-    static identifier = TokenType._r(TokenTypes.identifierRegex);
+    static bitwiseOr = _r(/\|/);
+    static bitwiseAnd = _r(/\&/);
+    static bitwiseXor = _r(/\^/);
 
 
-    static makeRef = TokenType._r(/\\/);
-    static not = TokenType._r(/\!/);
-    static sigil = TokenType._r(/[\$@%&]/);
+    //static label = _r(new RegExp(TokenTypes.identifierRegex.source+"[\t\r\n ]*\:"));
+    static identifier = _r(TokenTypes.identifierRegex);
+
+
+    static makeRef = _r(/\\/);
+    static not = _r(/\!/);
+    static sigil = _r(/[\$@%&]/);
 
 
 

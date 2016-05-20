@@ -1,4 +1,5 @@
-﻿import {Token, TokenType, TextFileRange, TextFile, TextFilePos} from "./token";
+﻿import {Token, TokenType, } from "./token";
+import {TextFile, TextFilePos, TextFileRange} from "./text";
 import {TokenTypes} from "./token-types";
 import {AstNode} from "./ast";
 

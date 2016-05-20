@@ -1,7 +1,7 @@
 ﻿/// <reference path="../../src/extensions.ts" />
 "use strict";
 
-import {Token, TokenType, TextFile, } from "../../src/token";
+import {Token, TokenType, } from "../../src/token";
 import {AstWriter} from "../../src/ast-writer";
 import {ParserBase} from "../../src/parser-base";
 import {ExpressionParser} from "../../src/expression-parser";
@@ -22,6 +22,7 @@ import {safeTry, TokenReader, Logger, AstNodeFixator} from "../../src/utils";
 import "../../src/extensions";
 import {RefArrayToRefUtil} from "../../src/refactor";
 import {ExpressionTester, EtReport, EtItem} from "../../src/expression-tester";
+import {TextFile, TextFilePos, TextFileRange, Cursor} from "../../src/text";
 
 export class IndexPage {
 
