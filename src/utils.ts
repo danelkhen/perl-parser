@@ -7,7 +7,7 @@ export class Logger {
     items: LogItem[] = [];
     add(item: LogItem) {
         this.items.add(item);
-        if (item.level == LogLevel.error || item.level==LogLevel.warning)
+        if (item.level == LogLevel.error || item.level == LogLevel.warning)
             console.log(item.toCompilerMessage());
     }
     log(args: any[]) {
@@ -234,7 +234,7 @@ export enum LogLevel {
 export class AstNodeFixator {
     process(node: AstNode) {
         let props = Object.keys(node);
-        props.forEach(prop=> {
+        props.forEach(prop => {
             if (prop == "parentNode")
                 return;
             let value = node[prop];
@@ -252,7 +252,7 @@ export class AstNodeFixator {
             this.process(child);
         }
         else if (value instanceof Array) {
-            value.forEach(t=> this.processProp(node, prop, t));
+            value.forEach(t => this.processProp(node, prop, t));
         }
     }
 }
@@ -277,4 +277,15 @@ export function safeTry<T>(action: (...args: any[]) => T): Promise<T> {
         }
 
     });
+}
+
+
+export class ArrayHelper {
+    static firstIndex<T>(list: T[], predicate: (item: T) => boolean): number {
+        for (let i = 0; i < list.length; i++) {
+            if (predicate(list[i]))
+                return i;
+        }
+        return -1;
+    }
 }

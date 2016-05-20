@@ -394,6 +394,7 @@ a.btn {
 .dir-view {
     overflow: auto;
     height: 100%;
+    padding:0 20px;
 }
 
 .dir-view .child {

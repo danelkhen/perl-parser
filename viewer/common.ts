@@ -1,5 +1,5 @@
 ﻿import {
-    Token, TokenType, 
+    Token, TokenType,
     AstWriter, ParserBase, ExpressionParser, Parser,
     AstNode, Expression, Statement, UnresolvedExpression, SimpleName, SubroutineDeclaration, SubroutineExpression, ArrayMemberAccessExpression, ArrayRefDeclaration,
     BarewordExpression, BeginStatement, BinaryExpression, Block, BlockExpression, BlockStatement, ElseStatement, ElsifStatement, EmptyStatement, EndStatement,
@@ -162,7 +162,10 @@ export class Helper {
                 let func = this.compileTemplateString(att.value);
                 if (func != null) {
                     let res = func(obj);
-                    node[att.name] = res;
+                    let propName = att.name;
+                    if (propName == "class")
+                        propName = "className";
+                    node[propName] = res;
                 }
             });
             Array.from(node.childNodes).forEach(t => this.dataBind(t, obj, thisContext));
@@ -182,10 +185,10 @@ export class Helper {
         el2.siblings(".template-instance").remove();
         if (list != null) {
             let els = list.select(obj => {
-                let el3 = el2.clone().removeClass("template").removeAttr("_for");
+                let el3 = el2.clone().removeAttr("_for");
                 let el4 = el3[0];
                 this.dataBind(el4, obj, thisContext);
-                el3.addClass("template-instance");
+                el3.removeClass("template").addClass("template-instance");
                 return el4;
             });
             el2.after(els);

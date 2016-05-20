@@ -134,13 +134,3 @@ export class Token {
 }
 
 
-
-export class ArrayHelper {
-    static firstIndex<T>(list: T[], predicate: (item: T) => boolean): number {
-        for (let i = 0; i < list.length; i++) {
-            if (predicate(list[i]))
-                return i;
-        }
-        return -1;
-    }
-}

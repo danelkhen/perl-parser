@@ -20,7 +20,7 @@ import {ExpressionTester, EtReport, EtItem} from "../src/expression-tester";
 import {P5Service, P5File, CritiqueResponse, CritiqueViolation} from "./p5-service";
 import {monitor, Monitor} from "./monitor";
 import {Key, Rect, Size, Point} from "./common";
-import {Editor, CvLine, IndexSelection, TokenUtils} from "./editor";
+import {Editor, CvLine, IndexSelection, TokenUtils, CodeHyperlink} from "./editor";
 import {TextFile, TextFilePos, TextFileRange, Cursor} from "../src/text";
 import {EditorConsoleBinder} from "./editor-console-binder";
 
@@ -97,11 +97,12 @@ export class IndexPage {
                 let tokens = this.findTokens(pos, violation.source.code.length);
                 if (tokens == null)
                     return;
-                let hl = this.editor.hyperlinkNode({ tokens, css: "hl hl-violation" });
-                this.tooltip({ target: hl, content: `${violation.description}\n${violation.policy}\nseverity:${violation.severity}`, });
+                let hl: CodeHyperlink = { tokens, css: "hl hl-violation" };
+                this.editor.hyperlinkNode(hl);
+                this.tooltip({ target: hl.anchorEl, content: `${violation.description}\n${violation.policy}\nseverity:${violation.severity}`, });
+                return { violation, hl };
                 //if (firstViolationLine == null)
                 //    firstViolationLine = violation.source.location.line;
-                return hl;
                 //tokens.forEach(token => {
                 //    let el = this.tokenToElement.get(token);
                 //    if (el == null)
@@ -111,8 +112,10 @@ export class IndexPage {
                 //    this.tooltip({ target: el, content: `${violation.description}\n${violation.policy}\nseverity:${violation.severity}`, });
                 //});
             });
-            if (hls.length > 0)
-                $(hls[0]).blur().focus();
+            if (hls.length > 0) {
+                this.editor.scrollToLine(hls[0].violation.source.location.line);
+            }
+            //$(hls[0]).blur().focus();
             //if (firstViolationLine !=null )
             //    this.scrollToLine(firstViolationLine);
         });

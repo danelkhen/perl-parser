@@ -1,4 +1,5 @@
-﻿export * from "./token";
+﻿export * from "./text";
+export * from "./token";
 export * from "./ast-writer";
 export * from "./parser-base";
 export * from "./expression-parser";

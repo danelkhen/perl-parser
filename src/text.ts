@@ -25,19 +25,19 @@ export class TextFile {
         if (line == 1)
             return 0;
         let res = this.newLineIndexes[line - 2] + 1;
+        if (isNaN(res))
+            return null;
         return res;
     }
-    //last index relative to start of line, without the line ending char. empty line has startIndex=endIndex=0
-    getLineEndIndex(line: number): number {
-        let nextLineStartIndex = this.getLineStartIndex(line + 1);
-        if (nextLineStartIndex == null)
-            return this.text.length - 1;
-        return nextLineStartIndex - 1;
-    }
+    ////last index relative to start of line, without the line ending char. empty line has startIndex=endIndex=0
+    //getLineEndIndex(line: number): number {
+    //    let nextLineStartIndex = this.getLineStartIndex(line + 1);
+    //    if (nextLineStartIndex == null)
+    //        return this.text.length - 1;
+    //    return nextLineStartIndex - 1;
+    //}
     getLineText(line: number): string {
-        let startIndex = this.getLineStartIndex(line);
-        let endIndex = this.getLineEndIndex(line);
-        return this.text.substring(startIndex, endIndex);
+        return this.lines[line-1];
     }
     findLine(index: number): number {
         let line = 1;
@@ -96,7 +96,9 @@ export class TextFile {
         return range;
     }
 
+    lines:string[];
     scanNewLines() {
+        this.lines = this.text.split(/\n/g);
         let regex = /\n/g;
         while (true) {
             let match = regex.exec(this.text);
@@ -184,12 +186,3 @@ export class Cursor {
 
 
 
-export class ArrayHelper {
-    static firstIndex<T>(list: T[], predicate: (item: T) => boolean): number {
-        for (let i = 0; i < list.length; i++) {
-            if (predicate(list[i]))
-                return i;
-        }
-        return -1;
-    }
-}

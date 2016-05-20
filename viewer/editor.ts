@@ -11,6 +11,7 @@ import {
     Operator, PackageDeclaration, ParenthesizedList, PostfixUnaryExpression, PrefixUnaryExpression, QwExpression, RawExpression, RawStatement, RegexExpression,
     ReturnExpression, TrinaryExpression, Unit, UnlessStatement, UseOrNoStatement, UseStatement, ValueExpression, VariableDeclarationExpression, VariableDeclarationStatement, WhileStatement,
     AstQuery, PrecedenceResolver, TokenTypes, Tokenizer, safeTry, TokenReader, Logger, AstNodeFixator,
+    TextFile, TextFilePos, TextFileRange, Cursor,
 } from "../src/index";
 import {PackageResolution, AsyncFunc, TreeNodeData, Expander, Helper} from "./common";
 import "../src/extensions";
@@ -20,7 +21,6 @@ import {P5Service, P5File, CritiqueResponse, CritiqueViolation} from "./p5-servi
 import {monitor, Monitor} from "./monitor";
 import {Key, Rect, Size, Point} from "./common";
 import {EditorDomBinder} from "./editor-dom-binder";
-import {TextFile, TextFilePos, TextFileRange, Cursor} from "../src/text";
 
 export class Editor {
     code: string;
@@ -104,7 +104,8 @@ export class Editor {
             { key: Key.HOME, handler: this.caretLineStart },
             { key: Key.END, handler: this.caretLineEnd },
 
-            { key: [Key.CONTROL, Key.RIGHT], handler: this.caretNextWord },
+            { key: [Key.CONTROL, Key.LEFT], handler: this.caretPrevToken },
+            { key: [Key.CONTROL, Key.RIGHT], handler: this.caretNextToken },
             { key: [Key.CONTROL, Key.HOME], handler: this.caretDocStart },
             { key: [Key.CONTROL, Key.END], handler: this.caretDocEnd },
 
@@ -142,7 +143,7 @@ export class Editor {
     }
     rangeContainsPos(range: TextFileRange, pos: EditorPos): boolean {
         return this.comparePos(range.start, pos) >= 0 &&
-            this.comparePos(range.end, pos) <= 0;
+            this.comparePos(range.end, pos) < 0;
 
     }
     getCaretToken(): Token {
@@ -184,6 +185,22 @@ export class Editor {
     }
     caretNextChar() {
         this.caretVisualPos.column++;
+    }
+    caretPrevToken() {
+        let token = this.getCaretToken();
+        let index = this.tokens.indexOf(token);
+        let prevToken = this.tokens[index - 1];
+        if (prevToken == null)
+            return;
+        this.setCaretLogicalPos(prevToken.range.start);
+    }
+    caretNextToken() {
+        let token = this.getCaretToken();
+        let index = this.tokens.indexOf(token);
+        let nextToken = this.tokens[index + 1];
+        if (nextToken == null)
+            return;
+        this.setCaretLogicalPos(nextToken.range.start);
     }
     caretNextWord() {
         let line = this.getCurrentLineText().substr(this.caretVisualPos.column - 1);
@@ -261,7 +278,7 @@ export class Editor {
         this.caretVisualPos.column = text.length + 1;
     }
     caretDocStart() {
-        this.setCaretLogicalPos({line:1, column:1});
+        this.setCaretLogicalPos({ line: 1, column: 1 });
         this.verifyCaretInView();
     }
     caretDocEnd() {
@@ -296,8 +313,9 @@ export class Editor {
     }
 
     scrollToLine(line: number) {
-        let el = this.binder.getLineEl(line);
-        this.binder.scrollToElement(el);
+        //this.verifyPosInView({ line, column: 1 });
+
+        this.topVisualLine = line;
     }
 
 
