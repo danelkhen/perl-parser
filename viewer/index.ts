@@ -22,6 +22,7 @@ import {monitor, Monitor} from "./monitor";
 import {Key, Rect, Size, Point} from "./common";
 import {Editor, CvLine, IndexSelection, TokenUtils} from "./editor";
 import {TextFile, TextFilePos, TextFileRange, Cursor} from "../src/text";
+import {EditorConsoleBinder} from "./editor-console-binder";
 
 export class IndexPage {
     constructor() {
@@ -548,8 +549,6 @@ export class IndexPage {
 
 
 export function main() {
-
-
     window.onpopstate = e => {
         e.preventDefault();
         $(window).trigger("urlchange");
@@ -581,41 +580,30 @@ export function main() {
 
 $(main);
 
-function consoleStyleRenderingTest() {
-    document.body.innerHTML = "";
-    let body = $.create("div").prependTo(document.body).css("font-family", "Source Code Pro");
-    let divs = [];
-    for (let line = 1; line < 50; line++) {
-        let div = $.create("div").appendTo(body);
-        let x = { el: div[0], spans: [] };
-        divs.push(x);
-        for (let col = 1; col < 200; col++) {
-            let span = $.create("span").text(Math.randomInt(1, 9)).appendTo(div);
-            x.spans.push(span[0]);
-        }
+
+
+function testConsoleBinder() {
+    $(document.body).empty();
+    let el = $.create(".console").appendTo(document.body)[0];
+    let binder = new EditorConsoleBinder();
+    binder.el = el;
+    binder.init();
+    let s = `public class ggg {
+    void foo(){
     }
 
-    function redraw() {
-        let start = performance.now();
-        let rand = Math.randomInt(1, 9);
-        divs.forEach((div, line) => {
-            div.spans.forEach(span => {
-                let x = Math.randomInt(1, 9).toString().substr(0, 1);
-                let ch = span.firstChild;
-                if (x != ch.data)
-                    ch.data = (line + rand).toString().substr(0, 1);
-            });
-        });
-        let end = performance.now();
-        console.log((end - start) + "ms");
+    void bar(){
     }
-    window.setTimeout(redraw, 1000);
-    window.setTimeout(redraw, 2000);
-    window.setTimeout(redraw, 3000);
-    window.setTimeout(redraw, 4000);
-    window.setTimeout(redraw, 5000);
+}`;
+    binder.setText(s);
+    binder.redraw();
+    window.setTimeout(() => {
+
+        binder.setText(s.substr(10));
+        binder.redraw();
+    }, 1000);
+
 }
-
 //splitNewLineTokens() {
 //    let list: Token[] = [];
 //    this.tokens.forEach(token => {

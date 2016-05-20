@@ -24,7 +24,8 @@ export class TextFile {
     getLineStartIndex(line: number): number {
         if (line == 1)
             return 0;
-        return this.newLineIndexes[line - 2] + 1;
+        let res = this.newLineIndexes[line - 2] + 1;
+        return res;
     }
     //last index relative to start of line, without the line ending char. empty line has startIndex=endIndex=0
     getLineEndIndex(line: number): number {

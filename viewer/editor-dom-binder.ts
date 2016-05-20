@@ -2,7 +2,7 @@
 "use strict";
 
 import {
-    Token, TokenType, 
+    Token, TokenType,
     AstWriter, ParserBase, ExpressionParser, Parser,
     AstNode, Expression, Statement, UnresolvedExpression, SimpleName, SubroutineDeclaration, SubroutineExpression, ArrayMemberAccessExpression, ArrayRefDeclaration,
     BarewordExpression, BeginStatement, BinaryExpression, Block, BlockExpression, BlockStatement, ElseStatement, ElsifStatement, EmptyStatement, EndStatement,
@@ -160,7 +160,6 @@ export class EditorDomBinder {
         let lineIndex = 0;
         let line = this.editor.lines[lineIndex];//new CvLine();
         line.tokens = [];
-        this.editor.lines.add(line);
         this.editor.tokens.forEach(token => {
             line.tokens.push(token);
             let lineCount = token.range.end.line - token.range.start.line;
@@ -172,6 +171,8 @@ export class EditorDomBinder {
                 //this.editor.lines.add(line);
             }
         });
+        if (this.editor.lines.length > 1 && this.editor.lines.last().tokens.length == 0)
+            console.warn("GGGGGGGGGGGGGGGGGG");
         this.editor.tokens.forEach(token => {
             let span = document.createElement("span");
             span.className = token.type.name;
@@ -316,6 +317,11 @@ export class EditorDomBinder {
             return visibles == visualLine;
         });
         return { column: p.column, line: logicalLine };
+    }
+    logicalToVisualPos(p: EditorPos): EditorPos {
+        let line = p.line;
+        let invisibleLines = this.editor.lines.take(line).where(t => !t.visible).length;
+        return { column: p.column, line: line - invisibleLines };
     }
 
     findFirstTextNode(node: Node): Text {

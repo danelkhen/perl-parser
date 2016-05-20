@@ -2,7 +2,7 @@
 "use strict";
 
 import {
-    Token, TokenType, 
+    Token, TokenType,
     AstWriter, ParserBase, ExpressionParser, Parser,
     AstNode, Expression, Statement, UnresolvedExpression, SimpleName, SubroutineDeclaration, SubroutineExpression, ArrayMemberAccessExpression, ArrayRefDeclaration,
     BarewordExpression, BeginStatement, BinaryExpression, Block, BlockExpression, BlockStatement, ElseStatement, ElsifStatement, EmptyStatement, EndStatement,
@@ -261,14 +261,14 @@ export class Editor {
         this.caretVisualPos.column = text.length + 1;
     }
     caretDocStart() {
-        this.caretVisualPos.line = 1;
-        this.caretVisualPos.column = 1;
+        this.setCaretLogicalPos({line:1, column:1});
         this.verifyCaretInView();
     }
     caretDocEnd() {
-        let text = this.getCurrentLineText();
-        this.caretVisualPos.line = this.lines.length;
-        this.caretVisualPos.column = text.length;
+        let line = this.lines.length;
+        let text = this.sourceFile.getLineText(line);
+        let column = text.length || 1;
+        this.setCaretLogicalPos({ line, column });
         this.verifyCaretInView();
     }
     caretSelectAll() {
@@ -358,6 +358,11 @@ export class Editor {
 
     get caretLogicalPos(): EditorPos {
         return this.binder.visualToLogicalPos(this.caretVisualPos);
+    }
+    setCaretLogicalPos(pos: EditorPos) {
+        let pos2 = this.binder.logicalToVisualPos(pos);
+        this.caretVisualPos.line = pos2.line;
+        this.caretVisualPos.column = pos2.column;
     }
 
 }
