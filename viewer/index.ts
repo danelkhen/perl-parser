@@ -2,7 +2,7 @@
 "use strict";
 
 import {
-    Token, TokenType, 
+    Token, TokenType,
     AstWriter, ParserBase, ExpressionParser, Parser,
     AstNode, Expression, Statement, UnresolvedExpression, SimpleName, SubroutineDeclaration, SubroutineExpression, ArrayMemberAccessExpression, ArrayRefDeclaration,
     BarewordExpression, BeginStatement, BinaryExpression, Block, BlockExpression, BlockStatement, ElseStatement, ElsifStatement, EmptyStatement, EndStatement,
@@ -581,6 +581,40 @@ export function main() {
 
 $(main);
 
+function consoleStyleRenderingTest() {
+    document.body.innerHTML = "";
+    let body = $.create("div").prependTo(document.body).css("font-family", "Source Code Pro");
+    let divs = [];
+    for (let line = 1; line < 50; line++) {
+        let div = $.create("div").appendTo(body);
+        let x = { el: div[0], spans: [] };
+        divs.push(x);
+        for (let col = 1; col < 200; col++) {
+            let span = $.create("span").text(Math.randomInt(1, 9)).appendTo(div);
+            x.spans.push(span[0]);
+        }
+    }
+
+    function redraw() {
+        let start = performance.now();
+        let rand = Math.randomInt(1, 9);
+        divs.forEach((div, line) => {
+            div.spans.forEach(span => {
+                let x = Math.randomInt(1, 9).toString().substr(0, 1);
+                let ch = span.firstChild;
+                if (x != ch.data)
+                    ch.data = (line + rand).toString().substr(0, 1);
+            });
+        });
+        let end = performance.now();
+        console.log((end - start) + "ms");
+    }
+    window.setTimeout(redraw, 1000);
+    window.setTimeout(redraw, 2000);
+    window.setTimeout(redraw, 3000);
+    window.setTimeout(redraw, 4000);
+    window.setTimeout(redraw, 5000);
+}
 
 //splitNewLineTokens() {
 //    let list: Token[] = [];

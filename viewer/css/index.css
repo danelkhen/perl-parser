@@ -138,15 +138,13 @@ a:target {
 .code-container .lines {
     width: 100%;
     position: absolute;
-    user-select: none;
     z-index: 0;
     color: #bbb;
     cursor: default;
-    position: absolute;
+    user-select: none;
     -webkit-user-select: none;
     -moz-user-select: none;
     -ms-user-select: none;
-    user-select: none;
 }
 
 
