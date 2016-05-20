@@ -1,5 +1,5 @@
 ﻿"use strict";
-import {Token, TokenType, TextRange2} from "./token";
+import {Token, TokenType, TextFileRange} from "./token";
 import {Tokenizer} from "./tokenizer";
 
 export class HereDocTokenType extends TokenType {
@@ -12,31 +12,12 @@ export class HereDocTokenType extends TokenType {
         if (range == null)
             return 0;
         let ender = tokenizer.cursor.captureAny(matchers).text;
-        //    range = tokenizer.cursor.next(/^<<\s*'[a-zA-Z0-9_]+'/);
-        //if (range != null) {
-        //    ender = range.text.substring(3, range.text.length - 1).trim();
-        //}
-        //else {
-        //    range = tokenizer.cursor.next(/^<<\s*[a-zA-Z0-9_]+/);
-        //    if (range == null)
-        //        return 0;
-        //    else
-        //        ender = range.text.substring(2).trim();
-        //}
         let newTokenType = TokenType._r(new RegExp("\\r?\\n[\\S\\s]*?\\r?\\n" + ender + "\\r?\\n"));
         newTokenType.name = "heredocValue";
         tokenizer.tempTokenTypes.push(newTokenType);
         let token = this.create(range);
         tokenizer.tokens.push(token);
         tokenizer.cursor.pos = range.end;
-
-        //let line = tokenizer.cursor.pos.line;
-        //while (line == tokenizer.cursor.pos.line)
-        //    tokenizer.next();
-        //let valueToken = newTokenType.tryTokenize(tokenizer);
-        //if (valueToken == null)
-        //    throw new Error();
-
         return 1;
     }
 
@@ -610,7 +591,7 @@ export class TokenTypes {
         TokenTypes.not,
     ];
 
-    static _matchPod(tokenizer: Tokenizer): TextRange2 {
+    static _matchPod(tokenizer: Tokenizer): TextFileRange {
         let cursor = tokenizer.cursor;
         if (cursor.pos.column > 1)
             return null;
@@ -627,7 +608,7 @@ export class TokenTypes {
             end = cut.end.index;//.index + 4;
         else
             end = cursor.file.text.length;
-        let range = new TextRange2(cursor.file, start.start, cursor.file.getPos(end));
+        let range = new TextFileRange(cursor.file, start.start, cursor.file.getPos(end));
         return range;
     }
 
@@ -639,7 +620,7 @@ export class TokenTypes {
         }
         return null;
     }
-    static _matchRegex(tokenizer: Tokenizer): TextRange2 { //figure out how to distinguish between regex and two divisions. a / b / c, is it a(/b/c), or (a / b) / c ?
+    static _matchRegex(tokenizer: Tokenizer): TextFileRange { //figure out how to distinguish between regex and two divisions. a / b / c, is it a(/b/c), or (a / b) / c ?
         let cursor = tokenizer.cursor;
         let lastToken = TokenTypes._findLastNonWhitespaceOrCommentToken(tokenizer.tokens);
         if (lastToken == null)
@@ -663,3 +644,20 @@ export class TokenTypes {
 
 
 }
+//    range = tokenizer.cursor.next(/^<<\s*'[a-zA-Z0-9_]+'/);
+//if (range != null) {
+//    ender = range.text.substring(3, range.text.length - 1).trim();
+//}
+//else {
+//    range = tokenizer.cursor.next(/^<<\s*[a-zA-Z0-9_]+/);
+//    if (range == null)
+//        return 0;
+//    else
+//        ender = range.text.substring(2).trim();
+//}
+//let line = tokenizer.cursor.pos.line;
+//while (line == tokenizer.cursor.pos.line)
+//    tokenizer.next();
+//let valueToken = newTokenType.tryTokenize(tokenizer);
+//if (valueToken == null)
+//    throw new Error();

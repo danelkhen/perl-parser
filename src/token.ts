@@ -1,7 +1,6 @@
 ﻿/// <reference path="extensions.ts" />
 "use strict";
 import {Tokenizer} from "./tokenizer";
-//import {TokenTypes} from "./token-types";
 
 export class TokenType {
     name: string;
@@ -11,13 +10,13 @@ export class TokenType {
     regex: RegExp;
     regexes: RegExp[];
 
-    create(range: TextRange2) {
+    create(range: TextFileRange) {
         return new Token(range, this);
     }
     create2(value: string) {
         return new Token(null, this, value);
     }
-    match(tokenizer: Tokenizer): TextRange2 {
+    match(tokenizer: Tokenizer): TextFileRange {
         throw new Error();
     }
 
@@ -87,11 +86,11 @@ export class TokenType {
 }
 
 export interface TokenMatcher {
-    (tokenizer: Tokenizer): TextRange2;
+    (tokenizer: Tokenizer): TextFileRange;
 }
 
 export class Token {
-    constructor(public range: TextRange2, public type: TokenType, value?: string) {
+    constructor(public range: TextFileRange, public type: TokenType, value?: string) {
         if (this.range == null)
             this.value = value;
         else
@@ -136,8 +135,8 @@ export class Token {
 
 
 
-export class TextRange2 {
-    constructor(public file: File2, public start: File2Pos, public end?: File2Pos) {
+export class TextFileRange {
+    constructor(public file: TextFile, public start: TextFilePos, public end?: TextFilePos) {
         if (this.end == null)
             this.end = this.start;
     }
@@ -146,7 +145,7 @@ export class TextRange2 {
     get text(): string { return this.file.text.substr(this.index, this.length); }
 }
 
-export class File2 {
+export class TextFile {
     constructor(name, text) {
         this.name = name;
         this.text = text;
@@ -155,7 +154,7 @@ export class File2 {
     name: string;
     text: string;
 
-    get startPos(): File2Pos { return this.getPos(0); }
+    get startPos(): TextFilePos { return this.getPos(0); }
     getLineStartIndex(line: number): number {
         if (line == 1)
             return 0;
@@ -183,10 +182,10 @@ export class File2 {
         }
         return line;
     }
-    getPos(index: number): File2Pos {
+    getPos(index: number): TextFilePos {
         let line = this.findLine(index);
         let lineIndex = this.getLineStartIndex(line);
-        let pos = new File2Pos();
+        let pos = new TextFilePos();
         pos.line = line; //lineIndex + 1;
         pos.column = index - lineIndex + 1;
         pos.index = index;
@@ -195,6 +194,41 @@ export class File2 {
         pos.file = this;
         return pos;
     }
+    getPos2(start: TextFilePos, length: number) {
+        if (length == 0)
+            return start;
+        let col = start.column;
+        let line = start.line;
+        let index = start.index;
+        for (let i = 1; i <= length; i++) {
+            index++;
+            if (start.file.text[index - 1] == "\n") {
+                line++;
+                col = 1;
+            }
+            else {
+                col++
+            }
+        }
+        let pos = new TextFilePos();
+        pos.file = start.file;
+        pos.line = line;
+        pos.column = col;
+        pos.index = index;
+        return pos;
+    }
+    getRange(index: number, length: number): TextFileRange {
+        let start = this.getPos(index);
+        let end = this.getPos(index + length);
+        let range = new TextFileRange(this, start, end);
+        return range;
+    }
+    getRange2(start: TextFilePos, length: number): TextFileRange {
+        let end = this.getPos2(start, length);
+        let range = new TextFileRange(this, start, end);
+        return range;
+    }
+
     scanNewLines() {
         let regex = /\n/g;
         while (true) {
@@ -207,67 +241,77 @@ export class File2 {
     newLineIndexes: number[] = [];
 }
 
-export class File2Pos {
+export class TextFilePos {
     line: number;
     column: number;
     index: number;
-    file: File2;
-    skip(length: number): File2Pos {
-        return this.file.getPos(this.index + length);
+    file: TextFile;
+    skip(length: number): TextFilePos {
+        return this.file.getPos2(this, length);//this.index + length);
     }
+    selectNext(length: number): TextFileRange {
+        return this.file.getRange2(this, length);
+    }
+    _nextText: string;
+    get nextText(): string {
+        if (this._nextText == null)
+            this._nextText = this.file.text.substr(this.index);
+        return this._nextText;
+    }
+    evalNext(regex: RegExp): TextFileRange {
+        var res = regex.exec(this.nextText);
+        if (res == null)
+            return null;
+        let start = this.skip(res.index);
+        let range = start.selectNext(res[0].length);
+        return range;
+    }
+    next(length: number): string {
+        return this.file.text.substr(this.index, length);
+    }
+
+    startsWith(s: string): boolean {
+        return this.next(s.length) == s;
+    }
+
 }
 
 
 export class Cursor {
-    constructor(public pos: File2Pos) {
+    constructor(public pos: TextFilePos) {
     }
 
     clone(): Cursor {
         return new Cursor(this.pos);
     }
-    get file(): File2 { return this.pos.file; }
+    get file(): TextFile { return this.pos.file; }
     get src(): string { return this.file.text; }
     get index(): number { return this.pos.index; }
     startsWith(s: string): boolean {
-        return this.get(s.length) == s;
+        return this.pos.startsWith(s);
     }
-    get(length) {
-        return this.src.substr(this.index, length);
-    }
-    next(regex: RegExp): TextRange2 {
-        let regex2 = regex;
-        let s = this.src.substr(this.index);
-        var res = regex2.exec(s);
-        if (res == null)
-            return null;
-        let range = this.getRange(this.index + res.index, res[0].length);
-        return range;
+    next(regex: RegExp): TextFileRange {
+        return this.pos.evalNext(regex);
     }
 
-    nextAny(list: RegExp[]): TextRange2 {
+    nextAny(list: RegExp[]): TextFileRange {
         return list.selectFirstNonNull(t => this.next(t));
     }
-    captureAny(list: RegExp[]): TextRange2 {
+    captureAny(list: RegExp[]): TextFileRange {
         return list.selectFirstNonNull(t => this.capture(t));
     }
 
-    capture(regex: RegExp): TextRange2 {
+    capture(regex: RegExp): TextFileRange {
         let regex2 = regex;
         let s = this.src.substr(this.index);
         var res = regex2.exec(s);
         if (res == null || res[1] == null) //res.length <= 1
             return null;
         let index = s.indexOf(res[1]);
-        let range = this.getRange(this.index + index, res[1].length);
+        let range = this.file.getRange(this.index + index, res[1].length);
         return range;
     }
 
-    getRange(index: number, length: number): TextRange2 {
-        let start = this.file.getPos(index);
-        let end = this.file.getPos(index + length);
-        let range = new TextRange2(this.file, start, end);
-        return range;
-    }
 
 }
 

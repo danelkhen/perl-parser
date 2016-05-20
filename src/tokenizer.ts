@@ -1,10 +1,10 @@
 ﻿"use strict";
 
-import {Token, File2, Cursor, TokenType} from "./token";
+import {Token, TextFile, Cursor, TokenType} from "./token";
 import {TokenTypes} from "./token-types";
 
 export class Tokenizer {
-    file: File2;
+    file: TextFile;
     cursor: Cursor;
     tempTokenTypes: TokenType[] = [];
     tokenTypes: TokenType[];

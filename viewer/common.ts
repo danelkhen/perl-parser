@@ -1,5 +1,5 @@
 ﻿import {
-    Token, TokenType, File2, File2Pos,
+    Token, TokenType, TextFile, TextFilePos,
     AstWriter, ParserBase, ExpressionParser, Parser,
     AstNode, Expression, Statement, UnresolvedExpression, SimpleName, SubroutineDeclaration, SubroutineExpression, ArrayMemberAccessExpression, ArrayRefDeclaration,
     BarewordExpression, BeginStatement, BinaryExpression, Block, BlockExpression, BlockStatement, ElseStatement, ElsifStatement, EmptyStatement, EndStatement,

@@ -1,7 +1,7 @@
 ﻿/// <reference path="../../src/extensions.ts" />
 "use strict";
 
-import {Token, TokenType, File2, } from "../../src/token";
+import {Token, TokenType, TextFile, } from "../../src/token";
 import {AstWriter} from "../../src/ast-writer";
 import {ParserBase} from "../../src/parser-base";
 import {ExpressionParser} from "../../src/expression-parser";
@@ -96,7 +96,7 @@ export class IndexPage {
         this.firstTime = false;
         this.code = data;
         let codeEl = $(".code").empty().text(data);
-        let file = new File2(filename, data);
+        let file = new TextFile(filename, data);
         let tok = new Tokenizer();
         tok.file = file;
         localStorage.setItem("pause", "1");

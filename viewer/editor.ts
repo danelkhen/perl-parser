@@ -2,7 +2,7 @@
 "use strict";
 
 import {
-    Token, TokenType, File2, File2Pos, TextRange2,
+    Token, TokenType, TextFile, TextFilePos, TextFileRange,
     AstWriter, ParserBase, ExpressionParser, Parser,
     AstNode, Expression, Statement, UnresolvedExpression, SimpleName, SubroutineDeclaration, SubroutineExpression, ArrayMemberAccessExpression, ArrayRefDeclaration,
     BarewordExpression, BeginStatement, BinaryExpression, Block, BlockExpression, BlockStatement, ElseStatement, ElsifStatement, EmptyStatement, EndStatement,
@@ -28,7 +28,7 @@ export class Editor {
     unit: Unit;
     tokens: Token[];
     caretVisualPos: EditorPos;
-    sourceFile: File2;
+    sourceFile: TextFile;
     binder: EditorDomBinder;
     codeHyperlinks: CodeHyperlink[] = [];
     visualLineCount = 10;
@@ -59,7 +59,7 @@ export class Editor {
     tokenizeAsync(filename: string, data: string): Promise<any> {
         this.code = data;
         let start = new Date();
-        this.sourceFile = new File2(filename, data);
+        this.sourceFile = new TextFile(filename, data);
         let tok = new Tokenizer();
         tok.onStatus = () => console.log("Tokenizer status: ", this.toPct(tok.cursor.index / tok.file.text.length));
         tok.file = this.sourceFile;
@@ -139,7 +139,7 @@ export class Editor {
             return y.column - x.column;
         return y.line - x.line;
     }
-    rangeContainsPos(range: TextRange2, pos: EditorPos): boolean {
+    rangeContainsPos(range: TextFileRange, pos: EditorPos): boolean {
         return this.comparePos(range.start, pos) >= 0 &&
             this.comparePos(range.end, pos) <= 0;
 

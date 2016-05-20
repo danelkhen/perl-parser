@@ -2,7 +2,7 @@
 "use strict";
 
 import {
-    Token, TokenType, File2, File2Pos,
+    Token, TokenType, TextFile, TextFilePos,
     AstWriter, ParserBase, ExpressionParser, Parser,
     AstNode, Expression, Statement, UnresolvedExpression, SimpleName, SubroutineDeclaration, SubroutineExpression, ArrayMemberAccessExpression, ArrayRefDeclaration,
     BarewordExpression, BeginStatement, BinaryExpression, Block, BlockExpression, BlockStatement, ElseStatement, ElsifStatement, EmptyStatement, EndStatement,
@@ -89,7 +89,7 @@ export class IndexPage {
             //Helper.dataBind($(".bottom-bar")[0], this);
             //Helper.repeat(".critique-row", res.violations);
             let hls = res.violations.select(violation => {
-                let pos = new File2Pos();
+                let pos = new TextFilePos();
                 pos.line = violation.source.location.line;
                 pos.column = violation.source.location.column;
                 let tokens = this.findTokens(pos, violation.source.code.length);
@@ -140,7 +140,7 @@ export class IndexPage {
         new Tooltip(opts);
     }
 
-    findTokens(pos: File2Pos, length: number): Token[] {
+    findTokens(pos: TextFilePos, length: number): Token[] {
         let token = this.findToken(pos);
         if (token == null)
             return [];
@@ -155,7 +155,7 @@ export class IndexPage {
         return list;
 
     }
-    findToken(pos: File2Pos): Token {
+    findToken(pos: TextFilePos): Token {
         return this.editor.tokens.first(t => t.range != null && t.range.start.line == pos.line && t.range.start.column == pos.column);
     }
 

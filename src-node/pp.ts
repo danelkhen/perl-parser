@@ -1,7 +1,7 @@
 ﻿import * as fs from "fs";
 import * as fs2 from "./fs2";
 import "../../../libs/corex";
-import {Token, TokenType, File2, } from "../src/token";
+import {Token, TokenType, TextFile, } from "../src/token";
 import {AstWriter} from "../src/ast-writer";
 import {ParserBase} from "../src/parser-base";
 import {ExpressionParser} from "../src/expression-parser";
@@ -123,7 +123,7 @@ class PerlParserTool {
     }
 
     parseUnit(filename: string, code: string): Unit {
-        let file = new File2(filename, code);
+        let file = new TextFile(filename, code);
         let tok = new Tokenizer();
         tok.file = file;
         tok.process();

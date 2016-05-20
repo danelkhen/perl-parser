@@ -1,4 +1,4 @@
-﻿import {Token, TokenType, TextRange2, File2, File2Pos} from "./token";
+﻿import {Token, TokenType, TextFileRange, TextFile, TextFilePos} from "./token";
 import {TokenTypes} from "./token-types";
 import {AstNode} from "./ast";
 
@@ -136,7 +136,7 @@ export class LogItem {
     level: LogLevel;
     token: Token;
     node: AstNode;
-    range: TextRange2;
+    range: TextFileRange;
     data: any;
     error: Error;
 
@@ -156,7 +156,7 @@ export class LogItem {
                     item.msg = arg;
             }
             else if (type == "object") {
-                if (arg instanceof TextRange2)
+                if (arg instanceof TextFileRange)
                     item.range = arg;
                 else if (arg instanceof Token)
                     item.token = arg;
@@ -178,7 +178,7 @@ export class LogItem {
         return item;
     }
 
-    getRange(): TextRange2 {
+    getRange(): TextFileRange {
         if (this.range != null)
             return this.range;
         if (this.token != null && this.token.range != null)
@@ -212,9 +212,9 @@ export class LogItem {
             return "";
         if (typeof (obj) != "object")
             return obj.toString();
-        if (obj instanceof TextRange2)
+        if (obj instanceof TextFileRange)
             return this.stringify(obj.start);
-        if (obj instanceof File2Pos)
+        if (obj instanceof TextFilePos)
             return obj.line + ":" + obj.column;
         return obj.toString();
         //if(obj instanceof LogItem)
