@@ -1,6 +1,6 @@
 {
     "compilerOptions": {
-        "module": "system",
+        "module": "amd",
         "moduleResolution": "node",
         "target": "es5",
         "noImplicitAny": false,

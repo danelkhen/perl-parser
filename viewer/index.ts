@@ -245,6 +245,20 @@ export class IndexPage {
         return path;
     }
 
+    testTokenize(code: string) {
+        if(code==null)
+            code = this.editor.sourceFile.text;
+        let start = performance.now();
+        let sourceFile = new TextFile("test.pm", code);
+        let tok = new Tokenizer();
+        tok.onStatus = () => console.log("Tokenizer status: ", this.editor.toPct(tok.cursor.index / tok.file.text.length));
+        tok.file = sourceFile;
+        //tok.process();
+        return tok.processAsync().then(() => {
+            let end = performance.now();
+            console.log("tokenization took " + (end - start) + "ms");
+        });
+    }
     update() {
         let url = this.getUrl();
         if (this.lastUrl == url)
