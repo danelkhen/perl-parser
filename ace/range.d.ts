@@ -1,0 +1,1 @@
+﻿export declare var Range: AceAjax.Range;
