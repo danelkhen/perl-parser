@@ -31,11 +31,14 @@ export class Tokenizer {
         if (tt == null)
             throw new Error();
     }
-    process() {
+    init() {
         this.tokens = [];
         this.cursor = new Cursor(this.file.startPos);
+    }
+    process() {
+        this.init();
         let cursor = this.cursor;
-        while (cursor.index < this.file.text.length) {
+        while (!this.isEof()) {
             this.next();
         }
     }
@@ -44,8 +47,7 @@ export class Tokenizer {
     onStatus() {
     }
     processAsync(): Promise<any> {
-        this.tokens = [];
-        this.cursor = new Cursor(this.file.startPos);
+        this.init();
         return new Promise((resolve, reject) => {
             this.resolve = resolve;
             this.lastStatusTime = Date.now();

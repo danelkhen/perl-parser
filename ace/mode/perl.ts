@@ -6,9 +6,10 @@ import {PerlHighlightRules} from "./perl_highlight_rules";
 import {MatchingBraceOutdent} from "./matching_brace_outdent";
 import {Range} from "../range";
 import {FoldMode as CStyleFoldMode} from "./folding/cstyle";
+import {Token} from "../../src/token";
 import {Tokenizer} from "../../src/tokenizer";
 import {TextFile} from "../../src/text";
-
+import "../../src/extensions";
 
 export class Mode extends TextMode {
     constructor() {
@@ -16,7 +17,6 @@ export class Mode extends TextMode {
         this.HighlightRules = PerlHighlightRules;
         this.$outdent = new MatchingBraceOutdent();
         this.foldingRules = new CStyleFoldMode({ start: "^=(begin|item)\\b", end: "^=(cut)\\b" });
-        this._tokenizer = new MyTokenizer();
     }
     HighlightRules: PerlHighlightRules;
     $outdent: MatchingBraceOutdent;
@@ -57,21 +57,23 @@ export class Mode extends TextMode {
         this.$outdent.autoOutdent(doc, row);
     };
 
-    _tokenizer: MyTokenizer;
-    _session: AceAjax.IEditSession;
+    session: AceAjax.IEditSession;
 
-    attachToSession(session) {
-        this._session = session;
-        this._tokenizer._session = session;
-        console.log("attachToSession", session);
+    attachToSession(session: AceAjax.IEditSession) {
+        if (this.session == session)
+            return;
+        this.session = session;
+        this.sessionChanged.emit();
     }
+    sessionChanged = new EventEmitter();
 
     getTokenizer() {
-        return this._tokenizer;
+        let x = new MyTokenizer();
+        x.mode = this;
+        x.init();
+        return x;
     }
-    $id:string;
-
-    //$id = "ace/mode/perl";
+    $id: string;
 }
 Mode.prototype.$id = "ace/mode/perl";
 
@@ -80,26 +82,44 @@ Mode.prototype.$id = "ace/mode/perl";
 
 
 class MyTokenizer {
-    _session: AceAjax.IEditSession;
-    getLineTokens(line, state, row?) {
-        if (state == null || typeof (state) == "string")
-            state = {};
-        if (state.lines == null) {
-            if (this._session != null) {
-                console.log("using session doc", this._session.doc);
-                state.lines = this._session.getDocument().getAllLines().toArray();
-            }
-            else {
-                state.lines = [];
-            }
+    session: AceAjax.IEditSession;
+    tokenizer: Tokenizer;
+    mode: Mode;
+    lines: string[] = [];
+    init() {
+        if (this.mode != null) {
+            let handler = () => {
+                this.mode.sessionChanged.remove(handler); //session is set immediatly after creating the tokenizer
+                this.attachToSession(this.mode.session);
+            };
+            this.mode.sessionChanged.add(handler);
         }
-        //let tok = state.tokenizer;
-        //if (tok == null)
-        let tok = new Tokenizer();
+    }
+    attachToSession(session) {
+        this.session = session;
+        this.lines = this.session.getDocument().getAllLines().toArray();
+        this.reset();
+    }
 
-        state.lines[row] = line;
-        tok.file = new TextFile("unknown.pm", state.lines.join("\n"));
-        tok.process();
+    reset() {
+        console.log("resetting tokenizer");
+        this.tokenizer = new Tokenizer();
+        this.tokenizer.file = new TextFile("unknown.pm", this.lines.join("\n"));
+        this.tokenizer.init();
+    }
+
+    getLineTokens(line: string, state: string, row?: number): AceAjax.TokenizerResult {
+        let lineNumber = row + 1;
+        if (this.lines[row] != line) {
+            this.lines[row] = line;
+            this.reset(); //TODO: optimize - clear only the tokens from this line forward, rewind to the proper pos, and continue from there.
+        }
+
+        let tok = this.tokenizer;
+        while (!tok.isEof() && tok.cursor.pos.line <= lineNumber) {
+            //console.log("MyTok", "tokenizer.next", tok.cursor.pos.line, tok.cursor.pos.column);
+            tok.next();
+        }
         let relevantTokens = [];
         for (let token of tok.tokens) {
             let startRow = token.range.start.line - 1;
@@ -114,34 +134,41 @@ class MyTokenizer {
             }
             let lines = token.value.lines();
             let newValue = lines[row - startRow];
-            //if (newValue != "")
-            relevantTokens.push({ type: token.type, value: newValue, isPartialToken: true });
+            if (newValue != "")
+                relevantTokens.push({ type: token.type, value: newValue, isPartialToken: true });
         }
-        let resetState = false;
-        if (relevantTokens.length > 0 && relevantTokens.last().isPartialToken)
-            resetState = true;
-        //let filteredTokens = state.tokenizer.tokens.filter(t=> row >= t.range.start.line && row <= t.range.end.line);
-        //tokens.forEach(token=> {
-        //    if (token.value.contains("\n")) {
-        //        token.value = token.value.lines()[0];
-        //    }
-        //});
-        let stateName = "no_tokens";
+        let newState = "no_tokens";
         if (relevantTokens.length > 0) {
             let lastToken = relevantTokens.last();
-            stateName = lastToken.type.name;
+            newState = lastToken.type.name;
             if (relevantTokens.first(t => t.type == "heredoc") != null)
-                stateName = "heredoc";
+                newState = "heredoc";
             if (lastToken.isPartialToken)
-                stateName += "_partial";
+                newState += "_partial";
         }
 
-        let tokens = relevantTokens.filter(t => t != null).map(t => ({ value: t.value, type: t.type.name }));
-        //tokens.removeAll(t=>t == "");
-
-        let res = { stateName, tokens, state: { lines: state.lines, toString: function () { return stateName; } } };//
+        let tokens: AceAjax.TokenInfo[] = relevantTokens.map(t => this.toTokenInfo(t));//.filter(t => t != null)
+        let res: AceAjax.TokenizerResult = { tokens, state: newState };//
+        console.log({ line_num: row + 1, line, state: state + " -> " + newState });
         //console.log("getLineTokens", { line_num: row + 1, line, stateName, state, tokens });
         return res;
     }
 
+    toTokenInfo(token: Token): AceAjax.TokenInfo {
+        return { value: token.value, type: token.type.name };
+    }
+
+}
+
+class EventEmitter {
+    handlers = [];
+    emit() {
+        this.handlers.forEach(handler => handler());
+    }
+    add(handler) {
+        this.handlers.push(handler);
+    }
+    remove(handler) {
+        this.handlers.remove(handler);
+    }
 }
