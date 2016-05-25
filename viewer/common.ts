@@ -12,6 +12,19 @@
 import {ChangeTracker} from "./monitor";
 
 export class Helper {
+    static tooltip(opts: TooltipOptions) {
+        if (opts.position == null)
+            opts.position = "bottom left";
+        if (opts.classes == null)
+            opts.classes = opts.target.className;
+        opts.classes += " tt";
+        new Tooltip(opts);
+    }
+
+    static toPct(x: number) {
+        return (x * 100).toFixed(0) + "%";
+    }
+
     static flattenArray<T>(list: Array<T | Array<T>>): T[] {
         let list2: T[] = [];
         list.forEach(t => {

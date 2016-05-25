@@ -5,7 +5,7 @@ var app = express();
 
 let rootDir = path.join(__dirname, "../..")
 console.log(rootDir);
-//let aceDir = path.join(rootDir, "../ace/lib/ace")
+let aceDir = path.join(rootDir, "../ace/lib/ace")
 
 
 app.use(function (req, res, next) {
@@ -14,9 +14,7 @@ app.use(function (req, res, next) {
     next();
 });
 
-//app.use("/res/ace", express.static(aceDir), (req, res) => {
-//    res.sendStatus(404);
-//});
+app.use("/res/ace", express.static(aceDir), (req, res) => res.sendStatus(404));
 app.use("/res", express.static(rootDir), express.static(path.join(rootDir, "built")), (req, res) => res.sendStatus(404));
 
 

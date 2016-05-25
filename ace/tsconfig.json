@@ -6,8 +6,7 @@
         "noImplicitAny": false,
         "sourceMap": false,
         "removeComments": false,
-        "outDir": "../../ace/lib"
-    },
-    "exclude": [
-    ]
+        "outDir": "../../ace/lib/ace",
+        "declaration": true
+    }
 }

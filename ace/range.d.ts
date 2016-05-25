@@ -1,1 +1,1 @@
-﻿export declare var Range: AceAjax.Range;
+﻿//export declare var Range: AceAjax.Range;

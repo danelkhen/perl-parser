@@ -1,15 +1,17 @@
 ﻿"use strict";
 
 //TODO: ? var oop = require("../lib/oop");
-import {Mode as TextMode} from "./text";
+import {Mode as TextMode} from "ace/mode/text";
 import {PerlHighlightRules} from "./perl_highlight_rules";
 import {MatchingBraceOutdent} from "./matching_brace_outdent";
-import {Range} from "../range";
+import {Range} from "ace/range";
 import {FoldMode as CStyleFoldMode} from "./folding/cstyle";
-import {Token} from "../../src/token";
-import {Tokenizer} from "../../src/tokenizer";
-import {TextFile} from "../../src/text";
-import "../../src/extensions";
+import {Token} from "perl-parser";
+import {Tokenizer} from "perl-parser";
+import {TextFile} from "perl-parser";
+import {IEditSession} from "ace/edit_session";
+import {TokenizerResult} from "ace/tokenizer";
+import {TokenInfo} from "ace/token_info";
 
 export class Mode extends TextMode {
     constructor() {
@@ -57,9 +59,9 @@ export class Mode extends TextMode {
         this.$outdent.autoOutdent(doc, row);
     };
 
-    session: AceAjax.IEditSession;
+    session: IEditSession;
 
-    attachToSession(session: AceAjax.IEditSession) {
+    attachToSession(session: IEditSession) {
         if (this.session == session)
             return;
         this.session = session;
@@ -67,7 +69,7 @@ export class Mode extends TextMode {
     }
     sessionChanged = new EventEmitter();
 
-    getTokenizer() {
+    getTokenizer(): any {
         let x = new MyTokenizer();
         x.mode = this;
         x.init();
@@ -82,7 +84,7 @@ Mode.prototype.$id = "ace/mode/perl";
 
 
 class MyTokenizer {
-    session: AceAjax.IEditSession;
+    session: IEditSession;
     tokenizer: Tokenizer;
     mode: Mode;
     lines: string[] = [];
@@ -97,6 +99,10 @@ class MyTokenizer {
     }
     attachToSession(session) {
         this.session = session;
+        this.session.on("change", e => {
+            this.lines = this.session.getDocument().getAllLines().toArray();
+            this.reset();
+        });
         this.lines = this.session.getDocument().getAllLines().toArray();
         this.reset();
     }
@@ -108,9 +114,10 @@ class MyTokenizer {
         this.tokenizer.init();
     }
 
-    getLineTokens(line: string, state: string, row?: number): AceAjax.TokenizerResult {
+    getLineTokens(line: string, state: string, row?: number): TokenizerResult {
         let lineNumber = row + 1;
         if (this.lines[row] != line) {
+            console.log({ lineNumber, prev: this.lines[row], now: line });
             this.lines[row] = line;
             this.reset(); //TODO: optimize - clear only the tokens from this line forward, rewind to the proper pos, and continue from there.
         }
@@ -147,20 +154,20 @@ class MyTokenizer {
                 newState += "_partial";
         }
 
-        let tokens: AceAjax.TokenInfo[] = relevantTokens.map(t => this.toTokenInfo(t));//.filter(t => t != null)
-        let res: AceAjax.TokenizerResult = { tokens, state: newState };//
-        console.log({ line_num: row + 1, line, state: state + " -> " + newState });
+        let tokens: TokenInfo[] = relevantTokens.map(t => this.toTokenInfo(t));//.filter(t => t != null)
+        let res: TokenizerResult = { tokens, state: newState };//
+        //console.log({ line_num: row + 1, line, fromState: state, toState: newState, stateChanged: state != newState });
         //console.log("getLineTokens", { line_num: row + 1, line, stateName, state, tokens });
         return res;
     }
 
-    toTokenInfo(token: Token): AceAjax.TokenInfo {
+    toTokenInfo(token: Token): TokenInfo {
         return { value: token.value, type: token.type.name };
     }
 
 }
 
-class EventEmitter {
+export class EventEmitter {
     handlers = [];
     emit() {
         this.handlers.forEach(handler => handler());

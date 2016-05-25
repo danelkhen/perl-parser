@@ -9,15 +9,20 @@ import {
     NamedMemberExpression, NativeFunctionInvocation, NativeInvocation_BlockAndListOrExprCommaList, NativeInvocation_BlockOrExpr, NonParenthesizedList, NoStatement,
     Operator, PackageDeclaration, ParenthesizedList, PostfixUnaryExpression, PrefixUnaryExpression, QwExpression, RawExpression, RawStatement, RegexExpression,
     ReturnExpression, TrinaryExpression, Unit, UnlessStatement, UseOrNoStatement, UseStatement, ValueExpression, VariableDeclarationExpression, VariableDeclarationStatement, WhileStatement,
-    AstQuery, PrecedenceResolver, TokenTypes, Tokenizer, safeTry, TokenReader, Logger, AstNodeFixator, TextFile, TextFilePos, TextFileRange, Cursor, 
+    AstQuery, PrecedenceResolver, TokenTypes, Tokenizer, safeTry, TokenReader, Logger, AstNodeFixator, TextFile, TextFilePos, TextFileRange, Cursor,
     ExpressionTester, EtReport, EtItem, RefArrayToRefUtil
 } from "perl-parser";
 import {PackageResolution, AsyncFunc, TreeNodeData, Expander, Helper} from "./common";
-import {P5Service, P5File, CritiqueResponse, CritiqueViolation} from "./p5-service";
+import {P5Service, P5File, CritiqueResponse, CritiqueViolation, GitBlameItem} from "./p5-service";
 import {monitor, Monitor} from "./monitor";
 import {Key, Rect, Size, Point} from "./common";
-import {Editor, CvLine, IndexSelection, TokenUtils, CodeHyperlink} from "./editor";
+import {Editor as Viewer, Collapsable, P5Editor, CvLine, IndexSelection, TokenUtils, CodeHyperlink} from "./editor";
 import {EditorConsoleBinder} from "./editor-console-binder";
+//import * as config from "ace/config";
+import * as ace from "ace/ace";
+import * as ModeList from "ace/ext/modelist";
+import {Editor} from "ace/editor";
+import {P5AceEditor} from "./p5-ace-editor";
 
 
 export class IndexPage {
@@ -27,8 +32,7 @@ export class IndexPage {
         this.selection = new IndexSelection();
     }
 
-    editor: Editor;
-
+    editor: P5Editor;
 
 
     isMouseDown = false;
@@ -61,7 +65,12 @@ export class IndexPage {
     }
     monitor: Monitor;
     main() {
-        this.editor = new Editor();
+        let viewerMode = true;
+        if(viewerMode)
+            this.editor = new Viewer();
+        else
+            this.editor = new P5AceEditor();
+
         this.editor.init();
 
         this.monitor = monitor;
@@ -95,7 +104,7 @@ export class IndexPage {
                     return;
                 let hl: CodeHyperlink = { tokens, css: "hl hl-violation" };
                 this.editor.hyperlinkNode(hl);
-                this.tooltip({ target: hl.anchorEl, content: `${violation.description}\n${violation.policy}\nseverity:${violation.severity}`, });
+                Helper.tooltip({ target: hl.anchorEl, content: `${violation.description}\n${violation.policy}\nseverity:${violation.severity}`, });
                 return { violation, hl };
                 //if (firstViolationLine == null)
                 //    firstViolationLine = violation.source.location.line;
@@ -119,27 +128,9 @@ export class IndexPage {
 
     gitBlame() {
         $(".code-container").addClass("git-blame-mode");
-        this.service.gitBlame(this.file.path).then(items => {
-            items.forEach(item => {
-                let line = this.editor.binder.getLineEl(parseInt(item.line_num));
-                $(line).find(".git-blame").remove();
-                let el = $.create(".git-blame");
-                el.getAppend("span.sha").text(item.sha);
-                el.getAppend("span.author").text(item.author);
-                this.tooltip({ target: el[0], content: [item.author, item.date, item.sha].join("\n") });
-                $(line).find(".line-number").before(el);
-            });
-        });
+        this.service.gitBlame(this.file.path).then(items => this.editor.setGitBlameItems(items));
     }
 
-    tooltip(opts: TooltipOptions) {
-        if (opts.position == null)
-            opts.position = "bottom left";
-        if (opts.classes == null)
-            opts.classes = opts.target.className;
-        opts.classes += " tt";
-        new Tooltip(opts);
-    }
 
     findTokens(pos: TextFilePos, length: number): Token[] {
         let token = this.findToken(pos);
@@ -242,12 +233,12 @@ export class IndexPage {
     }
 
     testTokenize(code: string) {
-        if(code==null)
+        if (code == null)
             code = this.editor.sourceFile.text;
         let start = performance.now();
         let sourceFile = new TextFile("test.pm", code);
         let tok = new Tokenizer();
-        tok.onStatus = () => console.log("Tokenizer status: ", this.editor.toPct(tok.cursor.index / tok.file.text.length));
+        tok.onStatus = () => console.log("Tokenizer status: ", Helper.toPct(tok.cursor.index / tok.file.text.length));
         tok.file = sourceFile;
         //tok.process();
         return tok.processAsync().then(() => {
@@ -307,7 +298,7 @@ export class IndexPage {
 
     dataBindNow() {
         Helper.dataBind(document.body, this, this);
-        this.editor.binder.notifyPossibleChanges();
+        this.editor.notifyPossibleChanges();
     }
 
     violation_click(e: JQueryEventObject, violation: CritiqueViolation) {
@@ -562,6 +553,7 @@ export class IndexPage {
 
 
 export function main() {
+
     window.onpopstate = e => {
         e.preventDefault();
         $(window).trigger("urlchange");
@@ -715,3 +707,7 @@ function testConsoleBinder() {
 //    }
 //}
 
+//config.init();
+//console.log(config);
+//console.log(ModeList);
+    //editor.tokenTooltip = new TokenTooltip(editor);

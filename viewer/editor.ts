@@ -19,9 +19,31 @@ import {P5Service, P5File, CritiqueResponse, CritiqueViolation} from "./p5-servi
 import {monitor, Monitor} from "./monitor";
 import {Key, Rect, Size, Point} from "./common";
 import {EditorDomBinder} from "./editor-dom-binder";
+import {GitBlameItem} from "./p5-service";
 
-export class Editor {
+export interface P5Editor {
+    init();
+    hyperlinkNode(opts: CodeHyperlink): HTMLAnchorElement;
+    scrollToLine(line: number);
+    tokens: Token[];
+    sourceFile: TextFile;
+    codeHyperlinks: CodeHyperlink[];
+    unit: Unit;
+    collapsables: Collapsable[];
+    collapsable(node: AstNode, tokens?: Token[]);
     code: string;
+    parse();
+    tokenizeAsync(filename: string, data: string): Promise<any>;
+    setGitBlameItems(items: GitBlameItem[]);
+    notifyPossibleChanges();
+
+}
+
+export class Editor implements P5Editor {
+    notifyPossibleChanges() {
+        this.binder.notifyPossibleChanges();
+    }
+    code:string;
     lines: CvLine[];
     isAllCollapsed: boolean;
     unit: Unit;
@@ -32,6 +54,17 @@ export class Editor {
     codeHyperlinks: CodeHyperlink[] = [];
     visualLineCount = 10;
     topVisualLine = 1;
+    setGitBlameItems(items: GitBlameItem[]) {
+        items.forEach(item => {
+            let line = this.binder.getLineEl(parseInt(item.line_num));
+            $(line).find(".git-blame").remove();
+            let el = $.create(".git-blame");
+            el.getAppend("span.sha").text(item.sha);
+            el.getAppend("span.author").text(item.author);
+            Helper.tooltip({ target: el[0], content: [item.author, item.date, item.sha].join("\n") });
+            $(line).find(".line-number").before(el);
+        });
+    }
 
 
 
@@ -52,15 +85,12 @@ export class Editor {
     }
 
 
-    toPct(x: number) {
-        return (x * 100).toFixed(0) + "%";
-    }
     tokenizeAsync(filename: string, data: string): Promise<any> {
         this.code = data;
         let start = new Date();
         this.sourceFile = new TextFile(filename, data);
         let tok = new Tokenizer();
-        tok.onStatus = () => console.log("Tokenizer status: ", this.toPct(tok.cursor.index / tok.file.text.length));
+        tok.onStatus = () => console.log("Tokenizer status: ", Helper.toPct(tok.cursor.index / tok.file.text.length));
         tok.file = this.sourceFile;
         //tok.process();
         return tok.processAsync().then(() => {
