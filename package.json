@@ -5,12 +5,13 @@
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "tsc -p src-node && node built/src-node/src-node/server.js"
+    "start": "tsc -p server && node built/server/server.js"
   },
   "author": "",
   "license": "ISC",
   "dependencies": {
     "express": "^4.13.4",
+    "requirejs": "^2.2.0",
     "systemjs": "^0.19.26"
   },
   "devDependencies": {}

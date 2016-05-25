@@ -1,16 +1,12 @@
 {
     "compilerOptions": {
-        "module": "commonjs",
+        "module": "amd",
         "moduleResolution": "node",
         "target": "es5",
         "noImplicitAny": false,
         "sourceMap": false,
         "removeComments": false,
-        "outDir": "../built/src-node"
-    },
-    "exclude": [
-        "../typings",
-        "../node_modules",
-        "../test"
-    ]
+        "outFile": "../built/perl-parser/perl-parser.js",
+        "declaration": true
+    }
 }

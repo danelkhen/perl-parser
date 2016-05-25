@@ -1,5 +1,7 @@
 {
-    "dependencies": {},
+    "dependencies": {
+        "requirejs": "registry:npm/requirejs#2.2.0+20160319062357"
+    },
     "devDependencies": {},
     "globalDependencies": {
         "ace": "registry:dt/ace#0.0.0+20160317120654",

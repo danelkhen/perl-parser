@@ -1,5 +1,4 @@
-﻿/// <reference path="../src/extensions.ts" />
-"use strict";
+﻿"use strict";
 
 
 export class P5Service {

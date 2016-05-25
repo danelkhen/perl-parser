@@ -5,5 +5,6 @@
 /// <reference path="../typings/globals/express-serve-static-core/index.d.ts" />
 /// <reference path="../typings/globals/serve-static/index.d.ts" />
 /// <reference path="../typings/globals/mime/index.d.ts" />
+/// <reference path="../built/perl-parser/perl-parser.d.ts" />
 
 

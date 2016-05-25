@@ -1,7 +1,6 @@
 ﻿"use strict";
 import {Token, TokenType} from "./token";
 import {AstWriter} from "./ast-writer";
-import {ParserBase} from "./parser-base";
 import {ExpressionParser} from "./expression-parser";
 import {Parser} from "./parser";
 import {PrecedenceResolver} from "./precedence-resolver";

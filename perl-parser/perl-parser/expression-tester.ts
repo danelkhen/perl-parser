@@ -1,10 +1,9 @@
 ﻿import "../../../libs/corex";
-import {Token, TokenType, } from "../src/token";
+import {Token, TokenType, } from "./token";
 import {TextFile, TextFilePos, TextFileRange, Cursor} from "./text";
-import {AstWriter} from "../src/ast-writer";
-import {ParserBase} from "../src/parser-base";
-import {ExpressionParser} from "../src/expression-parser";
-import {Parser} from "../src/parser";
+import {AstWriter} from "./ast-writer";
+import {ExpressionParser} from "./expression-parser";
+import {Parser} from "./parser";
 import {
 AstNode, Expression, Statement, UnresolvedExpression, SimpleName, SubroutineDeclaration, SubroutineExpression, ArrayMemberAccessExpression, ArrayRefDeclaration,
 BarewordExpression, BeginStatement, BinaryExpression, Block, BlockExpression, BlockStatement, ElseStatement, ElsifStatement, EmptyStatement, EndStatement,
@@ -14,13 +13,13 @@ Operator, PackageDeclaration, ParenthesizedList, PostfixUnaryExpression, PrefixU
 ReturnExpression, TrinaryExpression, Unit, UnlessStatement, UseOrNoStatement, UseStatement, ValueExpression, VariableDeclarationExpression, VariableDeclarationStatement, WhileStatement,
 HasArrow, HasLabel,
 AstQuery,
-} from "../src/ast";
-import {PrecedenceResolver} from "../src/precedence-resolver";
-import {TokenTypes} from "../src/token-types";
-import {Tokenizer} from "../src/tokenizer";
-import {safeTry, TokenReader, Logger, AstNodeFixator} from "../src/utils";
-import "../src/extensions";
-import {Refactor} from "../src/refactor";
+} from "./ast";
+import {PrecedenceResolver} from "./precedence-resolver";
+import {TokenTypes} from "./token-types";
+import {Tokenizer} from "./tokenizer";
+import {safeTry, TokenReader, Logger, AstNodeFixator} from "./utils";
+import "./extensions";
+import {Refactor} from "./refactor";
 
 
 export class ExpressionTester {

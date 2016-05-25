@@ -1,5 +1,4 @@
-﻿/// <reference path="../src/extensions.ts" />
-"use strict";
+﻿"use strict";
 
 import {
     Token, TokenType,
@@ -12,11 +11,10 @@ import {
     ReturnExpression, TrinaryExpression, Unit, UnlessStatement, UseOrNoStatement, UseStatement, ValueExpression, VariableDeclarationExpression, VariableDeclarationStatement, WhileStatement,
     AstQuery, PrecedenceResolver, TokenTypes, Tokenizer, safeTry, TokenReader, Logger, AstNodeFixator,
     TextFile, TextFilePos, TextFileRange, Cursor,
-} from "../src/index";
+} from "perl-parser";
 import {PackageResolution, AsyncFunc, TreeNodeData, Expander, Helper} from "./common";
-import "../src/extensions";
-import {RefArrayToRefUtil} from "../src/refactor";
-import {ExpressionTester, EtReport, EtItem} from "../src/expression-tester";
+import {RefArrayToRefUtil} from "perl-parser";
+import {ExpressionTester, EtReport, EtItem} from "perl-parser";
 import {P5Service, P5File, CritiqueResponse, CritiqueViolation} from "./p5-service";
 import {monitor, Monitor} from "./monitor";
 import {Key, Rect, Size, Point} from "./common";
