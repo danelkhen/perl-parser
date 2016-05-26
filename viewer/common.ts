@@ -10,6 +10,7 @@
     AstQuery, PrecedenceResolver, TokenTypes, Tokenizer, safeTry, TokenReader, Logger, AstNodeFixator,
 } from "perl-parser";
 import {ChangeTracker} from "./monitor";
+import {PerlModuleClassify} from "./p5-service";
 
 export class Helper {
     static tooltip(opts: TooltipOptions) {
@@ -267,6 +268,7 @@ export interface PackageResolution {
     node?: AstNode;
     name?: string;
     resolvedIncludePath?: string;
+    resolved:PerlModuleClassify;
 }
 
 
@@ -510,4 +512,9 @@ export enum Key {
     CLOSE_BRACKET = 221,
     QUOTE = 222,
     META = 224,
+}
+
+
+interface ObjectMap<T> {
+    [key:string]:T;
 }

@@ -27,8 +27,9 @@ export class P5AceEditor implements P5Editor {
         this.editor = ace.edit("editor");
         this.editor.session.setMode("ace/mode/perl");
         this.editor.setTheme("ace/theme/vs");
+        this.editor.focus();
     }
-    editor:Editor;
+    editor: Editor;
     hyperlinkNode(opts: CodeHyperlink): HTMLAnchorElement {
         return null;
     }
@@ -39,11 +40,13 @@ export class P5AceEditor implements P5Editor {
     unit: Unit;
     collapsables: Collapsable[];
     collapsable(node: AstNode, tokens?: Token[]) { }
+
     get code(): string { return this.editor.getValue(); }
-    set code(value: string) { this.editor.setValue(value); }
+    set code(value: string) { this.editor.setValue(value); this.editor.moveCursorTo(0, 0, false); }
+
     parse() { }
     tokenizeAsync(filename: string, data: string): Promise<any> {
-        return null;
+        return new Promise<any>((resolve, reject) => resolve());
     }
     setGitBlameItems(items: GitBlameItem[]) {
     }

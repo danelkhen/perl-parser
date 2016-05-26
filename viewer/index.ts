@@ -59,14 +59,24 @@ export class IndexPage {
         return this.service.fs(url).then(t => include);
     }
 
-    resolvePackage(pkg: PackageResolution): Promise<string> {
-        let funcs = Helper.selectAsyncFuncs(this.includes, t => this.resolvePackageWithInclude(pkg.name, t));
-        return Helper.firstSuccess(funcs).catch(t => null).then(t => pkg.resolvedIncludePath = t);
+    resolvePackages(pkgs: PackageResolution[]): Promise<any> {
+        return this.service.perlModuleClassify(pkgs.map(t => t.name)).then(res => {
+            res.forEach(mod => {
+                let pkg = pkgs.first(t => t.name == mod.name);
+                if (pkg == null)
+                    return;
+                pkg.resolved = mod;
+            });
+        });
     }
+    //resolvePackage(pkg: PackageResolution): Promise<string> {
+    //    let funcs = Helper.selectAsyncFuncs(this.includes, t => this.resolvePackageWithInclude(pkg.name, t));
+    //    return Helper.firstSuccess(funcs).catch(t => null).then(t => pkg.resolvedIncludePath = t);
+    //}
     monitor: Monitor;
     main() {
         let viewerMode = true;
-        if(viewerMode)
+        if (viewerMode)
             this.editor = new Viewer();
         else
             this.editor = new P5AceEditor();
@@ -81,14 +91,26 @@ export class IndexPage {
 
         this.update();
 
-        $(window).on("urlchange", e => { console.log(e); this.update(); });
+        $(window).on("urlchange", e => this.window_urlchange(e));
+    }
+
+    url: { pathname: string, hash: string, href: string };
+    window_urlchange(e: JQueryEventObject) {
+        let loc = document.location;
+        let prevUrl = this.url;
+        this.url = { pathname: loc.pathname, hash: loc.hash, href: loc.href };
+        console.log("urlchange", e, prevUrl, this.url);
+        console.log(e);
+        this.update();
     }
     //pageSize: number;
 
 
     critiqueRes: CritiqueResponse;
     critique() {
-        this.service.critique(this.file.path).then(res => {
+        //this.service.perlDoc("use").then(e=>console.log(e));
+        //this.service.perlModuleClassify(["Bookings::JSON::Schema::Helper", "Try::Tiny"]).then(e=>console.log(e));
+        this.service.perlCritique(this.file.path).then(res => {
             this.critiqueRes = res;
             console.log(res);
             //let firstViolationLine = null;
@@ -209,7 +231,7 @@ export class IndexPage {
         this.saveSelection();
     }
     saveSelection() {
-        history.replaceState(undefined, undefined, "#" + this.selection.toParam());
+        history.replaceState(undefined, undefined, window.location.pathname + "#" + this.selection.toParam());
         $(window).trigger("urlchange");
         //location.hash = this.selection.toParam();
         //console.log(this.selection.toParam());
@@ -432,26 +454,41 @@ export class IndexPage {
         });
         builtins.forEach(node => {
             let name = node.toCode().trim();
-            this.editor.hyperlinkNode({ node, href: "http://perldoc.perl.org/functions/" + name + ".html", name, title: "(builtin function) " + name + "\nctrl+click to open documentation", css: "builtin-function", target: "_blank" });
+            let anchor = this.editor.hyperlinkNode({ node, href: "http://perldoc.perl.org/functions/" + name + ".html", name, title: "(builtin function) " + name + "\nctrl+click to open documentation", css: "builtin-function", target: "_blank" });
+            console.log(anchor);
+            this.service.perlDocHtml({ funcName: name }).then(html => { //TODO: cache same funcs
+                if (anchor == null)
+                    return;
+                let html2 = html.substringBetween("<!-- start doc -->", "<!-- end doc -->");
+                let html3 = `<div class='pod'>${html2}</div>`;
+                Helper.tooltip({ target: anchor, content: html3, classes: "perldoc", });
+            });
         });
         pragmas.forEach(node => {
             let name = node.toCode().trim();
             this.editor.hyperlinkNode({ node, href: "http://perldoc.perl.org/" + name + ".html", name, title: "(pragma) " + name + "\nctrl+click to open documentation", target: "_blank" });
         });
 
-        let resolutions: PackageResolution[] = inUse.select(node => ({ node: node, name: node.toCode().trim() }));
-        resolutions.forEach(pkg => {
-            this.resolvePackage(pkg)
-                .then(t => {
-                    //console.log(pkg);
-                    let href = null;//"#"+pkg.name;//null;
-                    if (pkg.resolvedIncludePath != null)
-                        href = this.getCvUrlForIncludeAndPacakge(pkg.resolvedIncludePath, pkg.name);
-                    else
-                        href = "https://metacpan.org/pod/" + pkg.name;
-                    this.editor.hyperlinkNode({ node: pkg.node, href, name: pkg.name, title: "(package) " + pkg.name + "\nctrl+click to open documentation", css: "package-name" });
-                });
+        let resolutions: PackageResolution[] = inUse.select(node => ({ node: node, name: node.toCode().trim(), resolved: null }));
+        this.resolvePackages(resolutions).then(() => {
+            resolutions.forEach(pkg => {
+                if (pkg.resolved == null)
+                    return;
+                let href = null;//"#"+pkg.name;//null;
+                if (pkg.resolved.path != null)
+                    href = this.cvBaseUrl + pkg.resolved.path;
+                else if (pkg.resolved.url != null)
+                    href = pkg.resolved.url;//"https://metacpan.org/pod/" + pkg.name;
+                this.editor.hyperlinkNode({ node: pkg.node, href, name: pkg.name, title: "(package) " + pkg.name + "\nctrl+click to open documentation", css: "package-name" });
+            });
         });
+
+        //resolutions.forEach(pkg => {
+        //    this.resolvePackage(pkg)
+        //        .then(t => {
+        //            //console.log(pkg);
+        //        });
+        //});
         let packages = resolutions.select(t => t.name);
         refs.forEach(node => {
             let pkg = node.toCode();
@@ -460,21 +497,24 @@ export class IndexPage {
                 this.editor.hyperlinkNode({ node, href: "#" + pkg });
             }
         });
-        subs.forEach(sub => {
-            this.editor.collapsable(sub.block);
-        });
-        this.findConsecutiveRepetitions(this.editor.tokens, (x, y) => x.isAny([TokenTypes.comment, TokenTypes.whitespace]) && y.isAny([TokenTypes.comment, TokenTypes.whitespace])).forEach(comments => {
-            while (comments.length > 0 && comments.last().is(TokenTypes.whitespace))
-                comments.removeLast();
-            while (comments.length > 0 && comments.first().is(TokenTypes.whitespace))
-                comments.removeAt(0);
-            if (comments.length <= 1)
-                return;
-            let text = comments.select(t => t.value).join("");
-            if (text.lines().length > 3) {
-                this.editor.collapsable(null, comments);
-            }
-        });
+        let enableCollapsing = false;
+        if (enableCollapsing) {
+            subs.forEach(sub => {
+                this.editor.collapsable(sub.block);
+            });
+            this.findConsecutiveRepetitions(this.editor.tokens, (x, y) => x.isAny([TokenTypes.comment, TokenTypes.whitespace]) && y.isAny([TokenTypes.comment, TokenTypes.whitespace])).forEach(comments => {
+                while (comments.length > 0 && comments.last().is(TokenTypes.whitespace))
+                    comments.removeLast();
+                while (comments.length > 0 && comments.first().is(TokenTypes.whitespace))
+                    comments.removeAt(0);
+                if (comments.length <= 1)
+                    return;
+                let text = comments.select(t => t.value).join("");
+                if (text.lines().length > 3) {
+                    this.editor.collapsable(null, comments);
+                }
+            });
+        }
         this.editor.tokens.where(t => t.is(TokenTypes.pod) && t.value.lines().length > 3).forEach(pod => {
             this.editor.collapsable(null, [pod]);
         });
@@ -553,7 +593,6 @@ export class IndexPage {
 
 
 export function main() {
-
     window.onpopstate = e => {
         e.preventDefault();
         $(window).trigger("urlchange");

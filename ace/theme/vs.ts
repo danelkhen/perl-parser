@@ -4,15 +4,15 @@ let theme = {
     cssClass: "ace-vs",
     cssText: `
 .ace-vs .ace_gutter {
-  background: #ebebeb;
-  color: #333;
+  color: #bbb;
   overflow : hidden;
+  border-right: solid 1px #eee;
 }
 
-.ace-vs .ace_print-margin {
+/*.ace-vs .ace_print-margin {
   width: 1px;
   background: #e8e8e8;
-}
+} */
 
 .ace-vs {
   background-color: #FFFFFF;
@@ -20,7 +20,7 @@ let theme = {
 }
 
 .ace-vs .ace_cursor {
-  color: black;
+  border-left:1px solid #333;
 }
 
 .ace-vs .ace_invisible {
@@ -124,11 +124,11 @@ let theme = {
 }
 
 .ace-vs .ace_marker-layer .ace_active-line {
-  background: rgba(0, 0, 0, 0.07);
+  background: rgba(200, 200, 200, 0.2);
 }
 
 .ace-vs .ace_gutter-active-line {
-    background-color : #dcdcdc;
+  background: rgba(200, 200, 200, 0.2);
 }
 
 .ace-vs .ace_marker-layer .ace_selected-word {

@@ -444,3 +444,11 @@ a.btn {
 .console{
     font-family:'Source Code Pro';
 }
+
+
+.tooltip.perldoc {
+    max-height:30%;
+    overflow:auto;
+    white-space:normal;
+
+}
