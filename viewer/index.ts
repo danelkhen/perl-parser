@@ -76,7 +76,7 @@ export class IndexPage {
     //}
     aceMode = true;
     monitor: Monitor;
-    get aceEditor(): Editor { return (<P5AceEditor>this.editor).editor; }
+    get p5Editor(): P5AceEditor { return <P5AceEditor>this.editor; }
     main() {
         this.monitor = monitor;
         this.selection.fromParam(location.hash.substr(1));
@@ -84,10 +84,10 @@ export class IndexPage {
             $("body").addClass("ace-mode");
             this.editor = new P5AceEditor();
             this.editor.init();
-            this.aceEditor.selection.on("changeSelection", e => {
+            this.p5Editor.editor.selection.on("changeSelection", e => {
                 if (this.file == null)
                     return;
-                let range = this.aceEditor.selection.getRange();
+                let range = this.p5Editor.editor.selection.getRange();
                 this.selection.ranges = [new IndexRange(range.start.row + 1, range.end.row + 1)];
                 this.saveSelection();
             });
@@ -109,8 +109,8 @@ export class IndexPage {
         let loc = document.location;
         let prevUrl = this.url;
         this.url = { pathname: loc.pathname, hash: loc.hash, href: loc.href };
-        console.log("urlchange", e, prevUrl, this.url);
-        console.log(e);
+        //console.log("urlchange", e, prevUrl, this.url);
+        //console.log(e);
         this.update();
     }
     //pageSize: number;
@@ -128,15 +128,23 @@ export class IndexPage {
             //Helper.dataBind($(".bottom-bar")[0], this);
             //Helper.repeat(".critique-row", res.violations);
             let hls = res.violations.select(violation => {
-                let pos = new TextFilePos();
-                pos.line = violation.source.location.line;
-                pos.column = violation.source.location.column;
+                let pos = this.editor.sourceFile.getPos3(violation.source.location.line, violation.source.location.column);
+                //let pos = new TextFilePos();
+                //pos.line = violation.source.location.line;
+                //pos.column = violation.source.location.column;
                 let tokens = this.findTokens(pos, violation.source.code.length);
                 if (tokens == null)
                     return;
                 let hl: CodeHyperlink = { tokens, css: "hl hl-violation" };
-                this.editor.hyperlinkNode(hl);
-                Helper.tooltip(hl.anchorEl, { content: `${violation.description}\n${violation.policy}\nseverity:${violation.severity}`, });
+                let text = `${violation.description}\n${violation.policy}\nseverity:${violation.severity}`;
+                if (this.aceMode) {
+                    let range = this.editor.sourceFile.getRange2(pos, violation.source.code.length);
+                    this.p5Editor.addMarker({ range, className: "marker marker-violation", annotation: { text, type: "error" } });
+                }
+                else {
+                    this.editor.hyperlinkNode(hl);
+                    Helper.tooltip(hl.anchorEl, { content: text, });
+                }
                 return { violation, hl };
                 //if (firstViolationLine == null)
                 //    firstViolationLine = violation.source.location.line;
@@ -251,7 +259,7 @@ export class IndexPage {
         if (this.aceMode) {
             let range = this.selection.lastRange;
             if (range != null)
-                this.aceEditor.selection.setRange(new Range(range.from - 1, 0, range.to - 1, 0), false);
+                this.p5Editor.editor.selection.setRange(new Range(range.from - 1, 0, range.to - 1, 0), false);
             return;
         }
         let obj: { [key: string]: boolean } = {};
@@ -302,7 +310,7 @@ export class IndexPage {
                 this.service.src(url).then(data => {
                     this.file.src = data;
                     this.editor.code = data;
-                    if(this.aceMode)
+                    if (this.aceMode)
                         this.renderSelection();
                     window.setTimeout(() => {
                         this.editor.tokenizeAsync(url, data).then(() => {
@@ -342,7 +350,6 @@ export class IndexPage {
     }
 
     violation_click(e: JQueryEventObject, violation: CritiqueViolation) {
-        console.log(e, violation);
         this.editor.scrollToLine(violation.source.location.line);
     }
 

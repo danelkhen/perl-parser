@@ -9,6 +9,12 @@ export class TextFileRange {
     get index(): number { return this.start.index; }
     get length(): number { return this.end.index - this.start.index; }
     get text(): string { return this.file.text.substr(this.index, this.length); }
+    containsPos(pos: TextFilePos): boolean {
+        let start = this.start;
+        let end = this.end;
+        var contains = this.start.compareWith(pos) >= 0 && this.end.compareWith(pos) <= 0;
+        return contains;
+    }
 }
 
 export class TextFile {
@@ -37,7 +43,7 @@ export class TextFile {
     //    return nextLineStartIndex - 1;
     //}
     getLineText(line: number): string {
-        return this.lines[line-1];
+        return this.lines[line - 1];
     }
     findLine(index: number): number {
         let line = 1;
@@ -48,6 +54,12 @@ export class TextFile {
             line++;
         }
         return line;
+    }
+    getPos3(line: number, column: number): TextFilePos {
+        let lineStartIndex = this.getLineStartIndex(line);
+        let lineStartPos = this.getPos(lineStartIndex);
+        let pos = this.getPos2(lineStartPos, column-1);
+        return pos;
     }
     getPos(index: number): TextFilePos {
         let line = this.findLine(index);
@@ -96,7 +108,7 @@ export class TextFile {
         return range;
     }
 
-    lines:string[];
+    lines: string[];
     scanNewLines() {
         this.lines = this.text.split(/\n/g);
         let regex = /\n/g;
@@ -141,6 +153,18 @@ export class TextFilePos {
 
     startsWith(s: string): boolean {
         return this.next(s.length) == s;
+    }
+
+    equalsTo(pos: TextFilePos): boolean {
+        return this.compareWith(pos) == 0;
+    }
+    compareWith(pos: TextFilePos): number {
+        if (pos.line == this.line) {
+            if (pos.column == this.column)
+                return 0;
+            return pos.column - this.column;
+        }
+        return pos.line - this.line;
     }
 
 }

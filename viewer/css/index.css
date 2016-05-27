@@ -462,14 +462,24 @@ a.btn {
 }
 
 
-.ace-mode .layout, .ace-mode .loading, .ace-mode .debug {
+.ace-mode .code-container {
     display: none;
 }
 
+.ace-mode .code-view{
+    position:relative;
+}
 .ace-mode #editor {
     position: absolute;
     left: 0;
     top: 0;
     right: 0;
     bottom: 0;
+}
+
+.marker{
+    position:absolute;
+}
+.marker-violation{
+    border-bottom: 1px dashed red;
 }

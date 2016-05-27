@@ -497,9 +497,10 @@ declare module "ace/edit_session" {
 
         /**
          * Adds a new marker to the given `Range`. If `inFront` is `true`, a front marker is defined, and the `'changeFrontMarker'` event fires; otherwise, the `'changeBackMarker'` event fires.
+         * type can be: fullLine, screenLine, text (automatically set if multiline range)
          * @param range Define the range of the marker
          * @param clazz Set the CSS class for the marker
-         * @param type Identify the type of the marker
+         * @param type Identify the type of the marker - fullLine, screenLine, text...
          * @param inFront Set to `true` to establish a front marker
         **/
         addMarker(range: Range, clazz: string, type: string, inFront: boolean): number;

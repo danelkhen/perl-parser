@@ -39,11 +39,12 @@ export interface P5Editor {
 
 }
 
+
 export class Editor implements P5Editor {
     notifyPossibleChanges() {
         this.binder.notifyPossibleChanges();
     }
-    code:string;
+    code: string;
     lines: CvLine[];
     isAllCollapsed: boolean;
     unit: Unit;

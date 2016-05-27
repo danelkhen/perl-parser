@@ -36,7 +36,6 @@
 <body>
     <div class="loading">Loading...</div>
     <div class="debug"></div>
-    <div id="editor"></div>
     <table class="layout">
         <tr class="top">
             <td>
@@ -59,6 +58,7 @@
                     </table>
                 </div>
                 <div _if="isFile()" class="code-view">
+                    <div id="editor" _ignore></div>
                     <div class="code-container" _ignore>
                         <div class="lines"><div class="line"><div class="line-overlay"></div><a class="line-number">1</a><div class="expander-container"></div></div></div>
                         <div class="td-code"><div class="code"></div><textarea class="caret" spellcheck="false"></textarea></div>
