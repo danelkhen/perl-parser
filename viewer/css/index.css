@@ -460,3 +460,16 @@ a.btn {
 .popover-title {
     padding: 8px 4px;
 }
+
+
+.ace-mode .layout, .ace-mode .loading, .ace-mode .debug {
+    display: none;
+}
+
+.ace-mode #editor {
+    position: absolute;
+    left: 0;
+    top: 0;
+    right: 0;
+    bottom: 0;
+}

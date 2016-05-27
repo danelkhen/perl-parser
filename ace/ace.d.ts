@@ -81,6 +81,7 @@ declare module "ace/background_tokenizer" {
 }
 declare module "ace/range" {
     import {IEditSession} from "ace/edit_session";
+    import {Position} from "ace/position";
     /**
  * This object is used in various places to indicate a region within the editor. To better visualize how this works, imagine a rectangle. Each quadrant of the rectangle is analogus to a range, as ranges contain a starting row and starting column, and an ending row, and ending column.
 **/
@@ -289,6 +290,9 @@ declare module "ace/edit_session" {
     import {UndoManager} from "ace/undo_manager";
     import {Annotation} from "ace/annotation";
     import {Document} from "ace/document";
+    import {Selection} from "ace/selection";
+    import {Range} from "ace/range";
+    import {Position} from "ace/position";
 
     /**
      * Stores all the data about [[Editor `Editor`]] state providing easy way to change editors state.
@@ -1004,6 +1008,7 @@ declare module "ace/ace" {
     export = ace;
 }
 declare module "ace/anchor" {
+    import {Document} from "ace/document";
 
     ////////////////
     /// Anchor
@@ -1061,6 +1066,8 @@ declare module "ace/anchor" {
 }
 declare module "ace/document" {
     import {Delta} from "ace/delta";
+    import {Position} from "ace/position";
+    import {Range} from "ace/range";
 
 
     ////////////////
@@ -1260,6 +1267,9 @@ declare module "ace/editor" {
     import {IEditSession} from "ace/edit_session";
     import {VirtualRenderer} from "ace/virtual_renderer";
     import {KeyBinding} from "ace/key_binding";
+    import {Selection} from "ace/selection";
+    import {Position} from "ace/position";
+    import {Range} from "ace/range";
 
     ////////////////////////////////
     /// EditSession
@@ -2058,6 +2068,8 @@ declare module "ace/place_holder" {
     }
 }
 declare module "ace/range_list" {
+    import {Range} from "ace/range";
+    import {Position} from "ace/position";
 
     ////////////////
     /// RangeList
@@ -2214,10 +2226,12 @@ declare module "ace/search" {
 }
 declare module "ace/selection" {
     import {IEditSession} from "ace/edit_session";
+    import {Range} from "ace/range";
     ////////////////
     /// Search
     ////////////////
 
+    
     /**
      * Contains the cursor position and the text selection of an edit session.
      * The row/columns used in the selection are in document coordinates representing ths coordinates as thez appear in the document before applying soft wrap and folding.
@@ -2235,6 +2249,8 @@ declare module "ace/selection" {
         setSelectionRange(match: any): void;
 
         getAllRanges(): Range[];
+
+        getLineRange(): Range;
 
         on(event: string, fn: (e: any) => any): void;
 

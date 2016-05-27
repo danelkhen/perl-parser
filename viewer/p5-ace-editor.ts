@@ -29,6 +29,7 @@ export class P5AceEditor implements P5Editor {
         this.editor.setTheme("ace/theme/vs");
         this.editor.focus();
     }
+
     editor: Editor;
     hyperlinkNode(opts: CodeHyperlink): HTMLAnchorElement {
         return null;
@@ -41,8 +42,13 @@ export class P5AceEditor implements P5Editor {
     collapsables: Collapsable[];
     collapsable(node: AstNode, tokens?: Token[]) { }
 
-    get code(): string { return this.editor.getValue(); }
-    set code(value: string) { this.editor.setValue(value); this.editor.moveCursorTo(0, 0, false); }
+    get code(): string {
+        return this.editor.getValue();
+    }
+    set code(value: string) {
+        this.editor.setValue(value, -1);
+        //this.editor.moveCursorTo(0, 0, false);
+    }
 
     parse() { }
     tokenizeAsync(filename: string, data: string): Promise<any> {

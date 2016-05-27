@@ -16,11 +16,12 @@ import {PackageResolution, AsyncFunc, TreeNodeData, Expander, Helper} from "./co
 import {P5Service, P5File, CritiqueResponse, CritiqueViolation, GitBlameItem} from "./p5-service";
 import {monitor, Monitor} from "./monitor";
 import {Key, Rect, Size, Point} from "./common";
-import {Editor as Viewer, Collapsable, P5Editor, CvLine, IndexSelection, TokenUtils, CodeHyperlink} from "./editor";
+import {Editor as Viewer, Collapsable, P5Editor, CvLine, IndexSelection, TokenUtils, CodeHyperlink, IndexRange} from "./editor";
 import {EditorConsoleBinder} from "./editor-console-binder";
 //import * as config from "ace/config";
 import * as ace from "ace/ace";
 import * as ModeList from "ace/ext/modelist";
+import {Range} from "ace/range";
 import {Editor} from "ace/editor";
 import {P5AceEditor} from "./p5-ace-editor";
 
@@ -73,24 +74,33 @@ export class IndexPage {
     //    let funcs = Helper.selectAsyncFuncs(this.includes, t => this.resolvePackageWithInclude(pkg.name, t));
     //    return Helper.firstSuccess(funcs).catch(t => null).then(t => pkg.resolvedIncludePath = t);
     //}
+    aceMode = true;
     monitor: Monitor;
+    get aceEditor(): Editor { return (<P5AceEditor>this.editor).editor; }
     main() {
-        let viewerMode = true;
-        if (viewerMode)
-            this.editor = new Viewer();
-        else
-            this.editor = new P5AceEditor();
-
-        this.editor.init();
-
         this.monitor = monitor;
-        $(".lines").mousedown(e => this.onLineNumberMouseDown(e));
-        $(".lines").mouseover(e => this.onLineNumberMouseOver(e));
-        $(".lines").mouseup(e => this.onLineNumberMouseUp(e));
         this.selection.fromParam(location.hash.substr(1));
+        if (this.aceMode) {
+            $("body").addClass("ace-mode");
+            this.editor = new P5AceEditor();
+            this.editor.init();
+            this.aceEditor.selection.on("changeSelection", e => {
+                if (this.file == null)
+                    return;
+                let range = this.aceEditor.selection.getRange();
+                this.selection.ranges = [new IndexRange(range.start.row + 1, range.end.row + 1)];
+                this.saveSelection();
+            });
+        }
+        else {
+            this.editor = new Viewer();
+            this.editor.init();
+            $(".lines").mousedown(e => this.onLineNumberMouseDown(e));
+            $(".lines").mouseover(e => this.onLineNumberMouseOver(e));
+            $(".lines").mouseup(e => this.onLineNumberMouseUp(e));
+        }
 
         this.update();
-
         $(window).on("urlchange", e => this.window_urlchange(e));
     }
 
@@ -238,6 +248,12 @@ export class IndexPage {
     }
 
     renderSelection() {
+        if (this.aceMode) {
+            let range = this.selection.lastRange;
+            if (range != null)
+                this.aceEditor.selection.setRange(new Range(range.from - 1, 0, range.to - 1, 0), false);
+            return;
+        }
         let obj: { [key: string]: boolean } = {};
         this.selection.getSelectedIndexes().forEach(t => obj[t] = true);
         let node = <HTMLElement>$(".lines")[0].firstChild;
@@ -286,6 +302,8 @@ export class IndexPage {
                 this.service.src(url).then(data => {
                     this.file.src = data;
                     this.editor.code = data;
+                    if(this.aceMode)
+                        this.renderSelection();
                     window.setTimeout(() => {
                         this.editor.tokenizeAsync(url, data).then(() => {
                             window.setTimeout(() => {
@@ -612,7 +630,7 @@ export function main() {
         if (e.target.nodeName == "A") {
             if (e.isDefaultPrevented())
                 return;
-            if(e.target.getAttribute("data-original-title")) //ignore bootstrap popover.js targets
+            if (e.target.getAttribute("data-original-title")) //ignore bootstrap popover.js targets
                 return;
             e.preventDefault();
             let href = e.target.getAttribute("href");
