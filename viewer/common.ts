@@ -13,14 +13,50 @@ import {ChangeTracker} from "./monitor";
 import {PerlModuleClassify} from "./p5-service";
 
 export class Helper {
-    static tooltip(opts: TooltipOptions) {
-        if (opts.position == null)
-            opts.position = "bottom left";
-        if (opts.classes == null)
-            opts.classes = opts.target.className;
-        opts.classes += " tt";
-        new Tooltip(opts);
+    static tooltip(el: HTMLElement, opts: PopoverOptions) {
+        if (opts.html == null)
+            opts.html = true;
+        if (opts.trigger == null)
+            opts.trigger = "hover";
+        if (opts.delay == null)
+            opts.delay = 200;
+        if (opts.placement == null)
+            opts.placement = "bottom";
+        if (opts.animation == null)
+            opts.animation = false;
+        $(el).popover(opts);
+        //TODO:
+        //$('.selector').popover({
+        //    html: true,
+        //    trigger: 'manual',
+        //    container: $(this).attr('id'),
+        //    placement: 'top',
+        //    content: function () {
+        //        $return = '<div class="hover-hovercard"></div>';
+        //    }
+        //}).on("mouseenter", function () {
+        //    var _this = this;
+        //    $(this).popover("show");
+        //    $(this).siblings(".popover").on("mouseleave", function () {
+        //        $(_this).popover('hide');
+        //    });
+        //}).on("mouseleave", function () {
+        //    var _this = this;
+        //    setTimeout(function () {
+        //        if (!$(".popover:hover").length) {
+        //            $(_this).popover("hide")
+        //        }
+        //    }, 100);
+        //});
     }
+    //static tooltip_old(opts: TooltipOptions) {
+    //    if (opts.position == null)
+    //        opts.position = "bottom left";
+    //    if (opts.classes == null)
+    //        opts.classes = opts.target.className;
+    //    opts.classes += " tt";
+    //    new Tooltip(opts);
+    //}
 
     static toPct(x: number) {
         return (x * 100).toFixed(0) + "%";
@@ -268,7 +304,7 @@ export interface PackageResolution {
     node?: AstNode;
     name?: string;
     resolvedIncludePath?: string;
-    resolved:PerlModuleClassify;
+    resolved: PerlModuleClassify;
 }
 
 
@@ -515,6 +551,3 @@ export enum Key {
 }
 
 
-interface ObjectMap<T> {
-    [key:string]:T;
-}

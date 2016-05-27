@@ -126,7 +126,7 @@ export class IndexPage {
                     return;
                 let hl: CodeHyperlink = { tokens, css: "hl hl-violation" };
                 this.editor.hyperlinkNode(hl);
-                Helper.tooltip({ target: hl.anchorEl, content: `${violation.description}\n${violation.policy}\nseverity:${violation.severity}`, });
+                Helper.tooltip(hl.anchorEl, { content: `${violation.description}\n${violation.policy}\nseverity:${violation.severity}`, });
                 return { violation, hl };
                 //if (firstViolationLine == null)
                 //    firstViolationLine = violation.source.location.line;
@@ -455,13 +455,13 @@ export class IndexPage {
         builtins.forEach(node => {
             let name = node.toCode().trim();
             let anchor = this.editor.hyperlinkNode({ node, href: "http://perldoc.perl.org/functions/" + name + ".html", name, title: "(builtin function) " + name + "\nctrl+click to open documentation", css: "builtin-function", target: "_blank" });
-            console.log(anchor);
-            this.service.perlDocHtml({ funcName: name }).then(html => { //TODO: cache same funcs
+            this.perlDocHtml({ funcName: name }).then(html => { //TODO: cache same funcs
                 if (anchor == null)
                     return;
                 let html2 = html.substringBetween("<!-- start doc -->", "<!-- end doc -->");
-                let html3 = `<div class='pod'>${html2}</div>`;
-                Helper.tooltip({ target: anchor, content: html3, classes: "perldoc", });
+                let html3 = `<div class='pod perldoc'>${html2}</div>`;
+                console.log(anchor);
+                Helper.tooltip(anchor, { content: html3 });
             });
         });
         pragmas.forEach(node => {
@@ -576,6 +576,16 @@ export class IndexPage {
 
 
 
+    perlDocCache: ObjectMap<Promise<string>> = {};
+    perlDocHtml(req: { name?: string, funcName?: string }): Promise<string> {
+        let key = req.name + "_" + req.funcName;
+        let res = this.perlDocCache[key];
+        if (res !== undefined)
+            return res;
+        res = this.service.perlDocHtml(req);
+        this.perlDocCache[key] = res;
+        return res;//.then(res => this.perlDocHtml[key] = res);
+    }
 
 
     isFolder(file?: P5File) {
@@ -601,6 +611,8 @@ export function main() {
     $(document.body).click(e => {
         if (e.target.nodeName == "A") {
             if (e.isDefaultPrevented())
+                return;
+            if(e.target.getAttribute("data-original-title")) //ignore bootstrap popover.js targets
                 return;
             e.preventDefault();
             let href = e.target.getAttribute("href");

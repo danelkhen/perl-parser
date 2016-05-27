@@ -5,6 +5,7 @@
     "devDependencies": {},
     "globalDependencies": {
         "ace": "registry:dt/ace#0.0.0+20160317120654",
+        "bootstrap": "registry:dt/bootstrap#3.3.5+20160316155526",
         "codemirror": "registry:dt/codemirror#0.0.0+20160423074321",
         "es6-shim": "github:DefinitelyTyped/DefinitelyTyped/es6-shim/es6-shim.d.ts#4de74cb527395c13ba20b438c3a7a419ad931f1c",
         "express": "registry:dt/express#4.0.0+20160317120654",

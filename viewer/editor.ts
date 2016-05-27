@@ -61,7 +61,7 @@ export class Editor implements P5Editor {
             let el = $.create(".git-blame");
             el.getAppend("span.sha").text(item.sha);
             el.getAppend("span.author").text(item.author);
-            Helper.tooltip({ target: el[0], content: [item.author, item.date, item.sha].join("\n") });
+            Helper.tooltip(el[0], { template: [item.author, item.date, item.sha].join("\n") });
             $(line).find(".line-number").before(el);
         });
     }

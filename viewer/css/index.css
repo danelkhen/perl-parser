@@ -394,7 +394,7 @@ a.btn {
 .dir-view {
     overflow: auto;
     height: 100%;
-    padding:0 20px;
+    padding: 0 20px;
 }
 
 .dir-view .child {
@@ -441,14 +441,22 @@ a.btn {
     z-index: 100;
     display: none;
 }
-.console{
-    font-family:'Source Code Pro';
+
+.console {
+    font-family: 'Source Code Pro';
 }
 
+.popover {
+    max-width: 350px;
+}
 
-.tooltip.perldoc {
-    max-height:30%;
-    overflow:auto;
-    white-space:normal;
+.popover-content {
+    padding: 4px;
+    max-height: 150px;
+    overflow: auto;
+    font-size: 13px;
+}
 
+.popover-title {
+    padding: 8px 4px;
 }
