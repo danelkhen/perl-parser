@@ -233,6 +233,7 @@ a:target {
 
 
 
+
 .code a {
     -webkit-user-drag: none;
 }
@@ -482,4 +483,22 @@ a.btn {
 }
 .marker-violation{
     border-bottom: 1px dashed red;
+}
+.marker-link{
+    border-bottom: 1px solid blue;
+}
+
+.marker-tooltip {
+    height:300px;
+    width:300px;
+    /*max-width: 30%;*/
+    font-size: 12px;
+    font-family: Arial;
+    border-radius: 2px;
+    background-color: #fdfdfd;
+    color: black;
+    border: 1px solid #ccc;
+    padding: 6px;
+    overflow:auto;
+    pointer-events:auto;
 }

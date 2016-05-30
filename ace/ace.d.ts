@@ -2232,7 +2232,7 @@ declare module "ace/selection" {
     /// Search
     ////////////////
 
-    
+
     /**
      * Contains the cursor position and the text selection of an edit session.
      * The row/columns used in the selection are in document coordinates representing ths coordinates as thez appear in the document before applying soft wrap and folding.
@@ -3079,5 +3079,90 @@ declare module "ace/virtual_renderer" {
 }
 
 declare module "ace/ext/modelist" {
-    export var modes:any[];
+    export var modes: any[];
+}
+
+
+declare module "ace/tooltip" {
+    export class Tooltip {
+        constructor(parentNode: HTMLElement);
+        isOpen: boolean;
+        $element: HTMLElement;
+        $parentNode: HTMLElement;
+
+        $init(): HTMLElement;
+        getElement(): HTMLElement;
+        setText(text: string);
+        setHtml(html: string);
+        setPosition(x: number, y: number);
+        setClassName(className: string);
+        show(text: string, x: number, y: number);
+        hide();
+        getHeight(): number;
+        getWidth(): number;
+
+    }
+}
+
+
+
+declare module "ace/lib/event" {
+    //TODO:
+}
+declare module "ace/mouse/mouse_event" {
+    import {Editor} from "ace/editor";
+    import {Position} from "ace/position";
+
+    export class MouseEvent {
+        constructor(domEvent, editor);
+        domEvent: Event;
+        editor: Editor;
+        x: number;
+        y: number;
+        clientX: number;
+        clientY: number;
+        $pos: Position;
+        $inSelection: boolean;
+        propagationStopped: boolean;
+        defaultPrevented: boolean;
+        stopPropagation();
+        preventDefault();
+        stop();
+        /*
+         * Get the document position below the mouse cursor
+         * 
+         * @return {Object} 'row' and 'column' of the document position
+         */
+        getDocumentPosition(): Position
+        /*
+         * Check if the mouse cursor is inside of the text selection
+         * 
+         * @return {Boolean} whether the mouse cursor is inside of the selection
+         */
+        inSelection(): boolean;
+        /*
+         * Get the clicked mouse button
+         * 
+         * @return {Number} 0 for left button, 1 for middle button, 2 for right button
+         */
+        getButton(): number;
+        /*
+         * @return {Boolean} whether the shift key was pressed when the event was emitted
+         */
+        getShiftKey(): boolean;
+        getAccelKey(): boolean;
+    }
+}
+
+declare module "ace/ext/statusbar" {
+    import {Editor} from "ace/editor";
+    export class StatusBar {
+        constructor(editor: Editor, el: HTMLElement);
+    }
+}
+
+declare module "ace/config" {
+    export function init();
+    export interface Config {
+    }
 }

@@ -426,6 +426,7 @@ export interface CodeHyperlink {
     css?: string;
     anchorEl?: HTMLAnchorElement;
     target?: string;
+    html?:string;
     //tooltip?:TooltipOptions;
 }
 

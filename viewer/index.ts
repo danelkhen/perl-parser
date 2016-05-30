@@ -479,14 +479,20 @@ export class IndexPage {
         });
         builtins.forEach(node => {
             let name = node.toCode().trim();
-            let anchor = this.editor.hyperlinkNode({ node, href: "http://perldoc.perl.org/functions/" + name + ".html", name, title: "(builtin function) " + name + "\nctrl+click to open documentation", css: "builtin-function", target: "_blank" });
+            //let anchor = this.editor.hyperlinkNode({ node, href: "http://perldoc.perl.org/functions/" + name + ".html", name, title: "(builtin function) " + name + "\nctrl+click to open documentation", css: "builtin-function", target: "_blank" });
             this.perlDocHtml({ funcName: name }).then(html => { //TODO: cache same funcs
+                let hl: CodeHyperlink = { node, href: "http://perldoc.perl.org/functions/" + name + ".html", name, title: "(builtin function) " + name + "\nctrl+click to open documentation", css: "builtin-function", target: "_blank" };
+                if (html != null) {
+                    let html2 = html.substringBetween("<!-- start doc -->", "<!-- end doc -->");
+                    let html3 = `<div class='pod perldoc'>${html2}</div>`;
+                    hl.html = html3;
+                }
+                //console.log(hl);
+                let anchor = this.editor.hyperlinkNode(hl);
                 if (anchor == null)
                     return;
-                let html2 = html.substringBetween("<!-- start doc -->", "<!-- end doc -->");
-                let html3 = `<div class='pod perldoc'>${html2}</div>`;
-                console.log(anchor);
-                Helper.tooltip(anchor, { content: html3 });
+                //console.log(anchor);
+                //TODO: when not in ace mode: Helper.tooltip(anchor, { content: html3 });
             });
         });
         pragmas.forEach(node => {
