@@ -177,6 +177,10 @@ class MyTokenizer {
             type = "keyword";
         else if (token.isAnyIdentifier(TokenTypes.pragmas))
             type = "keyword";
+        else if(token.is(TokenTypes.braceOpen))
+            type = "paren.lparen";
+        else if(token.is(TokenTypes.braceClose))
+            type = "paren.rparen";
         return { value: token.value, type: type };
     }
 

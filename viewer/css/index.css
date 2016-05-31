@@ -530,7 +530,7 @@ a.btn {
     margin:4px 0 0 0;
 }
 
-.pod a{
+.pod a[href]{
     text-decoration:underline;
 }
 /*.pod dl,
