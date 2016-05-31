@@ -496,8 +496,8 @@ a.btn {
 }*/
 
 .marker-tooltip {
-    height:200px;
-    width:300px;
+    max-height:200px;
+    max-width:300px;
     /*max-width: 30%;*/
     font-size: 12px;
     font-family: Arial;
@@ -528,6 +528,10 @@ a.btn {
 .pod pre
 {
     margin:4px 0 0 0;
+}
+
+.pod a{
+    text-decoration:underline;
 }
 /*.pod dl,
 .pod dd,

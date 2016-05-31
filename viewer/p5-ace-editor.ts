@@ -131,7 +131,6 @@ export class P5AceEditor implements P5Editor {
     mouseDocPos: Position;
     editor_mousemove(e: MouseEvent) {
         this.mouseDocPos = e.getDocumentPosition();
-        //console.log("editor_mousemove", this.mouseDocPos);
     }
 
 

@@ -444,19 +444,28 @@ export class IndexPage {
         //return null;
     }
 
-    resolvePerldocAndAnnotate(node: AstNode, isBuiltinFunction:boolean): Promise<any> {
+    resolvePerldocAndAnnotate(node: AstNode, isBuiltinFunction: boolean): Promise<any> {
         let name = node.toCode().trim();
-        let req = {funcName:null, name:null};
-        if(isBuiltinFunction)
+        return this._resolvePerldocAndAnnotate(name, isBuiltinFunction, node, null);
+    }
+    resolvePerldocAndAnnotate2(token: Token, isBuiltinFunction: boolean): Promise<any> {
+        let name = token.value.trim();
+        return this._resolvePerldocAndAnnotate(name, isBuiltinFunction, null, [token]);
+    }
+
+    _resolvePerldocAndAnnotate(name: string, isBuiltinFunction: boolean, node: AstNode, tokens: Token[]): Promise<any> {
+        let req = { funcName: null, name: null };
+        if (isBuiltinFunction)
             req.funcName = name;
         else
             req.name = name;
 
         return this.perlDocHtml(req).then(html => {
-            let hl: CodeHyperlink = { node, href: "http://perldoc.perl.org/functions/" + name + ".html", name, title: "(builtin function) " + name + "\nctrl+click to open documentation", css: "builtin-function", target: "_blank" };
+            let hl: CodeHyperlink = { node: node, tokens: tokens, href: "http://perldoc.perl.org/functions/" + name + ".html", name, title: "(builtin function) " + name + "\nctrl+click to open documentation", css: "builtin-function", target: "_blank" };
             if (html != null) {
                 let html2 = html.substringBetween("<!-- start doc -->", "<!-- end doc -->");
-                let html3 = `<div><div class="popup-header"><a href="${hl.href}">${hl.name}</a></div><div class="pod perldoc">${html2}</div></div>`;
+                let type = isBuiltinFunction ? "builtin-function" : "pragma";
+                let html3 = `<div><div class="popup-header"><a href="${hl.href}">(${type}) ${hl.name}</a></div><div class="pod perldoc">${html2}</div></div>`;
                 hl.html = html3;
             }
             this.editor.hyperlinkNode(hl);
@@ -465,6 +474,10 @@ export class IndexPage {
     resolveAndHighlightUsedPackages() {
         if (this.editor.unit == null)
             return;
+
+        let builtins2: Token[] = this.editor.tokens.where(t => (t.isIdentifier() || t.isKeyword()) && TokenTypes.builtinFunctions.contains(t.value));
+        let pragmas2: Token[] = this.editor.tokens.where(t => (t.isIdentifier() || t.isKeyword()) && TokenTypes.pragmas.contains(t.value));
+        console.log({ builtins2, pragmas2 });
         let pkgRefs = this.findPackageRefs(this.editor.unit);
         console.log(pkgRefs.select(t => t.toCode().trim()).distinct());
         let inUse: NamedMemberExpression[] = [];
@@ -498,39 +511,8 @@ export class IndexPage {
         }
         builtins.forEach(node => this.resolvePerldocAndAnnotate(node, true));
         pragmas.forEach(node => this.resolvePerldocAndAnnotate(node, false));
-        //builtins.forEach(node => {
-        //    let name = node.toCode().trim();
-        //    //let anchor = this.editor.hyperlinkNode({ node, href: "http://perldoc.perl.org/functions/" + name + ".html", name, title: "(builtin function) " + name + "\nctrl+click to open documentation", css: "builtin-function", target: "_blank" });
-        //    this.perlDocHtml({ funcName: name }).then(html => { //TODO: cache same funcs
-        //        let hl: CodeHyperlink = { node, href: "http://perldoc.perl.org/functions/" + name + ".html", name, title: "(builtin function) " + name + "\nctrl+click to open documentation", css: "builtin-function", target: "_blank" };
-        //        if (html != null) {
-        //            let html2 = html.substringBetween("<!-- start doc -->", "<!-- end doc -->");
-        //            let html3 = `<div class='pod perldoc'>${html2}</div>`;
-        //            hl.html = html3;
-        //        }
-        //        //console.log(hl);
-
-        //        let anchor = this.editor.hyperlinkNode(hl);
-        //        if (anchor == null)
-        //            return;
-        //        //console.log(anchor);
-        //        //TODO: when not in ace mode: Helper.tooltip(anchor, { content: html3 });
-        //    });
-        //});
-        //pragmas.forEach((node, i) => {
-        //    let name = node.toCode().trim();
-        //    this.perlDocHtml({ name: name }).then(html => { //TODO: cache same funcs
-        //        let hl: CodeHyperlink = { node, href: "http://perldoc.perl.org/" + name + ".html", name, title: "(builtin function) " + name + "\nctrl+click to open documentation", css: "builtin-function", target: "_blank" };
-        //        if (html != null) {
-        //            let html2 = html.substringBetween("<!-- start doc -->", "<!-- end doc -->");
-        //            let html3 = `<div class='pod perldoc'>${html2}</div>`;
-        //            hl.html = html3;
-        //        }
-        //        let anchor = this.editor.hyperlinkNode(hl);
-        //        if (anchor == null)
-        //            return;
-        //    });
-        //});
+        builtins2.forEach(node => this.resolvePerldocAndAnnotate2(node, true));
+        pragmas2.forEach(node => this.resolvePerldocAndAnnotate2(node, false));
 
         let resolutions: PackageResolution[] = inUse.select(node => ({ node: node, name: node.toCode().trim(), resolved: null }));
         this.resolvePackages(resolutions).then(() => {
@@ -542,13 +524,15 @@ export class IndexPage {
                     href = this.cvBaseUrl + pkg.resolved.path;
                 else if (pkg.resolved.url != null)
                     href = pkg.resolved.url;//"https://metacpan.org/pod/" + pkg.name;
+                let core = pkg.resolved.is_core ? "core " : "";
+                let local = pkg.resolved.is_local ? "local " : "";
                 this.editor.hyperlinkNode({
                     node: pkg.node,
                     href, name: pkg.name,
                     title: "(package) " + pkg.name + "\nctrl+click to open documentation",
                     css: "package-name",
                     //html: `<iframe src="${href}" />`
-                    html: `<a href="${href}">${pkg.name}</a>`
+                    html: `<div><a href="${href}">(${core}${local}package) ${pkg.name}</a></div>`
                 });
             });
         });
@@ -649,12 +633,20 @@ export class IndexPage {
     perlDocCache: ObjectMap<Promise<string>> = {};
     perlDocHtml(req: { name?: string, funcName?: string }): Promise<string> {
         let key = req.name + "_" + req.funcName;
+        let storageKey = "perldoc_" + key;
+        let res3 = localStorage.getItem(storageKey);
+        if (res3 != null) {
+            return Promise.resolve(res3);
+        }
         let res = this.perlDocCache[key];
         if (res !== undefined)
             return res;
-        res = this.service.perlDocHtml(req);
+        res = this.service.perlDocHtml(req).then(res2 => {
+            localStorage.setItem(storageKey, res2);
+            return res2;
+        });
         this.perlDocCache[key] = res;
-        return res;//.then(res => this.perlDocHtml[key] = res);
+        return res;
     }
 
 
