@@ -15,7 +15,7 @@ export class P5Service {
         return this.ajax({ url: "perl/critique/:path", query: { path } });
     }
     perlDocHtml(req: { name?: string, funcName?: string }): Promise<string> {
-        return this.ajax({ url: "perl/doc/:name", query: { name, f: req.funcName } });
+        return this.ajax({ url: "perl/doc/:name", query: { name: req.name, f: req.funcName } });
     }
     perlModuleClassify(packageNames: string[]): Promise<PerlModuleClassify[]> {
         if (packageNames.length == 0)
@@ -49,13 +49,19 @@ export class P5Service {
             let query = {};
             Object.keys(opts.query).forEach(key => query[key] = opts.query[key]);
             Object.keys(query).forEach(key => {
-                if (!url2.contains(":" + key))
+                let value = query[key];
+                if (!url2.contains(":" + key)) {
+                    if (value == null)
+                        delete query[key];
                     return;
-                let value = opts.query[key];
+                }
                 let urlValue: string;
                 if (value instanceof Array) {
                     let list: Array<any> = value;
                     urlValue = list.map(t => this.urlEncodeIfNeeded(t)).join(",");
+                }
+                else if (value == null) {
+                    urlValue = "";
                 }
                 else {
                     urlValue = this.urlEncodeIfNeeded(value);

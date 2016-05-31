@@ -12,6 +12,7 @@ import {TextFile} from "perl-parser";
 import {IEditSession} from "ace/edit_session";
 import {TokenizerResult} from "ace/tokenizer";
 import {TokenInfo} from "ace/token_info";
+import {TokenTypes} from "perl-parser/token-types";
 
 export class Mode extends TextMode {
     constructor() {
@@ -123,11 +124,17 @@ class MyTokenizer {
         }
 
         let tok = this.tokenizer;
-        while (!tok.isEof() && tok.cursor.pos.line <= lineNumber) {
-            //console.log("MyTok", "tokenizer.next", tok.cursor.pos.line, tok.cursor.pos.column);
-            tok.next();
+        try {
+            while (!tok.isEof() && tok.cursor.pos.line <= lineNumber) {
+                //console.log("MyTok", "tokenizer.next", tok.cursor.pos.line, tok.cursor.pos.column);
+                tok.next();
+            }
         }
-        let relevantTokens = [];
+        catch (e) {
+            if (tok.cursor.pos.line <= lineNumber)
+                return { state: "error", tokens: [] };
+        }
+        let relevantTokens: TokenEx[] = [];
         for (let token of tok.tokens) {
             let startRow = token.range.start.line - 1;
             let endRow = token.range.end.line - 1;
@@ -141,14 +148,17 @@ class MyTokenizer {
             }
             let lines = token.value.lines();
             let newValue = lines[row - startRow];
-            if (newValue != "")
-                relevantTokens.push({ type: token.type, value: newValue, isPartialToken: true });
+            if (newValue != "") {
+                let token2:TokenEx = token.type.create2(newValue);
+                token2.isPartialToken = true;
+                relevantTokens.push(token2);
+            }
         }
         let newState = "no_tokens";
         if (relevantTokens.length > 0) {
             let lastToken = relevantTokens.last();
             newState = lastToken.type.name;
-            if (relevantTokens.first(t => t.type == "heredoc") != null)
+            if (relevantTokens.first(t => t.type.name == "heredoc") != null)
                 newState = "heredoc";
             if (lastToken.isPartialToken)
                 newState += "_partial";
@@ -162,7 +172,12 @@ class MyTokenizer {
     }
 
     toTokenInfo(token: Token): TokenInfo {
-        return { value: token.value, type: token.type.name };
+        let type = token.type.name;
+        if (token.isAnyIdentifier(TokenTypes.builtinFunctions))
+            type = "keyword";
+        else if (token.isAnyIdentifier(TokenTypes.pragmas))
+            type = "keyword";
+        return { value: token.value, type: type };
     }
 
 }
@@ -178,4 +193,8 @@ export class EventEmitter {
     remove(handler) {
         this.handlers.remove(handler);
     }
+}
+
+export interface TokenEx extends Token {
+    isPartialToken?:boolean;
 }

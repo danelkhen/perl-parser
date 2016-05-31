@@ -936,7 +936,7 @@ declare module "ace/position" {
         column: number;
     }
 }
-declare module "ace/key_binding" {
+declare module "ace/keyboard/keybinding" {
     import {Editor} from "ace/editor";
 
     export interface KeyBinding {
@@ -945,7 +945,7 @@ declare module "ace/key_binding" {
 
         setKeyboardHandler(kb: any): void;
 
-        addKeyboardHandler(kb: any, pos: any): void;
+        addKeyboardHandler(kb: any, pos?: any): void;
 
         removeKeyboardHandler(kb: any): boolean;
 
@@ -1267,7 +1267,7 @@ declare module "ace/editor" {
     import {EditorChangeEvent} from "ace/editor_change_event";
     import {IEditSession} from "ace/edit_session";
     import {VirtualRenderer} from "ace/virtual_renderer";
-    import {KeyBinding} from "ace/key_binding";
+    import {KeyBinding} from "ace/keyboard/keybinding";
     import {Selection} from "ace/selection";
     import {Position} from "ace/position";
     import {Range} from "ace/range";
@@ -3166,3 +3166,18 @@ declare module "ace/config" {
     export interface Config {
     }
 }
+
+declare module "ace/keyboard/hash_handler" {
+    import {Editor} from "ace/editor";
+    export class HashHandler {
+        bindKeys(bindings: KeyBindings):void;
+    }
+    export interface KeyBindings {
+        [key:string]:KeyHandler;
+    }
+    export interface KeyHandler {
+        (editor:Editor, arg:Object):void;
+    }
+
+}
+
