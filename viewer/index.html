@@ -2,7 +2,7 @@
 <html>
 <head>
     <title>CodeViewer</title>
-    <base href="/" />
+    <!--<base href="/" />-->
     <meta charset="utf-8" />
     <link rel="shortcut icon" type="image/png" href="/res/viewer/img/code.png" />
     <link href='//fonts.googleapis.com/css?family=Source+Code+Pro' rel='stylesheet' type='text/css'>
@@ -54,7 +54,7 @@
             <td>
                 <div class="dir-view" _if="isFolder()">
                     <table>
-                        <tr class="{{t => 'child template'}}" _for="file.children"><td><a href="{{path}}">{{name}}</a></td><td>{{size}}</td></tr>
+                        <tr class="{{t => 'child template'}}" _for="file.children"><td><a href="{{path}}">{{name}}</a></td><td>{{size||""}}</td></tr>
                     </table>
                 </div>
                 <div _if="isFile()" class="code-view">

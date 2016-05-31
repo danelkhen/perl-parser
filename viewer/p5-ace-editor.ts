@@ -16,7 +16,6 @@ import {P5Service, P5File, CritiqueResponse, CritiqueViolation, GitBlameItem} fr
 import {monitor, Monitor} from "./monitor";
 import {Key, Rect, Size, Point} from "./common";
 import {Editor as Viewer, Collapsable, P5Editor, CvLine, IndexSelection, TokenUtils, CodeHyperlink} from "./editor";
-import {EditorConsoleBinder} from "./editor-console-binder";
 //import * as config from "ace/config";
 import * as ace from "ace/ace";
 import * as ModeList from "ace/ext/modelist";
@@ -30,7 +29,6 @@ import {Tooltip} from "ace/tooltip";
 import {StatusBar} from "ace/ext/statusbar";
 import "ace/ext/linking";
 import {Config} from "ace/config";
-import {HashHandler} from "ace/keyboard/hash_handler";
 
 export class P5AceEditor implements P5Editor {
     init() {
@@ -42,21 +40,20 @@ export class P5AceEditor implements P5Editor {
             readOnly: false,
         });
         this.editor.focus();
-        //this.editor.addEventListener("linkHover", e => this.editor_linkHover(e));
         this.editor.addEventListener("linkClick", e => this.editor_linkClick(e));
         this.editor.addEventListener("mousemove", e => this.editor_mousemove(e));
         this.enableHover();
 
         this.statusBarEl = $(".status-bar")[0];
         this.statusTextEl = $(this.statusBarEl).find(".status-text")[0];
-        this.statusBar = new StatusBar(this.editor, this.statusBarEl);
-        let kh = new HashHandler();
-        kh.bindKeys({ 
-            "F12": (editor, arg) => this.goToDefinition() 
+        this.editor.commands.addCommand({
+            name: 'goToDefinition',
+            bindKey: { win: 'F12', mac: 'F12' },
+            exec: editor=> this.goToDefinition(),
+            readOnly: true // false if this command should not apply in readOnly mode
         });
-        this.editor.keyBinding.addKeyboardHandler(kh);
     }
-    statusBar: StatusBar;
+    //statusBar: StatusBar;
     statusBarEl: HTMLElement;
     statusTextEl: HTMLElement;
 
