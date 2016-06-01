@@ -18,7 +18,7 @@ import {PrecedenceResolver} from "./precedence-resolver";
 import {TokenTypes} from "./token-types";
 import {Tokenizer} from "./tokenizer";
 import {safeTry, TokenReader, Logger, AstNodeFixator} from "./utils";
-import "./extensions";
+//import "./extensions";
 import {Refactor} from "./refactor";
 
 

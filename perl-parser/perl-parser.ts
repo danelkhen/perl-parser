@@ -1,4 +1,5 @@
-﻿export * from "./perl-parser/utils";
+﻿import "./perl-parser/extensions";
+export * from "./perl-parser/utils";
 export * from "./perl-parser/text";
 export * from "./perl-parser/token-types";
 export * from "./perl-parser/token";
