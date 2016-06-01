@@ -10,7 +10,8 @@ import {
     Operator, PackageDeclaration, ParenthesizedList, PostfixUnaryExpression, PrefixUnaryExpression, QwExpression, RawExpression, RawStatement, RegexExpression,
     ReturnExpression, TrinaryExpression, Unit, UnlessStatement, UseOrNoStatement, UseStatement, ValueExpression, VariableDeclarationExpression, VariableDeclarationStatement, WhileStatement,
     AstQuery, PrecedenceResolver, TokenTypes, Tokenizer, safeTry, TokenReader, Logger, AstNodeFixator, TextFile, TextFilePos, TextFileRange, Cursor,
-    ExpressionTester, EtReport, EtItem, RefArrayToRefUtil
+    ExpressionTester, EtReport, EtItem, RefArrayToRefUtil,
+    EntityResolver, Package, Subroutine, 
 } from "perl-parser";
 import {PackageResolution, AsyncFunc, TreeNodeData, Expander, Helper} from "./common";
 import {P5Service, P5File, CritiqueResponse, CritiqueViolation, GitBlameItem} from "./p5-service";

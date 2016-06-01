@@ -1,4 +1,4 @@
-﻿import "../../../libs/corex";
+﻿//import "../../../libs/corex";
 import {Token, TokenType, } from "./token";
 import {TextFile, TextFilePos, TextFileRange, Cursor} from "./text";
 import {AstWriter} from "./ast-writer";

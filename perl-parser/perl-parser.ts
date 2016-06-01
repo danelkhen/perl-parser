@@ -12,3 +12,4 @@ export * from "./perl-parser/precedence-resolver";
 export * from "./perl-parser/refactor";
 export * from "./perl-parser/expression-tester";
 export * from "./perl-parser/precedence-resolver2";
+export * from "./perl-parser/entity";
