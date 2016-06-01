@@ -70,7 +70,7 @@ export class TokenTypes {
     });
     static qq = _rs([/qq\s*?\|[^|]*\|/, /qq\s*?\{[^\}]*\}/]);
     static qw = _rs([/qw\s*\/[^\/]*\//, /qw\s*<[^>]*>/, /qw\s*\([^\)]*\)/, /qw\s*\[[^\]]*\]/, /qw\s*\{[^\{]*\}/]);
-    static qr = _rs([/qr\/.*\/[a-z]*/, /qr\(.*?\)[a-z]*/, /qr\{.*?\}[a-z]*/]);//Regexp-like quote
+    static qr = _rs([/qr\/[^\/]*?\/[a-z]*/, /qr\([^\)]*?\)[a-z]*/, /qr\{[^\}]*?\}[a-z]*/]);//Regexp-like quote
     static qx = _rs([/qx\/.*\//, /`.*`/]);
     static tr = _rs([/tr\/.*\/.*\/[cdsr]*/, /tr\{.*\}\{.*\}/]); //token replace
     static q = _rs([/q\{[^\}]*\}/]);
@@ -507,7 +507,7 @@ export class TokenTypes {
     static string = _r(/\'[^\']*\'/);
     static regex = _custom(TokenTypes._matchRegex);//_r(/\/.*\/[a-z]*/);
     static regexSubstitute = _rs([/s\/.*\/.*\/[a-z]*/, /s#.*#.*#[a-z]*/, /s\{.*\}\{.*\}[a-z]*/]);  // s/abc/def/mg
-    static regexMatch = _rs([/m\/.*\/[a-z]*/, /m#.*#[a-z]*/, /m\{.*\}[a-z]*/]);  // s/abc/def/mg
+    static regexMatch = _rs([/m\/.*\/[a-z]*/, /m#.*#[a-z]*/, /m\{.*?\}[a-z]*/]);  // s/abc/def/mg
 
     static colon = _r(/\:/);
     static question = _r(/\?/);
@@ -634,7 +634,7 @@ export class TokenTypes {
             return null;
         if (lastToken.isAny([TokenTypes.braceClose, TokenTypes.parenClose, TokenTypes.sigiledIdentifier, TokenTypes.integer]))
             return null;
-        let res = cursor.next(/^\/.*\/[a-z]*/);
+        let res = cursor.next(/^\/.*?\/[a-z]*/);
         if (res == null)
             return null;
         if (cursor.next(/^\/\/\s*?\,/) != null)  //make //, to be considered regex

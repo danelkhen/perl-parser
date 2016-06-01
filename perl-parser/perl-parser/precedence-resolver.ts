@@ -2,13 +2,13 @@
 import {Logger, LogLevel} from "./utils";
 
 import {
-AstNode, Expression, Statement, UnresolvedExpression, SimpleName, SubroutineDeclaration, SubroutineExpression, ArrayMemberAccessExpression, ArrayRefDeclaration,
-BarewordExpression, BeginStatement, BinaryExpression, Block, BlockExpression, BlockStatement, ElseStatement, ElsifStatement, EmptyStatement, EndStatement,
-ExpressionStatement, ForEachStatement, ForStatement, HashMemberAccessExpression, HashRefCreationExpression, IfStatement, InvocationExpression, MemberExpression,
-NamedMemberExpression, NativeFunctionInvocation, NativeInvocation_BlockAndListOrExprCommaList, NativeInvocation_BlockOrExpr, NonParenthesizedList, NoStatement,
-Operator, PackageDeclaration, ParenthesizedList, PostfixUnaryExpression, PrefixUnaryExpression, QwExpression, RawExpression, RawStatement, RegexExpression,
-ReturnExpression, TrinaryExpression, Unit, UnlessStatement, UseOrNoStatement, UseStatement, ValueExpression, VariableDeclarationExpression, VariableDeclarationStatement, WhileStatement,
-HasArrow, HasLabel,
+    AstNode, Expression, Statement, UnresolvedExpression, SimpleName, SubroutineDeclaration, SubroutineExpression, ArrayMemberAccessExpression, ArrayRefDeclaration,
+    BarewordExpression, BeginStatement, BinaryExpression, Block, BlockExpression, BlockStatement, ElseStatement, ElsifStatement, EmptyStatement, EndStatement,
+    ExpressionStatement, ForEachStatement, ForStatement, HashMemberAccessExpression, HashRefCreationExpression, IfStatement, InvocationExpression, MemberExpression,
+    NamedMemberExpression, NativeFunctionInvocation, NativeInvocation_BlockAndListOrExprCommaList, NativeInvocation_BlockOrExpr, NonParenthesizedList, NoStatement,
+    Operator, PackageDeclaration, ParenthesizedList, PostfixUnaryExpression, PrefixUnaryExpression, QwExpression, RawExpression, RawStatement, RegexExpression,
+    ReturnExpression, TrinaryExpression, Unit, UnlessStatement, UseOrNoStatement, UseStatement, ValueExpression, VariableDeclarationExpression, VariableDeclarationStatement, WhileStatement,
+    HasArrow, HasLabel,
 } from "./ast";
 
 
@@ -58,6 +58,15 @@ export class PrecedenceResolver {
     //isFunction(node: Expression | Operator | Block): boolean {
     //}
     resolve(allowNonParenthesizedNoCommaList?: boolean) {
+        try {
+            return this._resolve(allowNonParenthesizedNoCommaList);
+        }
+        catch (e) {
+            this.logger.warn(e);
+            return this.mbe;
+        }
+    }
+    _resolve(allowNonParenthesizedNoCommaList?: boolean) {
         if (this.nodes.length == 1) {
             let node = this.nodes[0];
             if (node instanceof Expression)
@@ -71,69 +80,69 @@ export class PrecedenceResolver {
         }
 
         //TEMP HACKS
-        this.nodes.ofType(Operator).where(t=> t.token.is(TokenTypes.packageSeparator)).forEach(t=> this.resolveArrow(t));
-        this.nodes.ofType(HashRefCreationExpression).forEach(t=> this.resolveCodeRefOrDeref(t));
-        this.nodes.ofType(HashRefCreationExpression).forEach(t=> this.resolveHashMemberAccess(t));
-        this.nodes.ofType(ArrayRefDeclaration).forEach(t=> this.resolveArrayMemberAccess(t));
-        this.nodes.ofType(Operator).where(t=> t.token.is(TokenTypes.bitwiseAnd)).forEach(t=> this.resolveSigilPrefixUnary(t));
+        this.nodes.ofType(Operator).where(t => t.token.is(TokenTypes.packageSeparator)).forEach(t => this.resolveArrow(t));
+        this.nodes.ofType(HashRefCreationExpression).forEach(t => this.resolveCodeRefOrDeref(t));
+        this.nodes.ofType(HashRefCreationExpression).forEach(t => this.resolveHashMemberAccess(t));
+        this.nodes.ofType(ArrayRefDeclaration).forEach(t => this.resolveArrayMemberAccess(t));
+        this.nodes.ofType(Operator).where(t => t.token.is(TokenTypes.bitwiseAnd)).forEach(t => this.resolveSigilPrefixUnary(t));
         //Statement modifiers (hack)
-        this.nodes.ofType(Operator).where(t=> t.token.isAnyKeyword(TokenTypes.statementModifiers)).forEach(t=> this.resolveStatementModifier(t));
+        this.nodes.ofType(Operator).where(t => t.token.isAnyKeyword(TokenTypes.statementModifiers)).forEach(t => this.resolveStatementModifier(t));
 
         //    left terms and list operators (leftward)
-        this.nodes.ofType(NamedMemberExpression).where(t=> t.token.isAny([TokenTypes.identifier, TokenTypes.keyword]) && !this.isNamedUnaryOperator(t)).forEach(t=> this.resolveImplicitInvocation(t, true));
+        this.nodes.ofType(NamedMemberExpression).where(t => t.token.isAny([TokenTypes.identifier, TokenTypes.keyword]) && !this.isNamedUnaryOperator(t)).forEach(t => this.resolveImplicitInvocation(t, true));
         //    left	->
-        this.nodes.ofType(Operator).where(t=> t.token.is(TokenTypes.arrow)).forEach(t=> this.resolveArrow(t));
+        this.nodes.ofType(Operator).where(t => t.token.is(TokenTypes.arrow)).forEach(t => this.resolveArrow(t));
 
-        this.nodes.ofType(ParenthesizedList).forEach(t=> this.resolveInvocation(t));
+        this.nodes.ofType(ParenthesizedList).forEach(t => this.resolveInvocation(t));
         //console.log("resolved", this.nodes);
         //    nonassoc	++ --
-        this.nodes.ofType(Operator).where(t=> t.token.isAny([TokenTypes.inc, TokenTypes.dec])).forEach(t=> this.resolveAutoIncDec(t));
+        this.nodes.ofType(Operator).where(t => t.token.isAny([TokenTypes.inc, TokenTypes.dec])).forEach(t => this.resolveAutoIncDec(t));
         //console.log("resolved", this.nodes);
         //    right	**
         //    right	! ~ \ and unary + and -
-        this.nodes.reversed().ofType(Operator).where(t=> t.token.isAny([TokenTypes.not, TokenTypes.tilda, TokenTypes.makeRef, TokenTypes.sigil, TokenTypes.lastIndexVar, TokenTypes.plus, TokenTypes.minus,  /*TODO: coderef TokenTypes.multiply*/])).forEach(t=> this.resolvePrefixUnary(t));
+        this.nodes.reversed().ofType(Operator).where(t => t.token.isAny([TokenTypes.not, TokenTypes.tilda, TokenTypes.makeRef, TokenTypes.sigil, TokenTypes.lastIndexVar, TokenTypes.plus, TokenTypes.minus,  /*TODO: coderef TokenTypes.multiply*/])).forEach(t => this.resolvePrefixUnary(t));
         //console.log("resolved", this.nodes);
         //    left	=~ !~
-        this.nodes.ofType(Operator).where(t=> t.token.isAny([TokenTypes.regexEquals, TokenTypes.regexNotEquals])).forEach(t=> this.resolveBinary(t));
+        this.nodes.ofType(Operator).where(t => t.token.isAny([TokenTypes.regexEquals, TokenTypes.regexNotEquals])).forEach(t => this.resolveBinary(t));
         //console.log("resolved", this.nodes);
         //    left	* / % x   //TODO: %
-        this.nodes.ofType(Operator).where(t=> t.token.isAny([TokenTypes.multiply, TokenTypes.div, TokenTypes.multiplyString])).forEach(t=> this.resolveBinary(t));
+        this.nodes.ofType(Operator).where(t => t.token.isAny([TokenTypes.multiply, TokenTypes.div, TokenTypes.multiplyString])).forEach(t => this.resolveBinary(t));
         //console.log("resolved", this.nodes);
         //        left	+ - .
-        this.nodes.ofType(Operator).where(t=> t.token.isAny([TokenTypes.plus, TokenTypes.minus, TokenTypes.concat])).forEach(t=> this.resolveBinary(t));
+        this.nodes.ofType(Operator).where(t => t.token.isAny([TokenTypes.plus, TokenTypes.minus, TokenTypes.concat])).forEach(t => this.resolveBinary(t));
         //console.log("resolved", this.nodes);
         //        left	<< >>
         //        nonassoc	named unary operators
-        this.nodes.ofType(NamedMemberExpression).where(t=> this.isNamedUnaryOperator(t)).forEach(t=> this.resolveNamedUnaryOperator(t));
-        
+        this.nodes.ofType(NamedMemberExpression).where(t => this.isNamedUnaryOperator(t)).forEach(t => this.resolveNamedUnaryOperator(t));
+
         //console.log("resolved", this.nodes);
         //        nonassoc	< > <= >= lt gt le ge            //TODO: lt gt le ge
-        this.nodes.ofType(Operator).where(t=> t.token.isAny([
+        this.nodes.ofType(Operator).where(t => t.token.isAny([
             TokenTypes.greaterThan, TokenTypes.greaterThanOrEquals,
             TokenTypes.smallerThan, TokenTypes.smallerThanOrEquals,
-        ]) || t.token.isAnyKeyword(["lt", "gt", "le", "ge"])).forEach(t=> this.resolveBinary(t));
+        ]) || t.token.isAnyKeyword(["lt", "gt", "le", "ge"])).forEach(t => this.resolveBinary(t));
         //console.log("resolved", this.nodes);
         //        nonassoc	== != <=> eq ne cmp ~~
-        this.nodes.ofType(Operator).where(t=>
-            t.token.isAny([TokenTypes.equals, TokenTypes.notEquals, TokenTypes.numericCompare, ])
+        this.nodes.ofType(Operator).where(t =>
+            t.token.isAny([TokenTypes.equals, TokenTypes.notEquals, TokenTypes.numericCompare,])
             ||
-            t.token.isAnyKeyword(["eq", "ne", "cmp", ]))
-            .forEach(t=> this.resolveBinary(t));
+            t.token.isAnyKeyword(["eq", "ne", "cmp",]))
+            .forEach(t => this.resolveBinary(t));
         //console.log("resolved", this.nodes);
         //        left	&
-        this.nodes.ofType(Operator).where(t=> t.token.is(TokenTypes.bitwiseAnd)).forEach(t=> this.resolveBinary(t));
+        this.nodes.ofType(Operator).where(t => t.token.is(TokenTypes.bitwiseAnd)).forEach(t => this.resolveBinary(t));
         //        left	| ^
-        this.nodes.ofType(Operator).where(t=> t.token.isAny([TokenTypes.bitwiseOr, TokenTypes.bitwiseXor])).forEach(t=> this.resolveBinary(t));
+        this.nodes.ofType(Operator).where(t => t.token.isAny([TokenTypes.bitwiseOr, TokenTypes.bitwiseXor])).forEach(t => this.resolveBinary(t));
         //        left	&&
-        this.nodes.ofType(Operator).where(t=> t.token.is(TokenTypes.and)).forEach(t=> this.resolveBinary(t));
+        this.nodes.ofType(Operator).where(t => t.token.is(TokenTypes.and)).forEach(t => this.resolveBinary(t));
         //        left	|| //
-        this.nodes.ofType(Operator).where(t=> t.token.isAny([TokenTypes.or, TokenTypes.divDiv])).forEach(t=> this.resolveBinary(t));
+        this.nodes.ofType(Operator).where(t => t.token.isAny([TokenTypes.or, TokenTypes.divDiv])).forEach(t => this.resolveBinary(t));
         //    nonassoc	..  ... //TODO: ...
-        this.nodes.ofType(Operator).where(t=> t.token.isAny([TokenTypes.range, TokenTypes.range3])).forEach(t=> this.resolveBinary(t));
+        this.nodes.ofType(Operator).where(t => t.token.isAny([TokenTypes.range, TokenTypes.range3])).forEach(t => this.resolveBinary(t));
         //    right	?:
-        this.nodes.reversed().ofType(Operator).where(t=> t.token.is(TokenTypes.question)).forEach(t=> this.resolveTrinaryExpression(t));
+        this.nodes.reversed().ofType(Operator).where(t => t.token.is(TokenTypes.question)).forEach(t => this.resolveTrinaryExpression(t));
         //    right	= += -= *= etc. goto last next redo dump
-        this.nodes.reversed().ofType(Operator).where(t=> t.token.isAny([
+        this.nodes.reversed().ofType(Operator).where(t => t.token.isAny([
             TokenTypes.assignment,
             TokenTypes.addAssign,
             TokenTypes.subtractAssign,
@@ -144,27 +153,27 @@ export class PrecedenceResolver {
             TokenTypes.xorAssign,
             TokenTypes.divDivAssign,
             TokenTypes.concatAssign,
-        ])).forEach(t=> this.resolveBinary(t));
+        ])).forEach(t => this.resolveBinary(t));
         //    left	, =>
-        this.nodes.ofType(Operator).where(t=> t.token.isAny([TokenTypes.comma, TokenTypes.fatComma])).forEach(t=> this.resolveComma(t));
+        this.nodes.ofType(Operator).where(t => t.token.isAny([TokenTypes.comma, TokenTypes.fatComma])).forEach(t => this.resolveComma(t));
         //    nonassoc	list operators (rightward)
         //    right	not
-        this.nodes.reversed().ofType(Operator).where(t=> t.token.isAnyKeyword(["not"])).forEach(t=> this.resolvePrefixUnary(t));
+        this.nodes.reversed().ofType(Operator).where(t => t.token.isAnyKeyword(["not"])).forEach(t => this.resolvePrefixUnary(t));
         //    left	and
-        this.nodes.ofType(Operator).where(t=> t.token.isKeyword("and")).forEach(t=> this.resolveBinary(t));
+        this.nodes.ofType(Operator).where(t => t.token.isKeyword("and")).forEach(t => this.resolveBinary(t));
         //    left	or xor
-        this.nodes.ofType(Operator).where(t=> t.value == "or").forEach(t=> this.resolveBinary(t));
+        this.nodes.ofType(Operator).where(t => t.value == "or").forEach(t => this.resolveBinary(t));
 
 
         //console.log("resolved", this.nodes);
         if (this.nodes.length > 1) {
-            if (allowNonParenthesizedNoCommaList && this.nodes.where(t=> t instanceof Expression || t instanceof Block).length == this.nodes.length) {
+            if (allowNonParenthesizedNoCommaList && this.nodes.where(t => t instanceof Expression || t instanceof Block).length == this.nodes.length) {
                 //if (this.nodes.length > 2)
                 //    throw new Error();
                 //if (this.nodes.length == 2 && !(this.nodes[0] instanceof Block) && !(this.nodes[0] instanceof HashRefCreationExpression)) //if the latter, convert to block
                 //    throw new Error();
                 let node = new NonParenthesizedList();
-                node.items = <Expression[]>this.nodes.select(t=> t instanceof Block ? this.toBlockExpression(t) : t);
+                node.items = <Expression[]>this.nodes.select(t => t instanceof Block ? this.toBlockExpression(t) : t);
                 node.itemsSeparators = [];
                 //node.resolvedFrom = this.mbe;
                 return node;
@@ -367,7 +376,7 @@ export class PrecedenceResolver {
         let left = this.nodes[index - 1];
         if (left == null)
             return node;
-        if(left instanceof NamedMemberExpression && left.isBareword())
+        if (left instanceof NamedMemberExpression && left.isBareword())
             return node;
         if (left instanceof Expression || (left instanceof Operator && left.token.is(TokenTypes.arrow))) {
             let node2 = new ArrayMemberAccessExpression();
@@ -442,7 +451,7 @@ export class PrecedenceResolver {
         }
         else {
             let args = new UnresolvedExpression();
-            args.nodes = this.takeAsLongAs(i + 1, arg=> {
+            args.nodes = this.takeAsLongAs(i + 1, arg => {
                 if (!allowCommas && arg instanceof Operator && arg.token.isAny([TokenTypes.comma, TokenTypes.fatComma]))
                     return false;
                 if (arg instanceof Operator && arg.token.isAny([TokenTypes.colon, TokenTypes.question]))

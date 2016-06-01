@@ -89,7 +89,7 @@ export interface P5File {
     is_dir?: string;
     children?: P5File[];
     src?: string;
-
+    href?:string;
 }
 
 

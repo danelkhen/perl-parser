@@ -76,9 +76,6 @@ a {
     overflow: scroll;
 }
 
-.ace-mode .code-view {
-    overflow:scroll;
-}
 
 .menu {
     user-select: none;
@@ -473,7 +470,9 @@ a.btn {
 
 .ace-mode .code-view{
     position:relative;
+    overflow:auto;
 }
+
 .ace-mode #editor {
     position: absolute;
     left: 0;

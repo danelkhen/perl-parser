@@ -14,7 +14,7 @@ export class AstNode {
     tokens: Token[] = [];
     whitespaceBefore: Token[];
     whitespaceAfter: Token[];
-    query(): AstQuery<AstNode> {
+    query(): AstQuery<this> {
         return AstQuery.of(this);
     }
 
@@ -358,7 +358,7 @@ export class SubroutineExpression extends Expression {
 
     name: SimpleName;
     attribute: SimpleName;
-    
+
     //statements: Statement[];
     block: Block;
 }
@@ -429,7 +429,7 @@ export class NativeInvocation_BlockOrExpr extends NativeFunctionInvocation {
 
 
 export class AstQuery<T extends AstNode> {
-    constructor(public root: AstNode) {
+    constructor(public root: T) {
     }
 
     static of<V extends AstNode>(root: V): AstQuery<V> {
@@ -438,20 +438,32 @@ export class AstQuery<T extends AstNode> {
     getTokens(): Token[] {
         let node = this.root;
         let list: Token[] = [];
-        Object.keys(node).where(key=> key != "parentNode").select(key=> node[key]).forEach(obj=> {
+        Object.keys(node).where(key => key != "parentNode").select(key => node[key]).forEach(obj => {
             if (obj instanceof Array)
-                list.addRange(obj.where(t=> t instanceof Token));
+                list.addRange(obj.where(t => t instanceof Token));
             else if (obj instanceof Token)
                 list.add(obj);
         });
         return list;
     }
+    getParentStatement(): Statement {
+        return this.getParents().ofType(Statement).first();
+    }
+    getParents(): AstNode[] {
+        let list: AstNode[] = [];
+        let node = this.root.parentNode;
+        while (node != null) {
+            list.add(node);
+            node = node.parentNode;
+        }
+        return list;
+    }
     getChildren(): AstNode[] {
         let node = this.root;
         let list: AstNode[] = [];
-        Object.keys(node).where(key=> key != "parentNode").select(key=> node[key]).forEach(obj=> {
+        Object.keys(node).where(key => key != "parentNode").select(key => node[key]).forEach(obj => {
             if (obj instanceof Array)
-                list.addRange(obj.where(t=> t instanceof AstNode));
+                list.addRange(obj.where(t => t instanceof AstNode));
             else if (obj instanceof AstNode)
                 list.add(obj);
         });
@@ -494,7 +506,7 @@ export class AstQuery<T extends AstNode> {
         }
         return null;
     }
-    replaceNode(newNode: AstNode) {
+    replaceNode<R extends AstNode>(newNode: R): AstQuery<R> {
         let oldNode = this.root;
         let parentNode = oldNode.parentNode;
         let prop = oldNode.parentNodeProp;
@@ -508,7 +520,8 @@ export class AstQuery<T extends AstNode> {
         }
         newNode.parentNode = parentNode;
         newNode.parentNodeProp = prop;
-        this.root = newNode;
+        return AstQuery.of(newNode);
+        //this.root = newNode;
     }
 
 }

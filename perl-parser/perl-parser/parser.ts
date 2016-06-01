@@ -4,13 +4,13 @@ import {ParserBase} from "./parser-base";
 import {ExpressionParser} from "./expression-parser";
 
 import {
-AstNode, Expression, Statement, UnresolvedExpression, SimpleName, SubroutineDeclaration, SubroutineExpression, ArrayMemberAccessExpression, ArrayRefDeclaration,
-BarewordExpression, BeginStatement, BinaryExpression, Block, BlockExpression, BlockStatement, ElseStatement, ElsifStatement, EmptyStatement, EndStatement,
-ExpressionStatement, ForEachStatement, ForStatement, HashMemberAccessExpression, HashRefCreationExpression, IfStatement, InvocationExpression, MemberExpression,
-NamedMemberExpression, NativeFunctionInvocation, NativeInvocation_BlockAndListOrExprCommaList, NativeInvocation_BlockOrExpr, NonParenthesizedList, NoStatement,
-Operator, PackageDeclaration, ParenthesizedList, PostfixUnaryExpression, PrefixUnaryExpression, QwExpression, RawExpression, RawStatement, RegexExpression,
-ReturnExpression, TrinaryExpression, Unit, UnlessStatement, UseOrNoStatement, UseStatement, ValueExpression, VariableDeclarationExpression, VariableDeclarationStatement, WhileStatement,
-HasArrow, HasLabel,
+    AstNode, Expression, Statement, UnresolvedExpression, SimpleName, SubroutineDeclaration, SubroutineExpression, ArrayMemberAccessExpression, ArrayRefDeclaration,
+    BarewordExpression, BeginStatement, BinaryExpression, Block, BlockExpression, BlockStatement, ElseStatement, ElsifStatement, EmptyStatement, EndStatement,
+    ExpressionStatement, ForEachStatement, ForStatement, HashMemberAccessExpression, HashRefCreationExpression, IfStatement, InvocationExpression, MemberExpression,
+    NamedMemberExpression, NativeFunctionInvocation, NativeInvocation_BlockAndListOrExprCommaList, NativeInvocation_BlockOrExpr, NonParenthesizedList, NoStatement,
+    Operator, PackageDeclaration, ParenthesizedList, PostfixUnaryExpression, PrefixUnaryExpression, QwExpression, RawExpression, RawStatement, RegexExpression,
+    ReturnExpression, TrinaryExpression, Unit, UnlessStatement, UseOrNoStatement, UseStatement, ValueExpression, VariableDeclarationExpression, VariableDeclarationStatement, WhileStatement,
+    HasArrow, HasLabel,
 } from "./ast";
 
 import {safeTry, TokenReader, Logger, AstNodeFixator} from "./utils";
@@ -25,9 +25,9 @@ export class Parser extends ParserBase {
     public parse(): Statement[] {
         this.nextToken();
         let statements: Statement[] = [];
-        safeTry(() => this.parseStatementsUntil(null, statements)).catch(e=> {
-            let e2:Error = e;
-            this.logger.error([e2.message || "Unknown error:\n"+e.stack, this.token, ]);
+        safeTry(() => this.parseStatementsUntil(null, statements)).catch(e => {
+            let e2: Error = e;
+            this.logger.error([e2.message || "Unknown error:\n" + e.stack, this.token,]);
         });
         return statements;
     }
@@ -50,7 +50,7 @@ export class Parser extends ParserBase {
         this.log("parseStatements");
         if (statements == null)
             statements = [];
-        while (true) {
+        while (this.token != null) {
             i++;
             if (stopAtTokenType && this.token.is(stopAtTokenType))
                 break;

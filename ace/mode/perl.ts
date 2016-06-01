@@ -18,8 +18,11 @@ export class Mode extends TextMode {
     constructor() {
         super();
         this.HighlightRules = PerlHighlightRules;
+        this.$highlightRules = this.HighlightRules;
+        this.$highlightRules.$keywordList = TokenTypes.builtinFunctions.concat(TokenTypes.pragmas);
         this.$outdent = new MatchingBraceOutdent();
         this.foldingRules = new CStyleFoldMode({ start: "^=(begin|item)\\b", end: "^=(cut)\\b" });
+        //https://github.com/ajaxorg/ace/wiki/Default-Keyboard-Shortcuts
     }
     HighlightRules: PerlHighlightRules;
     $outdent: MatchingBraceOutdent;
@@ -123,7 +126,11 @@ class MyTokenizer {
             this.reset(); //TODO: optimize - clear only the tokens from this line forward, rewind to the proper pos, and continue from there.
         }
 
+
         let tok = this.tokenizer;
+        let startFromTokenIndex = 0;
+        if(tok.cursor.pos.line<lineNumber)
+            startFromTokenIndex = tok.tokens.length;
         try {
             while (!tok.isEof() && tok.cursor.pos.line <= lineNumber) {
                 //console.log("MyTok", "tokenizer.next", tok.cursor.pos.line, tok.cursor.pos.column);
@@ -135,11 +142,12 @@ class MyTokenizer {
                 return { state: "error", tokens: [] };
         }
         let relevantTokens: TokenEx[] = [];
-        for (let token of tok.tokens) {
+        for (let i = startFromTokenIndex ; i < tok.tokens.length; i++) {
+            let token = tok.tokens[i];
             let startRow = token.range.start.line - 1;
             let endRow = token.range.end.line - 1;
             if (startRow > row)
-                continue;
+                break;
             if (endRow < row)
                 continue;
             if (startRow == row && endRow == row) {
@@ -149,7 +157,7 @@ class MyTokenizer {
             let lines = token.value.lines();
             let newValue = lines[row - startRow];
             if (newValue != "") {
-                let token2:TokenEx = token.type.create2(newValue);
+                let token2: TokenEx = token.type.create2(newValue);
                 token2.isPartialToken = true;
                 relevantTokens.push(token2);
             }
@@ -177,9 +185,9 @@ class MyTokenizer {
             type = "keyword";
         else if (token.isAnyIdentifier(TokenTypes.pragmas))
             type = "keyword";
-        else if(token.is(TokenTypes.braceOpen))
+        else if (token.is(TokenTypes.braceOpen))
             type = "paren.lparen";
-        else if(token.is(TokenTypes.braceClose))
+        else if (token.is(TokenTypes.braceClose))
             type = "paren.rparen";
         return { value: token.value, type: type };
     }
@@ -200,5 +208,5 @@ export class EventEmitter {
 }
 
 export interface TokenEx extends Token {
-    isPartialToken?:boolean;
+    isPartialToken?: boolean;
 }

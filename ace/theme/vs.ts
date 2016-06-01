@@ -172,6 +172,7 @@ let theme = {
 
 
 .ace-vs .ace_qq { color: red;}
+.ace-vs .ace_qw { color: red;}
 .ace-vs .ace_pod { color: darkgreen;}
 .ace-vs .ace_keyword { color: blue;}
 .ace-vs .ace_builtin-function { color: blue;}
@@ -180,12 +181,13 @@ let theme = {
 .ace-vs .ace_sigiledIdentifier { color: #FF8700;}
 .ace-vs .ace_integer { color: red;}
 .ace-vs .ace_interpolatedString { color: brown;}
-.ace-vs .ace_bareString { color: brown;}
+.ace-vs .ace_bareString { color: inherit;}
 .ace-vs .ace_string { color: brown;}
 .ace-vs .ace_heredoc { color: brown;}
 .ace-vs .ace_heredocValue { color: brown;}
 .ace-vs .ace_regex { color: red;}
 .ace-vs .ace_regexSubstitute { color: red;}
+.ace-vs .ace_qr { color: red;}
 .ace-vs .ace_package-name { color:red;}
         
         

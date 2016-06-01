@@ -41,8 +41,8 @@
             <td>
                 <div class="top-bar">
                     <div class="menu">
-                        <a class="btn btnUp is-folder" href="../" _if="isFolder()">up</a>
-                        <a class="btn btnUp is-file" href="./" _if="isFile()">up</a>
+                        <a class="btn btnUp is-folder" href=".." _if="isFolder()">up</a>
+                        <a class="btn btnUp is-file" href="." _if="isFile()">up</a>
                         <button class="btn" _onclick="e => this.critique()">critique</button>
                         <button class="btn" _onclick="e => this.editor.expandOrCollapseAll()">toggle</button>
                         <button class="btn" _onclick="e => this.gitBlame()">blame</button>
@@ -54,7 +54,7 @@
             <td>
                 <div class="dir-view" _if="isFolder()">
                     <table>
-                        <tr class="{{t => 'child template'}}" _for="file.children"><td><a href="{{path}}">{{name}}</a></td><td>{{size||""}}</td></tr>
+                        <tr class="{{t => 'child template'}}" _for="file.children"><td><a href="{{href}}">{{name}}</a></td><td>{{size||""}}</td></tr>
                     </table>
                 </div>
                 <div _if="isFile()" class="code-view">

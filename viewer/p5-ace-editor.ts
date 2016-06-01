@@ -29,15 +29,19 @@ import {Tooltip} from "ace/tooltip";
 import {StatusBar} from "ace/ext/statusbar";
 import "ace/ext/linking";
 import {Config} from "ace/config";
+import "ace/ext/language_tools";
+import {EditSession} from "ace/edit_session";
 
 export class P5AceEditor implements P5Editor {
     init() {
         this.editor = ace.edit("editor");
         this.editor.session.setMode("ace/mode/perl");
         this.editor.setTheme("ace/theme/vs");
+        this.editor.$blockScrolling = Infinity; //automatically scrolling cursor into view after selection change this will be disabled in the next version set editor.$blockScrolling = Infinity to disable this message
         this.editor.setOptions({
             enableLinking: true,
             readOnly: false,
+            enableBasicAutocompletion: true
         });
         this.editor.focus();
         this.editor.addEventListener("linkClick", e => this.editor_linkClick(e));
@@ -49,7 +53,7 @@ export class P5AceEditor implements P5Editor {
         this.editor.commands.addCommand({
             name: 'goToDefinition',
             bindKey: { win: 'F12', mac: 'F12' },
-            exec: editor=> this.goToDefinition(),
+            exec: editor => this.goToDefinition(),
             readOnly: true // false if this command should not apply in readOnly mode
         });
     }
@@ -282,7 +286,8 @@ export class P5AceEditor implements P5Editor {
         return this.editor.getValue();
     }
     set code(value: string) {
-        this.editor.setValue(value, -1);
+        this.editor.setSession(new EditSession(value, "ace/mode/perl"));
+        //this.editor.setValue(value, -1);
         //this.editor.moveCursorTo(0, 0, false);
     }
 

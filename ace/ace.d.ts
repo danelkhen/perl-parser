@@ -9,6 +9,7 @@
         createModeDelegates(mapping: any): void;
         transformAction(state: any, action: any, editor: any, session: any, param: any): any;
         $getIndent(line);
+        $highlightRules: any;
     }
 }
 declare module "ace/background_tokenizer" {
@@ -1271,6 +1272,7 @@ declare module "ace/editor" {
     import {Selection} from "ace/selection";
     import {Position} from "ace/position";
     import {Range} from "ace/range";
+    import {EventEmitter} from "ace/lib/event_emitter";
 
     ////////////////////////////////
     /// EditSession
@@ -1286,7 +1288,7 @@ declare module "ace/editor" {
      * The `Editor` manages the [[EditSession]] (which manages [[Document]]s), as well as the [[VirtualRenderer]], which draws everything to the screen.
      * Event sessions dealing with the mouse and keyboard are bubbled up from `Document` to the `Editor`, which decides what to do with them.
     **/
-    export interface Editor {
+    export interface Editor extends EventEmitter {
 
         addEventListener(ev: 'change', callback: (ev: EditorChangeEvent) => any): void;
         addEventListener(ev: string, callback: Function): void;
@@ -3105,7 +3107,22 @@ declare module "ace/tooltip" {
 }
 
 
-
+declare module "ace/lib/event_emitter" {
+    export interface EventEmitter {
+        _emit(eventName:string, e);
+        _dispatchEvent(eventName:string, e);
+        _signal(eventName:string, e);
+        once(eventName:string, callback:Function);
+        setDefaultHandler(eventName:string, callback:Function);
+        removeDefaultHandler(eventName:string, callback:Function);
+        on(eventName:string, callback:Function, capturing?:boolean);
+        addEventListener(eventName:string, callback:Function, capturing?:boolean);
+        off(eventName:string, callback:Function);
+        removeListener(eventName:string, callback:Function);
+        removeEventListener(eventName:string, callback:Function);
+        removeAllListeners(eventName:string);
+    }
+}
 declare module "ace/lib/event" {
     //TODO:
 }
@@ -3170,13 +3187,13 @@ declare module "ace/config" {
 declare module "ace/keyboard/hash_handler" {
     import {Editor} from "ace/editor";
     export class HashHandler {
-        bindKeys(bindings: KeyBindings):void;
+        bindKeys(bindings: KeyBindings): void;
     }
     export interface KeyBindings {
-        [key:string]:KeyHandler;
+        [key: string]: KeyHandler;
     }
     export interface KeyHandler {
-        (editor:Editor, arg:Object):void;
+        (editor: Editor, arg: Object): void;
     }
 
 }

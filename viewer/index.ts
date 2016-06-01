@@ -84,7 +84,7 @@ export class IndexPage {
             $("body").addClass("ace-mode");
             this.editor = new P5AceEditor();
             this.editor.init();
-            this.p5Editor.editor.selection.on("changeSelection", e => {
+            this.p5Editor.editor.on("changeSelection", e => {
                 if (this.file == null)
                     return;
                 let range = this.p5Editor.editor.selection.getRange();
@@ -303,7 +303,8 @@ export class IndexPage {
         this.service.fs(url).then(t => this.file = t).then(() => {
             if (this.file.children != null) {
                 this.file.children.forEach(t => t.name = t.path);
-                this.file.children.forEach(t => t.path = Helper.urlJoin([url, t.path]));
+                this.file.children.forEach(t => t.path = Helper.urlJoin([this.file.path, t.path]));
+                this.file.children.forEach(t => t.href = t.is_dir ? "/" + t.path + "/" : "/" + t.path);
                 this.file.children = this.file.children.orderBy([t => !t.is_dir, t => t.name]);
             }
             else {
@@ -479,7 +480,8 @@ export class IndexPage {
         let pragmas2: Token[] = this.editor.tokens.where(t => (t.isIdentifier() || t.isKeyword()) && TokenTypes.pragmas.contains(t.value));
         console.log({ builtins2, pragmas2 });
         let pkgRefs = this.findPackageRefs(this.editor.unit);
-        console.log(pkgRefs.select(t => t.toCode().trim()).distinct());
+        console.log({pkgRefs});
+        console.log(pkgRefs.select(t => t.toCode().trim()).distinct().orderBy(t=>t));
         let inUse: NamedMemberExpression[] = [];
         let refs: NamedMemberExpression[] = [];
         let builtins: NamedMemberExpression[] = [];
@@ -614,6 +616,7 @@ export class IndexPage {
     }
 
     isInsideUse(node: Expression): boolean {
+        //console.log("isInsideUse", node);
         let parent = node.parentNode;
         let parentProp = node.parentNodeProp;
         if (parent instanceof InvocationExpression && node.parentNodeProp == "target") {
@@ -625,6 +628,9 @@ export class IndexPage {
             if (target instanceof NamedMemberExpression && target.name == "use")
                 return true;
         }
+        //let s = node.query().getParentStatement().toCode().trim();
+        //if (s.startsWith("use "))
+        //    console.log("failed detecting use", node);
         return false;
     }
 

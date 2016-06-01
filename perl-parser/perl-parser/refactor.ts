@@ -36,7 +36,7 @@ export class Refactor {
         return node.query().selectFirstNonNull(predicate);
     }
     replaceNode(oldNode: AstNode, newNode: AstNode) {
-        return oldNode.query().replaceNode(newNode);
+        oldNode.query().replaceNode(newNode);
     }
 
 }
