@@ -480,8 +480,7 @@ export class IndexPage {
         let pragmas2: Token[] = this.editor.tokens.where(t => (t.isIdentifier() || t.isKeyword()) && TokenTypes.pragmas.contains(t.value));
         console.log({ builtins2, pragmas2 });
         let pkgRefs = this.findPackageRefs(this.editor.unit);
-        console.log({pkgRefs});
-        console.log(pkgRefs.select(t => t.toCode().trim()).distinct().orderBy(t=>t));
+        console.log(pkgRefs.select(t => t.toCode().trim()).distinct().orderBy(t => t));
         let inUse: NamedMemberExpression[] = [];
         let refs: NamedMemberExpression[] = [];
         let builtins: NamedMemberExpression[] = [];
@@ -500,6 +499,7 @@ export class IndexPage {
             else
                 refs.push(t);
         });
+        console.log({ refs, inUse });
         let subs = this.findSubs();
         if (!this.aceMode) {
             subs.where(t => t.name != null).forEach(node => {
@@ -518,41 +518,34 @@ export class IndexPage {
 
         let resolutions: PackageResolution[] = inUse.select(node => ({ node: node, name: node.toCode().trim(), resolved: null }));
         this.resolvePackages(resolutions).then(() => {
-            resolutions.forEach(pkg => {
-                if (pkg.resolved == null)
-                    return;
-                let href = null;//"#"+pkg.name;//null;
-                if (pkg.resolved.path != null)
-                    href = this.cvBaseUrl + pkg.resolved.path;
-                else if (pkg.resolved.url != null)
-                    href = pkg.resolved.url;//"https://metacpan.org/pod/" + pkg.name;
-                let core = pkg.resolved.is_core ? "core " : "";
-                let local = pkg.resolved.is_local ? "local " : "";
+            console.log({ resolutions });
+
+            pkgRefs.forEach(node => {
+                let name = node.toCode().trim();
+                let core = "";
+                let local = "";
+                let href = "";
+                let pkg = resolutions.first(t => t.name == name);
+                if (pkg != null && pkg.resolved != null) {
+                    if (pkg.resolved.path != null)
+                        href = this.cvBaseUrl + pkg.resolved.path;
+                    else if (pkg.resolved.url != null)
+                        href = pkg.resolved.url;//"https://metacpan.org/pod/" + pkg.name;
+                    core = pkg.resolved.is_core ? "core " : "";
+                    local = pkg.resolved.is_local ? "local " : "";
+                }
                 this.editor.hyperlinkNode({
-                    node: pkg.node,
-                    href, name: pkg.name,
-                    title: "(package) " + pkg.name + "\nctrl+click to open documentation",
+                    node: node,
+                    href: href,
+                    name: name,
+                    //title: "(package) " + pkg.name + "\nctrl+click to open documentation",
                     css: "package-name",
                     //html: `<iframe src="${href}" />`
-                    html: `<div><a href="${href}">(${core}${local}package) ${pkg.name}</a></div>`
+                    html: `<div><a href="${href}">(${core}${local}package) ${name}</a></div>`
                 });
             });
         });
 
-        //resolutions.forEach(pkg => {
-        //    this.resolvePackage(pkg)
-        //        .then(t => {
-        //            //console.log(pkg);
-        //        });
-        //});
-        let packages = resolutions.select(t => t.name);
-        refs.forEach(node => {
-            let pkg = node.toCode();
-            let pkg2 = resolutions.first(t => t.name == pkg);
-            if (pkg2 != null) {
-                this.editor.hyperlinkNode({ node, href: "#" + pkg });
-            }
-        });
         let enableCollapsing = false;
         if (enableCollapsing) {
             subs.forEach(sub => {
@@ -606,12 +599,15 @@ export class IndexPage {
         return new AstQuery(this.editor.unit).getDescendants().ofType(SubroutineExpression);
     }
     isPackageName(node: NamedMemberExpression): boolean {
+        let parentNode = node.parentNode;
+        if (parentNode instanceof NamedMemberExpression && this.isPackageName(parentNode))
+            return false;
         if (node.arrow)
             return false;
         if (node.token.is(TokenTypes.sigiledIdentifier))
             return false;
-        if (node.parentNode instanceof NamedMemberExpression && node.parentNodeProp == "target")
-            return false;
+        //if (node.parentNode instanceof NamedMemberExpression && node.parentNodeProp == "target")
+        //    return false;
         return true;
     }
 
