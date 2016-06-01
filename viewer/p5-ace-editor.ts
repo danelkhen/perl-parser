@@ -192,7 +192,7 @@ export class P5AceEditor implements P5Editor {
             console.log("hyperlinkNode not supported anymore");
             return null;
         }
-        this.addPopupMarker({ href: hl.href, html: hl.html, node: hl.node, tokens: hl.tokens, className: hl.css, target:hl.target });
+        this.addPopupMarker({ href: hl.href, html: hl.html, node: hl.node, tokens: hl.tokens, className: hl.css, target: hl.target });
         return null;
     }
 
@@ -205,8 +205,8 @@ export class P5AceEditor implements P5Editor {
         let pos2 = new TextFilePos();
         pos2.line = pos.row + 1;
         pos2.column = pos.column + 1;
-        let link = this.popupMarkers.first(link => link.tokens != null && link.tokens.first(t => t.range.containsPos(pos2)) != null);
-        return link;
+        let pm = this.popupMarkers.first(t => t.range != null && t.range.containsPos(pos2));
+        return pm;
     }
     editor_linkClick(e: LinkEvent) {
         let link = this.findPopupMarker(e.position);
@@ -248,10 +248,21 @@ export class P5AceEditor implements P5Editor {
         }
     }
     addPopupMarker(pm: PopupMarker): void {
-        if (pm.tokens == null && pm.node != null) {
-            pm.tokens = TokenUtils.collectTokens(pm.node);
+        if (pm.range == null) {
+            if (pm.tokens == null && pm.node != null)
+                pm.tokens = TokenUtils.collectTokens(pm.node);
+            if (pm.tokens == null || pm.tokens.length == 0)
+                return;
+            if (pm.tokens.length == 1) {
+                pm.range = pm.tokens[0].range;
+            }
+            else {
+                let first = pm.tokens.first().range;
+                let last = pm.tokens.last().range;
+                pm.range = new TextFileRange(first.file, first.start, first.end);
+            }
         }
-        if (pm.tokens == null)
+        if (pm.range == null)
             return;
         this.popupMarkers.add(pm);
         if (pm.className == null)
@@ -266,7 +277,7 @@ export class P5AceEditor implements P5Editor {
         return { column: ann.pos.column - 1, row: ann.pos.line - 1, text: ann.text, type: ann.type || "info" };
     }
     setAnnotations(list: Annotation[]) {
-        let list2 = list.map(t=>this.toAceAnnotation(t));
+        let list2 = list.map(t => this.toAceAnnotation(t));
         this.editor.session.setAnnotations(list2);
     }
     addAnnotation(ann: Annotation) {
@@ -330,7 +341,7 @@ export class P5AceEditor implements P5Editor {
     setGitBlameItems(items: GitBlameItem[]) {
         let anns = items.map(item => {
             let pos = this.sourceFile.getPos3(parseInt(item.line_num), 1);
-            return { pos: pos, text:`${item.date}\n${item.sha}\n${item.author}`};
+            return { pos: pos, text: `${item.date}\n${item.sha}\n${item.author}` };
         });
         this.setAnnotations(anns);
     }
@@ -366,8 +377,10 @@ export interface PopupMarker {
     node?: AstNode;
     tokens?: Token[];
     //marker: Marker;
+    range?: TextFileRange;
     href?: string;
     html?: string;
+
     className?: string;
     target?: string;
 }

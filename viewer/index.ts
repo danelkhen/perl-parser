@@ -139,7 +139,16 @@ export class IndexPage {
                 let text = `${violation.description}\n${violation.policy}\nseverity:${violation.severity}`;
                 if (this.aceMode) {
                     let range = this.editor.sourceFile.getRange2(pos, violation.source.code.length);
-                    this.p5Editor.addMarker({ range, className: "marker marker-violation", annotation: { text, type: "error" } });
+                    this.p5Editor.addMarker({
+                        range,
+                        className: "marker marker-violation",
+                        annotation: { text, type: "error" }
+                    });
+                    let html = `<div><div class="popup-header">${violation.policy}</div><div><div>severity:${violation.severity}</div><div>${violation.description}</div></div>`;
+                    this.p5Editor.addPopupMarker({
+                        range,
+                        html: html,
+                    });
                 }
                 else {
                     this.editor.hyperlinkNode(hl);
@@ -555,7 +564,7 @@ export class IndexPage {
                     css: "package-name",
                     //html: `<iframe src="${href}" />`
                     html: `<div><a href="${href}">(${core}${local}package) ${name}</a></div>`,
-                    target:"_blank",
+                    target: "_blank",
 
                 });
             });
