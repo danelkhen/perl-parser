@@ -163,10 +163,24 @@ let theme = {
 
 
 
+/*
 
-
-
-
+.ace-vs .ace_fold-widget {
+    background-image:none;
+    font-size:13px;
+    color: #ccc;
+    border: 1px solid #ccc;
+    border-radius:0;
+    max-height:1em;
+    height:1em;
+    
+}
+.ace-vs .ace_fold-widget.ace_open::after {
+    content: "-";
+}
+.ace-vs .ace_fold-widget.ace_closed::after {
+    content: "+";
+}*/
 
 
 

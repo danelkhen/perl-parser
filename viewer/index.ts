@@ -326,9 +326,11 @@ export class IndexPage {
                         this.editor.tokenizeAsync(url, data).then(() => {
                             window.setTimeout(() => {
                                 this.editor.parse();
-                                this.resolveAndHighlightUsedPackages();
                                 this.navigateToHash();
                                 this.dataBind();
+                                this.resolveAndHighlightUsedPackages().then(() => {
+                                    console.log("finished...");
+                                });
                             });
                         });
                     }, 10);
@@ -488,13 +490,13 @@ export class IndexPage {
             };
             if (html != null) {
                 let html2 = html.substringBetween("<!-- start doc -->", "<!-- end doc -->");
-                let html3 = `<div><div class="popup-header"><a href="${hl.href}">(${type}) ${hl.name}</a></div><div class="pod perldoc">${html2}</div></div>`;
+                let html3 = `<div><div class="popup-header"><a target="_blank" href="${hl.href}">(${type}) ${hl.name}</a></div><div class="pod perldoc">${html2}</div></div>`;
                 hl.html = html3;
             }
             this.editor.hyperlinkNode(hl);
         });
     }
-    resolveAndHighlightUsedPackages() {
+    resolveAndHighlightUsedPackages(): Promise<any> {
         if (this.editor.unit == null)
             return;
 
@@ -538,37 +540,6 @@ export class IndexPage {
         builtins2.forEach(node => this.resolvePerldocAndAnnotate2(node, true));
         pragmas2.forEach(node => this.resolvePerldocAndAnnotate2(node, false));
 
-        let resolutions: PackageResolution[] = inUse.select(node => ({ node: node, name: node.toCode().trim(), resolved: null }));
-        this.resolvePackages(resolutions).then(() => {
-            console.log({ resolutions });
-
-            pkgRefs.forEach(node => {
-                let name = node.toCode().trim();
-                let core = "";
-                let local = "";
-                let href = "";
-                let pkg = resolutions.first(t => t.name == name);
-                if (pkg != null && pkg.resolved != null) {
-                    if (pkg.resolved.path != null)
-                        href = this.cvBaseUrl + pkg.resolved.path;
-                    else if (pkg.resolved.url != null)
-                        href = pkg.resolved.url;//"https://metacpan.org/pod/" + pkg.name;
-                    core = pkg.resolved.is_core ? "core " : "";
-                    local = pkg.resolved.is_local ? "local " : "";
-                }
-                this.editor.hyperlinkNode({
-                    node: node,
-                    href: href,
-                    name: name,
-                    //title: "(package) " + pkg.name + "\nctrl+click to open documentation",
-                    css: "package-name",
-                    //html: `<iframe src="${href}" />`
-                    html: `<div><a href="${href}">(${core}${local}package) ${name}</a></div>`,
-                    target: "_blank",
-
-                });
-            });
-        });
 
         let enableCollapsing = false;
         if (enableCollapsing) {
@@ -591,6 +562,38 @@ export class IndexPage {
         this.editor.tokens.where(t => t.is(TokenTypes.pod) && t.value.lines().length > 3).forEach(pod => {
             this.editor.collapsable(null, [pod]);
         });
+
+        let resolutions: PackageResolution[] = inUse.select(node => ({ node: node, name: node.toCode().trim(), resolved: null }));
+        return this.resolvePackages(resolutions).then(() => {
+            console.log({ resolutions });
+
+            pkgRefs.forEach(node => {
+                let name = node.toCode().trim();
+                let core = "";
+                let local = "";
+                let href = "";
+                let pkg = resolutions.first(t => t.name == name);
+                if (pkg != null && pkg.resolved != null) {
+                    if (pkg.resolved.path != null)
+                        href = this.cvBaseUrl + pkg.resolved.path;
+                    else if (pkg.resolved.url != null)
+                        href = pkg.resolved.url;//"https://metacpan.org/pod/" + pkg.name;
+                    core = pkg.resolved.is_core ? "core " : "";
+                    local = pkg.resolved.is_local ? "local " : "";
+                    this.editor.hyperlinkNode({
+                        node: node,
+                        href: href,
+                        name: name,
+                        //title: "(package) " + pkg.name + "\nctrl+click to open documentation",
+                        css: "package-name",
+                        //html: `<iframe src="${href}" />`
+                        html: `<div><a target="_blank" href="${href}">(${core}${local}package) ${name}</a></div>`,
+                        target: "_blank",
+                    });
+                }
+            });
+        });
+
     }
 
     findConsecutiveRepetitions<T>(list: T[], equals: (x: T, y: T) => boolean): Array<T[]> {
@@ -636,6 +639,11 @@ export class IndexPage {
     }
 
     isInsideUse(node: Expression): boolean {
+        //let s = node.query().getParentStatement().toCode().trim();
+        ////if (s.startsWith("use "))
+        ////    console.log("failed detecting use", s, node);
+        //if (s.startsWith("use if"))
+        //    console.log("failed detecting use", s, node);
         //console.log("isInsideUse", node);
         let parent = node.parentNode;
         let parentProp = node.parentNodeProp;
@@ -645,12 +653,12 @@ export class IndexPage {
         }
         if (parent instanceof InvocationExpression && parentProp == "arguments") {
             let target = parent.target;
-            if (target instanceof NamedMemberExpression && target.name == "use")
+            if (target instanceof NamedMemberExpression && target.name == "use") {
+                //if (target.parentNode instanceof BinaryExpression) //use if ...
+                //    return false;
                 return true;
+            }
         }
-        //let s = node.query().getParentStatement().toCode().trim();
-        //if (s.startsWith("use "))
-        //    console.log("failed detecting use", node);
         return false;
     }
 

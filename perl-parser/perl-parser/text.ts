@@ -15,6 +15,7 @@ export class TextFileRange {
         var contains = this.start.compareWith(pos) >= 0 && this.end.compareWith(pos) <= 0;
         return contains;
     }
+
 }
 
 export class TextFile {
@@ -159,11 +160,8 @@ export class TextFilePos {
         return this.compareWith(pos) == 0;
     }
     compareWith(pos: TextFilePos): number {
-        if (pos.line == this.line) {
-            if (pos.column == this.column)
-                return 0;
+        if (pos.line == this.line) 
             return pos.column - this.column;
-        }
         return pos.line - this.line;
     }
 

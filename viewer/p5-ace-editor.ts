@@ -259,7 +259,7 @@ export class P5AceEditor implements P5Editor {
             else {
                 let first = pm.tokens.first().range;
                 let last = pm.tokens.last().range;
-                pm.range = new TextFileRange(first.file, first.start, first.end);
+                pm.range = new TextFileRange(first.file, first.start, last.end);
             }
         }
         if (pm.range == null)
