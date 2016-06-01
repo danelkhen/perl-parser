@@ -462,10 +462,23 @@ export class IndexPage {
             req.name = name;
 
         return this.perlDocHtml(req).then(html => {
-            let hl: CodeHyperlink = { node: node, tokens: tokens, href: "http://perldoc.perl.org/functions/" + name + ".html", name, title: "(builtin function) " + name + "\nctrl+click to open documentation", css: "builtin-function", target: "_blank" };
+            let href = "";
+            if (isBuiltinFunction)
+                href = "http://perldoc.perl.org/functions/" + name + ".html";
+            else
+                href = "http://perldoc.perl.org/" + name + ".html";
+            let type = isBuiltinFunction ? "builtin-function" : "pragma";
+            let hl: CodeHyperlink = {
+                node: node,
+                tokens: tokens,
+                href: href,
+                name: name,
+                //title: "(builtin function) " + name + "\nctrl+click to open documentation",
+                css: type,
+                target: "_blank"
+            };
             if (html != null) {
                 let html2 = html.substringBetween("<!-- start doc -->", "<!-- end doc -->");
-                let type = isBuiltinFunction ? "builtin-function" : "pragma";
                 let html3 = `<div><div class="popup-header"><a href="${hl.href}">(${type}) ${hl.name}</a></div><div class="pod perldoc">${html2}</div></div>`;
                 hl.html = html3;
             }
@@ -541,7 +554,9 @@ export class IndexPage {
                     //title: "(package) " + pkg.name + "\nctrl+click to open documentation",
                     css: "package-name",
                     //html: `<iframe src="${href}" />`
-                    html: `<div><a href="${href}">(${core}${local}package) ${name}</a></div>`
+                    html: `<div><a href="${href}">(${core}${local}package) ${name}</a></div>`,
+                    target:"_blank",
+
                 });
             });
         });

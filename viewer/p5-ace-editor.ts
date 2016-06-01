@@ -31,6 +31,7 @@ import "ace/ext/linking";
 import {Config} from "ace/config";
 import "ace/ext/language_tools";
 import {EditSession} from "ace/edit_session";
+import {Annotation as AceAnnotation} from "ace/annotation";
 
 export class P5AceEditor implements P5Editor {
     init() {
@@ -191,7 +192,7 @@ export class P5AceEditor implements P5Editor {
             console.log("hyperlinkNode not supported anymore");
             return null;
         }
-        this.addPopupMarker({ href: hl.href, html: hl.html, node: hl.node, tokens: hl.tokens, className: hl.css });
+        this.addPopupMarker({ href: hl.href, html: hl.html, node: hl.node, tokens: hl.tokens, className: hl.css, target:hl.target });
         return null;
     }
 
@@ -261,9 +262,16 @@ export class P5AceEditor implements P5Editor {
     }
 
 
+    toAceAnnotation(ann: Annotation): AceAnnotation {
+        return { column: ann.pos.column - 1, row: ann.pos.line - 1, text: ann.text, type: ann.type || "info" };
+    }
+    setAnnotations(list: Annotation[]) {
+        let list2 = list.map(t=>this.toAceAnnotation(t));
+        this.editor.session.setAnnotations(list2);
+    }
     addAnnotation(ann: Annotation) {
         let atts = this.editor.session.getAnnotations();
-        atts.push({ column: ann.pos.column - 1, row: ann.pos.line - 1, text: ann.text, type: ann.type || "info" });
+        atts.push(this.toAceAnnotation(ann));
         this.editor.session.setAnnotations(atts);
     }
     toPosition(pos: TextFilePos): Position {
@@ -320,6 +328,11 @@ export class P5AceEditor implements P5Editor {
         });
     }
     setGitBlameItems(items: GitBlameItem[]) {
+        let anns = items.map(item => {
+            let pos = this.sourceFile.getPos3(parseInt(item.line_num), 1);
+            return { pos: pos, text:`${item.date}\n${item.sha}\n${item.author}`};
+        });
+        this.setAnnotations(anns);
     }
     notifyPossibleChanges() {
     }
@@ -328,6 +341,7 @@ export class P5AceEditor implements P5Editor {
 export interface Annotation {
     pos?: TextFilePos;
     text: string;
+    /** info warning error*/
     type?: string;
 }
 
