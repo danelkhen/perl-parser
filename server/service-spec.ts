@@ -1,4 +1,4 @@
-﻿interface P5Service {
+﻿export interface P5Service {
     
     fs_list_files(req: { path: string }): FsFile[];
     fs_get_file(req: { path: string, contents?: boolean }): FsFile;
@@ -12,17 +12,19 @@
 
 }
 
-interface GitFile {
+export interface GitFile {
     id: string;
     path: string;
 }
 
-interface FsFile {
+export interface FsFile {
     path: string;
+    is_dir:boolean;
+    children?:FsFile[];
 }
-interface PerlPackage {
+export interface PerlPackage {
     name: string;
     dependencies: PerlPackage[];
 }
-interface PerlCriticResult {
+export interface PerlCriticResult {
 }

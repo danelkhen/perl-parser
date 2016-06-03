@@ -284,7 +284,7 @@ export class IndexPage {
     }
 
     getUrl() {
-        let path = window.location.pathname;
+        let path = window.location.pathname.substr(1);
         return path;
     }
 

@@ -1,12 +1,12 @@
 ﻿import * as fs from "fs";
 import * as fs2 from "./fs2";
 import "../../../libs/corex";
-import {Token, TokenType, } from "perl-parser";
-import {TextFile, TextFilePos, TextFileRange, Cursor} from "perl-parser";
-import {AstWriter} from "perl-parser";
-import {ParserBase} from "perl-parser";
-import {ExpressionParser} from "perl-parser";
-import {Parser} from "perl-parser";
+import {Token, TokenType, } from "perl-parser-es6";
+import {TextFile, TextFilePos, TextFileRange, Cursor} from "perl-parser-es6";
+import {AstWriter} from "perl-parser-es6";
+import {ParserBase} from "perl-parser-es6";
+import {ExpressionParser} from "perl-parser-es6";
+import {Parser} from "perl-parser-es6";
 import {
 AstNode, Expression, Statement, UnresolvedExpression, SimpleName, SubroutineDeclaration, SubroutineExpression, ArrayMemberAccessExpression, ArrayRefDeclaration,
 BarewordExpression, BeginStatement, BinaryExpression, Block, BlockExpression, BlockStatement, ElseStatement, ElsifStatement, EmptyStatement, EndStatement,
@@ -15,14 +15,14 @@ NamedMemberExpression, NativeFunctionInvocation, NativeInvocation_BlockAndListOr
 Operator, PackageDeclaration, ParenthesizedList, PostfixUnaryExpression, PrefixUnaryExpression, QwExpression, RawExpression, RawStatement, RegexExpression,
 ReturnExpression, TrinaryExpression, Unit, UnlessStatement, UseOrNoStatement, UseStatement, ValueExpression, VariableDeclarationExpression, VariableDeclarationStatement, WhileStatement,
 HasArrow, HasLabel,
-} from "perl-parser";
-import {PrecedenceResolver} from "perl-parser";
-import {TokenTypes} from "perl-parser";
-import {Tokenizer} from "perl-parser";
-import {safeTry, TokenReader, Logger, AstNodeFixator} from "perl-parser";
+} from "perl-parser-es6";
+import {PrecedenceResolver} from "perl-parser-es6";
+import {TokenTypes} from "perl-parser-es6";
+import {Tokenizer} from "perl-parser-es6";
+import {safeTry, TokenReader, Logger, AstNodeFixator} from "perl-parser-es6";
 import {Deparse} from "./deparse";
-import {Refactor} from "perl-parser";
-import {ExpressionTester, EtReport, EtItem} from "perl-parser";
+import {Refactor} from "perl-parser-es6";
+import {ExpressionTester, EtReport, EtItem} from "perl-parser-es6";
 
 class PerlParserTool {
     filename: string;

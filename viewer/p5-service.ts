@@ -2,7 +2,7 @@
 
 
 export class P5Service {
-    baseUrl = localStorage.getItem("p5-service-url") || "";
+    baseUrl = localStorage.getItem("p5-service-url") || `${location.protocol}//${location.host}//`;
     fs(path: string): Promise<P5File> {
         return this.ajax({ url: "fs/:path", query: { path } });
     }

@@ -8,5 +8,6 @@
         "removeComments": false,
         "outFile": "../built/perl-parser/perl-parser.js",
         "declaration": true
-    }
+    },
+    "files": ["perl-parser.ts"]
 }

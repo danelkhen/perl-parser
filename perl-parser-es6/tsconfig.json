@@ -1,0 +1,14 @@
+{
+    "compilerOptions": {
+        "module": "amd",
+        "moduleResolution": "node",
+        "target": "es6",
+        "noImplicitAny": false,
+        "sourceMap": false,
+        "removeComments": false,
+        "outFile": "../built/perl-parser-es6/perl-parser-es6.js",
+        "declaration": true,
+        "rootDir": "../perl-parser"
+    },
+    "files": ["../perl-parser/perl-parser-es6.ts"]
+}
