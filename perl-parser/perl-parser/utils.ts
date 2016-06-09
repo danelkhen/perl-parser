@@ -87,8 +87,8 @@ export class TokenReader {
     nextToken() {
         this.tokenIndex++;
         this.token = this.tokens[this.tokenIndex];
-        //if (this.token != null)
-        //    this.logger.log(this.token.value);
+        if (this.token == null)
+            console.info("TokenReader has no more tokens");
     }
     nextNonWhitespaceToken(): Token[] {
         this.nextToken();

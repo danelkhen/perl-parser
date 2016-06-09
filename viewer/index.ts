@@ -11,7 +11,7 @@ import {
     ReturnExpression, TrinaryExpression, Unit, UnlessStatement, UseOrNoStatement, UseStatement, ValueExpression, VariableDeclarationExpression, VariableDeclarationStatement, WhileStatement,
     AstQuery, PrecedenceResolver, TokenTypes, Tokenizer, safeTry, TokenReader, Logger, AstNodeFixator, TextFile, TextFilePos, TextFileRange, Cursor,
     ExpressionTester, EtReport, EtItem, RefArrayToRefUtil,
-    EntityResolver, Package, Subroutine, 
+    EntityResolver, Package, Subroutine,
 } from "perl-parser";
 import {PackageResolution, AsyncFunc, TreeNodeData, Expander, Helper} from "./common";
 import {P5Service, P5File, CritiqueResponse, CritiqueViolation, GitBlameItem} from "./p5-service";
@@ -300,6 +300,12 @@ export class IndexPage {
         return tok.processAsync().then(() => {
             let end = performance.now();
             console.log("tokenization took " + (end - start) + "ms");
+        });
+    }
+
+    reparse() {
+        this.editor.tokenizeAsync(this.file.name, this.editor.code).then(() => {
+            this.editor.parse();
         });
     }
     update() {
