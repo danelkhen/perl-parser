@@ -1,11 +1,11 @@
 ﻿"use strict";
 
 //TODO: ? var oop = require("../lib/oop");
-import {Mode as TextMode} from "ace/mode/text";
-import {PerlHighlightRules} from "./perl_highlight_rules";
-import {MatchingBraceOutdent} from "./matching_brace_outdent";
+import {Mode as TextMode}           from "ace/mode/text";
+import {PerlHighlightRules}         from "ace/mode/perl_highlight_rules";
+import {MatchingBraceOutdent}       from "ace/mode/matching_brace_outdent";
+import {FoldMode as CStyleFoldMode} from "ace/mode/folding/cstyle";
 import {Range} from "ace/range";
-import {FoldMode as CStyleFoldMode} from "./folding/cstyle";
 import {Token} from "perl-parser";
 import {Tokenizer} from "perl-parser";
 import {TextFile} from "perl-parser";

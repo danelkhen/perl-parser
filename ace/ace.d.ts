@@ -3109,18 +3109,18 @@ declare module "ace/tooltip" {
 
 declare module "ace/lib/event_emitter" {
     export interface EventEmitter {
-        _emit(eventName:string, e);
-        _dispatchEvent(eventName:string, e);
-        _signal(eventName:string, e);
-        once(eventName:string, callback:Function);
-        setDefaultHandler(eventName:string, callback:Function);
-        removeDefaultHandler(eventName:string, callback:Function);
-        on(eventName:string, callback:Function, capturing?:boolean);
-        addEventListener(eventName:string, callback:Function, capturing?:boolean);
-        off(eventName:string, callback:Function);
-        removeListener(eventName:string, callback:Function);
-        removeEventListener(eventName:string, callback:Function);
-        removeAllListeners(eventName:string);
+        _emit(eventName: string, e);
+        _dispatchEvent(eventName: string, e);
+        _signal(eventName: string, e);
+        once(eventName: string, callback: Function);
+        setDefaultHandler(eventName: string, callback: Function);
+        removeDefaultHandler(eventName: string, callback: Function);
+        on(eventName: string, callback: Function, capturing?: boolean);
+        addEventListener(eventName: string, callback: Function, capturing?: boolean);
+        off(eventName: string, callback: Function);
+        removeListener(eventName: string, callback: Function);
+        removeEventListener(eventName: string, callback: Function);
+        removeAllListeners(eventName: string);
     }
 }
 declare module "ace/lib/event" {
@@ -3198,3 +3198,21 @@ declare module "ace/keyboard/hash_handler" {
 
 }
 
+
+declare module "ace/mode/matching_brace_outdent" {
+    export class MatchingBraceOutdent {
+        checkOutdent(line, input);
+        autoOutdent(doc, row);
+    }
+}
+
+declare module "ace/mode/perl_highlight_rules" {
+    export class PerlHighlightRules {
+    }
+}
+
+declare module "ace/mode/folding/cstyle" {
+    export class FoldMode {
+        constructor(opts: { start: string, end: string });
+    }
+}
