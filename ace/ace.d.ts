@@ -1,4 +1,6 @@
 ﻿declare module "ace/mode/text" {
+    import {Completer} from "ace/ext/language_tools";
+
     export class Mode {
         getTokenizer(): any;
         toggleCommentLines(state: any, doc: any, startRow: any, endRow: any): void;
@@ -10,6 +12,7 @@
         transformAction(state: any, action: any, editor: any, session: any, param: any): any;
         $getIndent(line);
         $highlightRules: any;
+        completer: Completer;
     }
 }
 declare module "ace/background_tokenizer" {
@@ -856,7 +859,7 @@ declare module "ace/edit_session" {
         **/
         getScreenLength(): number;
 
-        gutterRenderer:GutterRenderer;
+        gutterRenderer: GutterRenderer;
     }
     export var EditSession: {
         /**
@@ -3184,7 +3187,7 @@ declare module "ace/ext/statusbar" {
 declare module "ace/config" {
     export function init();
     export interface Config {
-        characterWidth?:number;
+        characterWidth?: number;
     }
 }
 
@@ -3225,7 +3228,48 @@ declare module "ace/layer/gutter" {
     import {IEditSession} from "ace/edit_session";
     import {Config} from "ace/config";
     export interface GutterRenderer {
-        getText(session:IEditSession, row:number):string;
-        getWidth(session:IEditSession, lastLineNumber:string|number, config:Config):number;
+        getText(session: IEditSession, row: number): string;
+        getWidth(session: IEditSession, lastLineNumber: string | number, config: Config): number;
     }
+}
+
+declare module "ace/ext/language_tools" {
+    import {IEditSession} from "ace/edit_session";
+    import {Editor} from "ace/editor";
+    import {Position} from "ace/position";
+
+    export interface Completer {
+        /** used by util.getCompletionPrefix() to calculate the prefix */
+        identifierRegexps?: RegExp[];
+        getCompletions(editor: Editor, session: IEditSession, pos: Position, prefix: string, callback: (err, res: Completion[]) => void): void;
+        /** set item.docHTML if needed */
+        getDocTooltip?(item: Completion): void;
+    }
+    export interface Completion {
+        caption: string,
+        meta: string,
+        type: string,
+        docHTML?: string,
+        /** snippet to be inserted in the caret location */
+        snippet?: string,
+        /** text value to be inserted in the caret location */
+        value?: string,
+    }
+    /** Modifies list of default completers */
+    export function setCompleters(val: Completer[]);
+    export function addCompleter(completer: Completer);
+
+    /** Exports existing completer so that user can construct his own set of completers.*/
+    export let textCompleter: Completer;
+    export let keyWordCompleter: Completer;
+    export let snippetCompleter: Completer;
+
+}
+
+declare module "ace/autocomplete/util" {
+    import {Editor} from "ace/editor";
+    export function parForEach(array, fn, callback);
+    export function retrievePrecedingIdentifier(text: string, pos: number, regex?: RegExp);
+    export function retrieveFollowingIdentifier(text: string, pos: number, regex?: RegExp);
+    export function getCompletionPrefix(editor: Editor);
 }

@@ -35,6 +35,8 @@ import "ace/ext/language_tools";
 import {EditSession} from "ace/edit_session";
 import {Annotation as AceAnnotation} from "ace/annotation";
 import {GutterRenderer} from "ace/layer/gutter";
+import {snippetCompleter, textCompleter, keyWordCompleter} from "ace/ext/language_tools";
+import {Completer} from "ace/ext/language_tools";
 
 export class P5AceEditor implements P5Editor {
     init() {
@@ -45,7 +47,7 @@ export class P5AceEditor implements P5Editor {
         this.editor.setOptions({
             enableLinking: true,
             readOnly: false,
-            enableBasicAutocompletion: true
+            enableBasicAutocompletion: [snippetCompleter, /*textCompleter, */keyWordCompleter],
         });
         this.editor.focus();
         this.editor.addEventListener("linkClick", e => this.editor_linkClick(e));
@@ -358,7 +360,7 @@ export class P5AceEditor implements P5Editor {
             //let range = this.sourceFile.getRange2(pos, 10);
             //let marker = <Marker>{ html: "<span>" + item.author, range: range, className:"marker-git-blame", inFront:true };
             //this.addMarker(marker);
-            return <Annotation> { pos: pos, text: `${item.date}\n${item.sha}\n${item.author}` };
+            return <Annotation>{ pos: pos, text: `${item.date}\n${item.sha}\n${item.author}` };
 
         });
         this.setAnnotations(anns);

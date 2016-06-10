@@ -54,6 +54,7 @@ export class Entity {
 export class Package extends Entity {    //main is default package
     members: Member[] = [];
     node: PackageDeclaration;
+    uses: PackageRef[] = [];
 }
 
 export class Member extends Entity {
@@ -108,6 +109,18 @@ export class EntityResolver {
             }
             pkg.members.push(sub);
             sub.package = pkg;
+        }
+        else if (node instanceof ExpressionStatement) {
+            let code = node.toCode().trim();
+            if (code.startsWith("use ")) {
+                let pkgName = code.split(/[ ;]/)[1];
+                if (pkgName != null) {
+                    let pkg = this.packages.last();
+                    let pr = new PackageRef();
+                    pr.name = pkgName;
+                    pkg.uses.push(pr);
+                }
+            }
         }
     }
 }
