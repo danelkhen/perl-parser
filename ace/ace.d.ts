@@ -294,6 +294,7 @@ declare module "ace/edit_session" {
     import {Selection} from "ace/selection";
     import {Range} from "ace/range";
     import {Position} from "ace/position";
+    import {GutterRenderer} from "ace/layer/gutter";
 
     /**
      * Stores all the data about [[Editor `Editor`]] state providing easy way to change editors state.
@@ -854,6 +855,8 @@ declare module "ace/edit_session" {
          * Returns the length of the screen.
         **/
         getScreenLength(): number;
+
+        gutterRenderer:GutterRenderer;
     }
     export var EditSession: {
         /**
@@ -3181,6 +3184,7 @@ declare module "ace/ext/statusbar" {
 declare module "ace/config" {
     export function init();
     export interface Config {
+        characterWidth?:number;
     }
 }
 
@@ -3214,5 +3218,14 @@ declare module "ace/mode/perl_highlight_rules" {
 declare module "ace/mode/folding/cstyle" {
     export class FoldMode {
         constructor(opts: { start: string, end: string });
+    }
+}
+
+declare module "ace/layer/gutter" {
+    import {IEditSession} from "ace/edit_session";
+    import {Config} from "ace/config";
+    export interface GutterRenderer {
+        getText(session:IEditSession, row:number):string;
+        getWidth(session:IEditSession, lastLineNumber:string|number, config:Config):number;
     }
 }

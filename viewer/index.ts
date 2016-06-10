@@ -14,7 +14,7 @@ import {
     EntityResolver, Package, Subroutine,
 } from "perl-parser";
 import {PackageResolution, AsyncFunc, TreeNodeData, Expander, Helper} from "./common";
-import {P5Service, P5File, CritiqueResponse, CritiqueViolation, GitBlameItem} from "./p5-service";
+import {P5Service, P5File, CritiqueResponse, CritiqueViolation, GitBlameItem, PerlDocRequest} from "./p5-service";
 import {monitor, Monitor} from "./monitor";
 import {Key, Rect, Size, Point} from "./common";
 import {Editor as Viewer, Collapsable, P5Editor, CvLine, IndexSelection, TokenUtils, CodeHyperlink, IndexRange} from "./editor";
@@ -62,7 +62,7 @@ export class IndexPage {
     }
 
     resolvePackages(pkgs: PackageResolution[]): Promise<any> {
-        return this.service.perlModuleClassify(pkgs.map(t => t.name)).then(res => {
+        return this.service.perlModuleClassify(pkgs.map(t => t.name).distinct()).then(res => {
             res.forEach(mod => {
                 let pkg = pkgs.first(t => t.name == mod.name);
                 if (pkg == null)
@@ -672,7 +672,9 @@ export class IndexPage {
 
 
     perlDocCache: ObjectMap<Promise<string>> = {};
-    perlDocHtml(req: { name?: string, funcName?: string }): Promise<string> {
+    //multiPerlDocHtml(req: { name?: string, funcName?: string }[]): Promise<string> {
+    //}
+    perlDocHtml(req: PerlDocRequest): Promise<string> {
         let key = req.name + "_" + req.funcName;
         let storageKey = "perldoc_" + key;
         let res3 = localStorage.getItem(storageKey);

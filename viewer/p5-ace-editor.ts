@@ -21,6 +21,7 @@ import {Editor as Viewer, Collapsable, P5Editor, CvLine, IndexSelection, TokenUt
 import * as ace from "ace/ace";
 import * as ModeList from "ace/ext/modelist";
 import {Editor} from "ace/editor";
+import {IEditSession} from "ace/edit_session";
 import {Range} from "ace/range";
 import {TokenInfo} from "ace/token_info";
 import {TokenIterator} from "ace/token_iterator";
@@ -33,6 +34,7 @@ import {Config} from "ace/config";
 import "ace/ext/language_tools";
 import {EditSession} from "ace/edit_session";
 import {Annotation as AceAnnotation} from "ace/annotation";
+import {GutterRenderer} from "ace/layer/gutter";
 
 export class P5AceEditor implements P5Editor {
     init() {
@@ -59,6 +61,7 @@ export class P5AceEditor implements P5Editor {
             readOnly: true // false if this command should not apply in readOnly mode
         });
     }
+    metaText: Map<number, string> = new Map<number, string>();
     //statusBar: StatusBar;
     statusBarEl: HTMLElement;
     statusTextEl: HTMLElement;
@@ -306,7 +309,9 @@ export class P5AceEditor implements P5Editor {
         return this.editor.getValue();
     }
     set code(value: string) {
-        this.editor.setSession(new EditSession(value, "ace/mode/perl"));
+        let session = new EditSession(value, "ace/mode/perl");
+        session.gutterRenderer = new P5GutterRenderer(this);
+        this.editor.setSession(session);
         //this.editor.setValue(value, -1);
         //this.editor.moveCursorTo(0, 0, false);
     }
@@ -326,12 +331,12 @@ export class P5AceEditor implements P5Editor {
         console.log(unit);
         new AstNodeFixator().process(this.unit);
         this.unitPackage = EntityResolver.process(this.unit)[0];
-        console.log({package:this.unitPackage});
+        console.log({ package: this.unitPackage });
         this.global = new Global();
         this.global.packages.push(this.unitPackage);
     }
-    unitPackage:Package;
-    global:Global;
+    unitPackage: Package;
+    global: Global;
 
     tokenizeAsync(filename: string, data: string): Promise<any> {
         this.code = data;
@@ -349,7 +354,12 @@ export class P5AceEditor implements P5Editor {
     setGitBlameItems(items: GitBlameItem[]) {
         let anns = items.map(item => {
             let pos = this.sourceFile.getPos3(parseInt(item.line_num), 1);
-            return { pos: pos, text: `${item.date}\n${item.sha}\n${item.author}` };
+            this.metaText.set(pos.line, item.author);
+            //let range = this.sourceFile.getRange2(pos, 10);
+            //let marker = <Marker>{ html: "<span>" + item.author, range: range, className:"marker-git-blame", inFront:true };
+            //this.addMarker(marker);
+            return <Annotation> { pos: pos, text: `${item.date}\n${item.sha}\n${item.author}` };
+
         });
         this.setAnnotations(anns);
     }
@@ -394,4 +404,44 @@ export interface PopupMarker {
 }
 
 
+
+export class P5GutterRenderer implements GutterRenderer {
+    constructor(public editor: P5AceEditor) { }
+    minGutterLength = 5;
+    maxGutterLength = 11;
+    getText(session: IEditSession, row: number): string {
+        let line = row + 1;
+        let mt = this.editor.metaText.get(line);
+        if (mt != null) {
+            return mt.substr(0, this.maxGutterLength - 1 - line.toString().length) + "|" + line;
+        }
+        return String(line);
+    }
+    getWidth(session: IEditSession, lastLineNumber: string | number, config: Config): number {
+        if (this.editor.metaText.size > 0)
+            return this.maxGutterLength * config.characterWidth;
+        return this.minGutterLength * config.characterWidth;
+
+        //return 10 * config.characterWidth;;
+        //let length: number;
+        //if (this.editor.metaText.size > 0) {
+        //    let maxMetaLength = 0;
+        //    let firstRow = this.editor.editor.getFirstVisibleRow();
+        //    let lastRow = this.editor.editor.getLastVisibleRow();
+        //    for (let row = firstRow; row <= lastRow; row++) {
+        //        let line = row + 1;
+        //        let l = (this.editor.metaText.get(line) || "").length;
+        //        if (maxMetaLength < l)
+        //            maxMetaLength = l;
+        //    }
+        //    length = (lastRow + 1).toString().length + maxMetaLength + 1;
+        //}
+        //else {
+        //    length = lastLineNumber.toString().length;
+        //}
+        //let width = length * config.characterWidth;
+        //return width;
+    }
+
+}
 

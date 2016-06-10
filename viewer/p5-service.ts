@@ -14,7 +14,7 @@ export class P5Service {
     perlCritique(path: string): Promise<CritiqueResponse> {
         return this.ajax({ url: "perl/critique/:path", query: { path } });
     }
-    perlDocHtml(req: { name?: string, funcName?: string }): Promise<string> {
+    perlDocHtml(req: PerlDocRequest): Promise<string> {
         return this.ajax({ url: "perl/doc/:name", query: { name: req.name, f: req.funcName } });
     }
     perlModuleClassify(packageNames: string[]): Promise<PerlModuleClassify[]> {
@@ -89,7 +89,7 @@ export interface P5File {
     is_dir?: string;
     children?: P5File[];
     src?: string;
-    href?:string;
+    href?: string;
 }
 
 
@@ -135,6 +135,11 @@ export interface CritiqueViolation {
 export interface CritiqueResponse {
     statistics: CritiqueStatistics;
     violations: CritiqueViolation[];
+}
+
+export interface PerlDocRequest {
+    name?: string;
+    funcName?: string;
 }
 
 
