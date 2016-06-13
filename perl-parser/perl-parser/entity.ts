@@ -88,6 +88,15 @@ export class EntityResolver {
         return this.packages;
     }
     packages: Package[];
+    getCreatePackage(): Package {
+        let pkg = this.packages.last();
+        if (pkg == null) {
+            pkg = new Package();
+            pkg.name = "main";
+            this.packages.push(pkg);
+        }
+        return pkg;
+    }
 
     processNode(node: AstNode) {
         if (node instanceof PackageDeclaration) {
@@ -101,12 +110,7 @@ export class EntityResolver {
             let sub = new Subroutine();
             sub.node = node;
             sub.name = node.declaration.name.toCode().trim();
-            let pkg = this.packages.last();
-            if (pkg == null) {
-                pkg = new Package();
-                pkg.name = "main";
-                this.packages.push(pkg);
-            }
+            let pkg = this.getCreatePackage();
             pkg.members.push(sub);
             sub.package = pkg;
         }
@@ -115,7 +119,7 @@ export class EntityResolver {
             if (code.startsWith("use ")) {
                 let pkgName = code.split(/[ ;]/)[1];
                 if (pkgName != null) {
-                    let pkg = this.packages.last();
+                    let pkg = this.getCreatePackage();
                     let pr = new PackageRef();
                     pr.name = pkgName;
                     pkg.uses.push(pr);

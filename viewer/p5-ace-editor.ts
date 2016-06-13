@@ -36,7 +36,27 @@ import {GutterRenderer} from "ace/layer/gutter";
 import {snippetCompleter, textCompleter, keyWordCompleter} from "ace/ext/language_tools";
 import {Completer} from "ace/ext/language_tools";
 
-export class P5AceEditor  {
+export class P5AceEditor {
+    linkEvent: LinkEvent;
+    tokenUnderMouse: TokenInfo;
+    linkUnderMouseMarkerId: number;
+    linkUnderMouse: CodeHyperlink;
+    tokens: Token[];
+    sourceFile: TextFile;
+    codeHyperlinks: CodeHyperlink[];
+    unit: Unit;
+    collapsables: Collapsable[];
+    collapsable(node: AstNode, tokens?: Token[]) { }
+    lastCheckedTokenUnderMouse: TokenInfo;
+    tokenUnderMouse2: TokenInfo;
+    popupMarkers: PopupMarker[] = [];
+    editor: Editor;
+    metaText: Map<number, string> = new Map<number, string>();
+    statusBarEl: HTMLElement;
+    statusTextEl: HTMLElement;
+    mouseDocPos: Position;
+    isMouseOnDoc = false;
+
     init() {
         this.editor = ace.edit("editor");
         this.editor.session.setMode("viewer/ace/mode/perl");
@@ -50,6 +70,8 @@ export class P5AceEditor  {
         this.editor.focus();
         this.editor.addEventListener("linkClick", e => this.editor_linkClick(e));
         this.editor.addEventListener("mousemove", e => this.editor_mousemove(e));
+        this.editor.renderer.getMouseEventTarget().addEventListener("mouseenter", e => this.editor_mouseenter(e));
+        this.editor.renderer.getMouseEventTarget().addEventListener("mouseleave", e => this.editor_mouseleave(e));
         this.enableHover();
 
         this.statusBarEl = $(".status-bar")[0];
@@ -61,10 +83,6 @@ export class P5AceEditor  {
             readOnly: true // false if this command should not apply in readOnly mode
         });
     }
-    metaText: Map<number, string> = new Map<number, string>();
-    //statusBar: StatusBar;
-    statusBarEl: HTMLElement;
-    statusTextEl: HTMLElement;
 
     enableHover() {
         this.scheduleCheckHover();
@@ -76,26 +94,23 @@ export class P5AceEditor  {
         }, 200);
     }
 
-    lastCheckedTokenUnderMouse: TokenInfo;
-    tokenUnderMouse2: TokenInfo;
-
     checkHover() {
         let pos = this.mouseDocPos;
-        if (pos == null)
-            return;
-        let token = this.editor.session.getTokenAt(pos.row, pos.column);
-        if (this.lastCheckedTokenUnderMouse == token) {
-            if (this.tokenUnderMouse2 == token)
+        if (pos != null && this.isMouseOnDoc) {
+            let token = this.editor.session.getTokenAt(pos.row, pos.column);
+            if (this.lastCheckedTokenUnderMouse == token) {
+                if (this.tokenUnderMouse2 == token)
+                    return;
+                this.tokenUnderMouse2 = token;
+                this.onTokenHoverStart({ pos, token });
                 return;
-            this.tokenUnderMouse2 = token;
-            this.onTokenHoverStart({ pos, token });
-            return;
+            }
+            this.lastCheckedTokenUnderMouse = token;
         }
         if (this.tokenUnderMouse2 != null) {
             this.onTokenHoverEnd({ pos, token: this.tokenUnderMouse2 });
             this.tokenUnderMouse2 = null;
         }
-        this.lastCheckedTokenUnderMouse = token;
     }
     onTokenHoverStart(e: { pos: Position, token: TokenInfo }) {
         let pm = this.findPopupMarker(e.pos);
@@ -134,11 +149,15 @@ export class P5AceEditor  {
         //this.statusTextEl.textContent = "";
     }
 
-    mouseDocPos: Position;
     editor_mousemove(e: MouseEvent) {
         this.mouseDocPos = e.getDocumentPosition();
     }
-
+    editor_mouseenter(e: Event) {
+        this.isMouseOnDoc = true;
+    }
+    editor_mouseleave(e: Event) {
+        this.isMouseOnDoc = false;
+    }
 
     getCaretToken(): TokenInfo {
         let pos = this.editor.getCursorPosition();
@@ -163,43 +182,13 @@ export class P5AceEditor  {
             window.location.href = hl.href;
     }
 
-    linkEvent: LinkEvent;
-    tokenUnderMouse: TokenInfo;
-    linkUnderMouseMarkerId: number;
-    linkUnderMouse: CodeHyperlink;
-    //editor_linkHover(e: LinkEvent) {
-    //    return;
-    //    if (e.token == this.tokenUnderMouse)
-    //        return;
-    //    this.tokenUnderMouse = e.token;
-    //    let link = this.getLink(e.position);
-    //    if (link == this.linkUnderMouse)
-    //        return;
-    //    this.linkUnderMouse = link;
-
-    //    let markerId = this.linkUnderMouseMarkerId;
-    //    if (markerId != null) {
-    //        this.linkUnderMouseMarkerId = null;
-    //        this.editor.session.removeMarker(markerId);
-    //    }
-    //    if (this.tokenUnderMouse == null)
-    //        return;
-    //    if (link == null)
-    //        return;
-    //    let range = this.getTokensRange(link.tokens);
-    //    let range2 = this.toRange(range);
-    //    this.linkUnderMouseMarkerId = this.editor.session.addMarker(range2, "marker marker-link", "text", false);
-    //}
-
-    hyperlinkNode(hl: CodeHyperlink): HTMLAnchorElement {
+    hyperlinkNode(hl: CodeHyperlink) {
         if (hl.html == null) {
             console.log("hyperlinkNode not supported anymore");
             return null;
         }
         this.addPopupMarker({ href: hl.href, html: hl.html, node: hl.node, tokens: hl.tokens, className: hl.css, target: hl.target });
-        return null;
     }
-
 
     getTokensRange(tokens: Token[]): TextFileRange {
         return new TextFileRange(tokens[0].range.file, tokens[0].range.start, tokens.last().range.end);
@@ -214,12 +203,6 @@ export class P5AceEditor  {
     }
     editor_linkClick(e: LinkEvent) {
         let link = this.findPopupMarker(e.position);
-        //let token: TokenInfo = e.token;
-        //let pos: Position = e.position;
-        //let pos2 = new TextFilePos();
-        //pos2.line = pos.row + 1;
-        //pos2.column = pos.column + 1;
-        //let link = this.links.first(link => link.tokens != null && link.tokens.first(t => t.range.containsPos(pos2)) != null);
         if (link == null) {
             console.log("can't find link", this.popupMarkers, e.token, e.position);
             return;
@@ -228,9 +211,6 @@ export class P5AceEditor  {
         window.open(link.href);
     }
 
-    popupMarkers: PopupMarker[] = [];
-
-    editor: Editor;
     removeMarker(marker: Marker) {
         if (marker == null || marker.id == null)
             return;
@@ -276,7 +256,6 @@ export class P5AceEditor  {
         return null;
     }
 
-
     toAceAnnotation(ann: Annotation): AceAnnotation {
         return { column: ann.pos.column - 1, row: ann.pos.line - 1, text: ann.text, type: ann.type || "info" };
     }
@@ -298,17 +277,11 @@ export class P5AceEditor  {
     scrollToLine(line: number) {
         this.editor.scrollToLine(line - 1, null, false, null);
     }
-    tokens: Token[];
-    sourceFile: TextFile;
-    codeHyperlinks: CodeHyperlink[];
-    unit: Unit;
-    collapsables: Collapsable[];
-    collapsable(node: AstNode, tokens?: Token[]) { }
 
-    get code(): string {
+    getCode(): string {
         return this.editor.getValue();
     }
-    set code(value: string) {
+    setCode(value: string) {
         let session = new EditSession(value, "viewer/ace/mode/perl");
         session.gutterRenderer = new P5GutterRenderer(this);
         this.editor.setSession(session);
@@ -341,7 +314,7 @@ export class P5AceEditor  {
     tokenizeAsync(filename: string): Promise<any> {
         //this.code = data;
         let start = new Date();
-        this.sourceFile = new TextFile(filename, this.code);
+        this.sourceFile = new TextFile(filename, this.getCode());
         let tok = new Tokenizer();
         tok.onStatus = () => console.log("Tokenizer status: ", Helper.toPct(tok.cursor.index / tok.file.text.length));
         tok.file = this.sourceFile;
@@ -422,26 +395,54 @@ export class P5GutterRenderer implements GutterRenderer {
             return this.maxGutterLength * config.characterWidth;
         return this.minGutterLength * config.characterWidth;
 
-        //return 10 * config.characterWidth;;
-        //let length: number;
-        //if (this.editor.metaText.size > 0) {
-        //    let maxMetaLength = 0;
-        //    let firstRow = this.editor.editor.getFirstVisibleRow();
-        //    let lastRow = this.editor.editor.getLastVisibleRow();
-        //    for (let row = firstRow; row <= lastRow; row++) {
-        //        let line = row + 1;
-        //        let l = (this.editor.metaText.get(line) || "").length;
-        //        if (maxMetaLength < l)
-        //            maxMetaLength = l;
-        //    }
-        //    length = (lastRow + 1).toString().length + maxMetaLength + 1;
-        //}
-        //else {
-        //    length = lastLineNumber.toString().length;
-        //}
-        //let width = length * config.characterWidth;
-        //return width;
     }
 
 }
 
+
+
+//editor_linkHover(e: LinkEvent) {
+//    return;
+//    if (e.token == this.tokenUnderMouse)
+//        return;
+//    this.tokenUnderMouse = e.token;
+//    let link = this.getLink(e.position);
+//    if (link == this.linkUnderMouse)
+//        return;
+//    this.linkUnderMouse = link;
+
+//    let markerId = this.linkUnderMouseMarkerId;
+//    if (markerId != null) {
+//        this.linkUnderMouseMarkerId = null;
+//        this.editor.session.removeMarker(markerId);
+//    }
+//    if (this.tokenUnderMouse == null)
+//        return;
+//    if (link == null)
+//        return;
+//    let range = this.getTokensRange(link.tokens);
+//    let range2 = this.toRange(range);
+//    this.linkUnderMouseMarkerId = this.editor.session.addMarker(range2, "marker marker-link", "text", false);
+//}
+
+
+
+//return 10 * config.characterWidth;;
+//let length: number;
+//if (this.editor.metaText.size > 0) {
+//    let maxMetaLength = 0;
+//    let firstRow = this.editor.editor.getFirstVisibleRow();
+//    let lastRow = this.editor.editor.getLastVisibleRow();
+//    for (let row = firstRow; row <= lastRow; row++) {
+//        let line = row + 1;
+//        let l = (this.editor.metaText.get(line) || "").length;
+//        if (maxMetaLength < l)
+//            maxMetaLength = l;
+//    }
+//    length = (lastRow + 1).toString().length + maxMetaLength + 1;
+//}
+//else {
+//    length = lastLineNumber.toString().length;
+//}
+//let width = length * config.characterWidth;
+//return width;

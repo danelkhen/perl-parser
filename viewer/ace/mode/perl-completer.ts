@@ -49,7 +49,8 @@ export class PerlCompleter implements Completer {
             unit.statements = statements;
             this.unit = unit;
             new AstNodeFixator().process(this.unit);
-            this.unitPackage = EntityResolver.process(this.unit)[0];
+            let packages = EntityResolver.process(this.unit);
+            this.unitPackage = packages.last(); //use strict/warnings outside package scope causes the first package to be the wrong one
             console.log({ unit, package: this.unitPackage });
         }
         catch (e) {
@@ -71,7 +72,7 @@ export class PerlCompleter implements Completer {
             return;
         }
         console.log("getCompletions", { pos, prefix, pkgName });
-        let list = this.createCompletions(pkgName, this.unitPackage.uses.map(t => t.name));
+        let list = this.createCompletions(pkgName, this.unitPackage.uses.map(t => t.name).orderBy(t => t));
         //let list: Completion[] = this.unitPackage.uses.map(t => <Completion>{ caption: t.name, type: null, meta: "package", snippet: null, docHTML: "docHTML", value: t.name });
         callback(null, list);
     }

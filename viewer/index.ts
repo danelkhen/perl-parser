@@ -265,7 +265,7 @@ export class IndexPage {
                 this.service.src(url).then(data => {
                     this.file.src = data;
                     this.ignoreCursorEvents = true;
-                    this.editor.code = data;
+                    this.editor.setCode(data);
                     this.ignoreCursorEvents = false;
                     this.renderSelection();
                     window.setTimeout(() => {
