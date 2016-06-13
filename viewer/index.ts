@@ -9,7 +9,7 @@ import {
     NamedMemberExpression, NativeFunctionInvocation, NativeInvocation_BlockAndListOrExprCommaList, NativeInvocation_BlockOrExpr, NonParenthesizedList, NoStatement,
     Operator, PackageDeclaration, ParenthesizedList, PostfixUnaryExpression, PrefixUnaryExpression, QwExpression, RawExpression, RawStatement, RegexExpression,
     ReturnExpression, TrinaryExpression, Unit, UnlessStatement, UseOrNoStatement, UseStatement, ValueExpression, VariableDeclarationExpression, VariableDeclarationStatement, WhileStatement,
-    AstQuery, PrecedenceResolver, TokenTypes, Tokenizer, safeTry, TokenReader, Logger, AstNodeFixator, TextFile, TextFilePos, TextFileRange, Cursor,
+    AstQuery, PrecedenceResolver, TokenTypes, Tokenizer, TokenReader, Logger, AstNodeFixator, TextFile, TextFilePos, TextFileRange, Cursor,
     ExpressionTester, EtReport, EtItem, RefArrayToRefUtil,
     EntityResolver, Package, Subroutine,
 } from "perl-parser";
@@ -25,31 +25,30 @@ import * as ModeList from "ace/ext/modelist";
 import {Range} from "ace/range";
 import {Editor} from "ace/editor";
 import {P5AceEditor} from "./p5-ace-editor";
-
+import {PerlCompleter} from "./ace/mode/perl-completer";
 
 export class IndexPage {
     constructor() {
         let win: any = window;
         this.service = new P5Service();
         this.selection = new IndexSelection();
+        PerlCompleter.getDocHtml = (type, name) => this.PerlCompleter_getDocHtml(type, name);
     }
 
     editor: P5Editor;
-
-
     isMouseDown = false;
     selection: IndexSelection;
     service: P5Service;
     file: P5File;
     cvBaseUrl = "/";
-    includes = [
-        "lib/",
-    ];
-
-
     lastUrl: string;
     generatedCode: string;
+    aceMode = true;
+    monitor: Monitor;
+    url: { pathname: string, hash: string, href: string };
+    critiqueRes: CritiqueResponse;
 
+    get p5Editor(): P5AceEditor { return <P5AceEditor>this.editor; }
 
     getCvUrlForIncludeAndPacakge(include: string, packageName: string) {
         let url = Helper.urlJoin([this.cvBaseUrl, include, packageName.split("::")]) + ".pm";
@@ -62,22 +61,21 @@ export class IndexPage {
     }
 
     resolvePackages(pkgs: PackageResolution[]): Promise<any> {
-        return this.service.perlModuleClassify(pkgs.map(t => t.name).distinct()).then(res => {
-            res.forEach(mod => {
-                let pkg = pkgs.first(t => t.name == mod.name);
-                if (pkg == null)
-                    return;
-                pkg.resolved = mod;
+        return new Promise<any>((resolve, reject) => {
+            this.service.perlModuleClassify(pkgs.map(t => t.name).distinct()).then(res => {
+                res.forEach(mod => {
+                    let pkg = pkgs.first(t => t.name == mod.name);
+                    if (pkg == null)
+                        return;
+                    pkg.resolved = mod;
+                });
+                this.perlDocPackages(pkgs).then(resolve, reject);
             });
         });
     }
-    //resolvePackage(pkg: PackageResolution): Promise<string> {
-    //    let funcs = Helper.selectAsyncFuncs(this.includes, t => this.resolvePackageWithInclude(pkg.name, t));
-    //    return Helper.firstSuccess(funcs).catch(t => null).then(t => pkg.resolvedIncludePath = t);
-    //}
-    aceMode = true;
-    monitor: Monitor;
-    get p5Editor(): P5AceEditor { return <P5AceEditor>this.editor; }
+    perlDocPackages(pkgs: PackageResolution[]): Promise<any> {
+        return Promise.all(pkgs.filter(pkg => pkg.resolved != null && pkg.resolved.is_core).map(pkg => this.perlDocHtml({ name: pkg.name }).then(html => pkg.docHtml = html)));
+    }
     main() {
         this.monitor = monitor;
         this.selection.fromParam(location.hash.substr(1));
@@ -86,6 +84,8 @@ export class IndexPage {
             this.editor = new P5AceEditor();
             this.editor.init();
             this.p5Editor.editor.on("changeSelection", e => {
+                if (this.ignoreCursorEvents)
+                    return;
                 if (this.file == null)
                     return;
                 let range = this.p5Editor.editor.selection.getRange();
@@ -105,7 +105,6 @@ export class IndexPage {
         $(window).on("urlchange", e => this.window_urlchange(e));
     }
 
-    url: { pathname: string, hash: string, href: string };
     window_urlchange(e: JQueryEventObject) {
         let loc = document.location;
         let prevUrl = this.url;
@@ -117,7 +116,6 @@ export class IndexPage {
     //pageSize: number;
 
 
-    critiqueRes: CritiqueResponse;
     critique() {
         //this.service.perlDoc("use").then(e=>console.log(e));
         //this.service.perlModuleClassify(["Bookings::JSON::Schema::Helper", "Try::Tiny"]).then(e=>console.log(e));
@@ -268,8 +266,12 @@ export class IndexPage {
     renderSelection() {
         if (this.aceMode) {
             let range = this.selection.lastRange;
-            if (range != null)
+            if (range != null) {
+                this.ignoreCursorEvents = true;
+                this.p5Editor.editor.gotoLine(range.from - 1);
                 this.p5Editor.editor.selection.setRange(new Range(range.from - 1, 0, range.to - 1, 0), false);
+                this.ignoreCursorEvents = false;
+            }
             return;
         }
         let obj: { [key: string]: boolean } = {};
@@ -303,8 +305,9 @@ export class IndexPage {
         });
     }
 
+    ignoreCursorEvents = false;
     reparse() {
-        this.editor.tokenizeAsync(this.file.name, this.editor.code).then(() => {
+        this.editor.tokenizeAsync(this.file.name).then(() => {
             this.editor.parse();
         });
     }
@@ -326,14 +329,17 @@ export class IndexPage {
             else {
                 this.service.src(url).then(data => {
                     this.file.src = data;
+                    this.ignoreCursorEvents = true;
                     this.editor.code = data;
+                    this.ignoreCursorEvents = false;
                     if (this.aceMode)
                         this.renderSelection();
                     window.setTimeout(() => {
-                        this.editor.tokenizeAsync(url, data).then(() => {
+                        this.editor.tokenizeAsync(url).then(() => {
                             window.setTimeout(() => {
                                 this.editor.parse();
-                                this.navigateToHash();
+                                if (!this.aceMode)
+                                    this.navigateToHash();
                                 this.dataBind();
                                 this.resolveAndHighlightUsedPackages().then(() => {
                                     console.log("finished...");
@@ -496,8 +502,7 @@ export class IndexPage {
                 target: "_blank"
             };
             if (html != null) {
-                let html2 = html.substringBetween("<!-- start doc -->", "<!-- end doc -->");
-                let html3 = `<div><div class="popup-header"><a target="_blank" href="${hl.href}">(${type}) ${hl.name}</a></div><div class="pod perldoc">${html2}</div></div>`;
+                let html3 = `<div><div class="popup-header"><a target="_blank" href="${hl.href}">(${type}) ${hl.name}</a></div>${html}</div>`;
                 hl.html = html3;
             }
             this.editor.hyperlinkNode(hl);
@@ -587,6 +592,7 @@ export class IndexPage {
                         href = pkg.resolved.url;//"https://metacpan.org/pod/" + pkg.name;
                     core = pkg.resolved.is_core ? "core " : "";
                     local = pkg.resolved.is_local ? "local " : "";
+                    let html = `<div><div class="popup-header"><a target="_blank" href="${href}">(${core}${local}package) ${name}</a></div>${pkg.docHtml || ""}</div>`;
                     this.editor.hyperlinkNode({
                         node: node,
                         href: href,
@@ -594,7 +600,7 @@ export class IndexPage {
                         //title: "(package) " + pkg.name + "\nctrl+click to open documentation",
                         css: "package-name",
                         //html: `<iframe src="${href}" />`
-                        html: `<div><a target="_blank" href="${href}">(${core}${local}package) ${name}</a></div>`,
+                        html: html,
                         target: "_blank",
                     });
                 }
@@ -674,20 +680,25 @@ export class IndexPage {
     perlDocCache: ObjectMap<Promise<string>> = {};
     //multiPerlDocHtml(req: { name?: string, funcName?: string }[]): Promise<string> {
     //}
-    perlDocHtml(req: PerlDocRequest): Promise<string> {
+    perlDocFromStorageOnly(req: PerlDocRequest): string {
         let key = req.name + "_" + req.funcName;
         let storageKey = "perldoc_" + key;
         let res3 = localStorage.getItem(storageKey);
+        return res3;
+    }
+    perlDocHtml(req: PerlDocRequest): Promise<string> {
+        let key = req.name + "_" + req.funcName;
+        let storageKey = "perldoc_" + key;
+        let res3 = this.perlDocFromStorageOnly(req);
         if (res3 != null) {
             return Promise.resolve(res3);
         }
         let res = this.perlDocCache[key];
         if (res !== undefined)
             return res;
-        res = this.service.perlDocHtml(req).then(res2 => {
-            localStorage.setItem(storageKey, res2);
-            return res2;
-        });
+        res = this.service.perlDocHtml(req)
+            .then(html => `<div class="pod">` + html.substringBetween("<!-- start doc -->", "<!-- end doc -->") + "</div>")
+            .then(res2 => { localStorage.setItem(storageKey, res2); return res2; });
         this.perlDocCache[key] = res;
         return res;
     }
@@ -703,6 +714,13 @@ export class IndexPage {
             file = this.file;
         return this.file != null && this.file.children == null;
     }
+
+
+    PerlCompleter_getDocHtml(type: string, name: string): string {
+        return this.perlDocFromStorageOnly({ name: name });
+
+    }
+
 
 }
 
@@ -742,128 +760,3 @@ export function main() {
 $(main);
 
 
-
-function testConsoleBinder() {
-    $(document.body).empty();
-    let el = $.create(".console").appendTo(document.body)[0];
-    let binder = new EditorConsoleBinder();
-    binder.el = el;
-    binder.init();
-    let s = `public class ggg {
-    void foo(){
-    }
-
-    void bar(){
-    }
-}`;
-    binder.setText(s);
-    binder.redraw();
-    window.setTimeout(() => {
-
-        binder.setText(s.substr(10));
-        binder.redraw();
-    }, 1000);
-
-}
-//splitNewLineTokens() {
-//    let list: Token[] = [];
-//    this.tokens.forEach(token => {
-//        if (token.is(TokenTypes.whitespace) && token.value.contains("\n") && token.value != "\n") {
-//            let s = token.value;
-//            while (s.length > 0) {
-//                if (s[0] == "\n") {
-//                    let newLineToken = TokenTypes.whitespace.create2("\n");
-//                    list.push(newLineToken);
-//                    s = s.substring(1);
-//                }
-//                else {
-//                    let index = s.indexOf("\n");
-//                    if (index > 0) {
-//                        let part = s.substring(0, index - 1);
-//                        let whitespaceToken = TokenTypes.whitespace.create2(part);
-//                        list.push(whitespaceToken);
-//                        let whitespaceToken2 = TokenTypes.whitespace.create2("\n");
-//                        list.push(whitespaceToken2);
-//                        s = s.substring(index + 1);
-//                    }
-//                    else {
-//                        let whitespaceToken = TokenTypes.whitespace.create2(s);
-//                        list.push(whitespaceToken);
-//                        s = "";
-//                    }
-//                }
-//            }
-//            return;
-//        }
-//        else {
-//            list.push(token);
-//        }
-//    });
-//    this.tokens = list;
-//}
-
-
-//var editor = CodeMirror.fromTextArea(<HTMLTextAreaElement>$("textarea")[0], { lineNumbers: true, mode:"perl",  foldGutter:true, });
-//editor.setSize(null, "100%");
-//editor.setValue("sub ggg {\nprint 'ggg';\n\n\n\n}");
-//window.editor = editor;
-//editor.foldCode(CodeMirror.Pos(0, 8), {rangeFinder:CodeMirror.fold.brace});
-//return;
-
-//this.pageSize = Math.floor(this.scrollEl.offsetHeight / this.lineHeight);
-//let x = { name: "ggg", phones: [{ number: "asd" }, { number: "dddd" }] };
-//monitor.methodInvoked.attach(e => console.log("methodInvoked", e));
-//monitor.propSet.attach(e => console.log("propSet", e));
-//monitor.register(x, () => true);
-//x.name = "aaa";
-//x.phones.push({ number: "aaaaa" });
-//x.phones.removeAt(1);
-//console.log(window.location.pathname);
-//$(".menu").getAppend("button.btn.btnCritique").text("Critique").click(e => this.critique());
-//$(".menu").getAppend("button.btn.btnExpandOrCollapseAll").text("Expand/Collapse").click(e => this.expandOrCollapseAll());
-//$(".menu").getAppend("button.btn.btnGitBlame").text("git blame").click(e => this.gitBlame());
-//this.tbUrl = $("#tbUrl");
-//this.tbUrl.val(window.location.pathname);
-//this.urlKey = "perl-parser\turl";
-//this.tbRegex = $("#tbRegex");
-//$("#btnRefactor").click(e => this.refactor());
-//$("#btnTestExpressions").click(e => this.testExpressions());
-
-//this.tbRegex.keyup(e => {
-//    let s = this.tbRegex.val();
-//    try {
-//        let regex = new Function("return " + s + ";")();
-//        let res = regex.exec(this.code);
-//        if (res instanceof Array)
-//            console.log(JSON.stringify(res[0]), { regex: res });
-//        else
-//            console.log(res);
-//    }
-//    catch (e) {
-//        console.log(e);
-//    }
-//});
-//this.tbUrl.change(e => this.update());
-//$("#cbAddParentheses").change(e => this.update());
-//$("#cbDeparseFriendly").change(e => this.update());
-//$(".line-numbers").on("click", "a.line-number", e=>e.preventDefault());
-//if (token.is(TokenTypes.whitespace) && token.value == "\n") {
-//    line = new CvLine();
-//    line.tokens = [];
-//    this.lines.add(line);
-//}
-//else {
-//    let lines = token.value.lines();
-//    if (lines.length > 1) {
-//        lines.skip(1).forEach(t => {
-//            line = new CvLine();
-//            line.tokens = [token];
-//            this.lines.add(line);
-//        });
-//    }
-//}
-
-//config.init();
-//console.log(config);
-//console.log(ModeList);
-    //editor.tokenTooltip = new TokenTooltip(editor);

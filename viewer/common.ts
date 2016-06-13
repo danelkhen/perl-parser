@@ -7,7 +7,7 @@
     NamedMemberExpression, NativeFunctionInvocation, NativeInvocation_BlockAndListOrExprCommaList, NativeInvocation_BlockOrExpr, NonParenthesizedList, NoStatement,
     Operator, PackageDeclaration, ParenthesizedList, PostfixUnaryExpression, PrefixUnaryExpression, QwExpression, RawExpression, RawStatement, RegexExpression,
     ReturnExpression, TrinaryExpression, Unit, UnlessStatement, UseOrNoStatement, UseStatement, ValueExpression, VariableDeclarationExpression, VariableDeclarationStatement, WhileStatement,
-    AstQuery, PrecedenceResolver, TokenTypes, Tokenizer, safeTry, TokenReader, Logger, AstNodeFixator,
+    AstQuery, PrecedenceResolver, TokenTypes, Tokenizer, TokenReader, Logger, AstNodeFixator,
 } from "perl-parser";
 import {ChangeTracker} from "./monitor";
 import {PerlModuleClassify} from "./p5-service";
@@ -329,6 +329,7 @@ export interface PackageResolution {
     name?: string;
     resolvedIncludePath?: string;
     resolved: PerlModuleClassify;
+    docHtml?:string;
 }
 
 

@@ -8,7 +8,7 @@ import {
     NamedMemberExpression, NativeFunctionInvocation, NativeInvocation_BlockAndListOrExprCommaList, NativeInvocation_BlockOrExpr, NonParenthesizedList, NoStatement,
     Operator, PackageDeclaration, ParenthesizedList, PostfixUnaryExpression, PrefixUnaryExpression, QwExpression, RawExpression, RawStatement, RegexExpression,
     ReturnExpression, TrinaryExpression, Unit, UnlessStatement, UseOrNoStatement, UseStatement, ValueExpression, VariableDeclarationExpression, VariableDeclarationStatement, WhileStatement,
-    AstQuery, PrecedenceResolver, TokenTypes, Tokenizer, safeTry, TokenReader, Logger, AstNodeFixator, TextFile, TextFilePos, TextFileRange, Cursor,
+    AstQuery, PrecedenceResolver, TokenTypes, Tokenizer, TokenReader, Logger, AstNodeFixator, TextFile, TextFilePos, TextFileRange, Cursor,
     ExpressionTester, EtReport, EtItem, RefArrayToRefUtil,
     EntityResolver, Package, Subroutine, Global
 } from "perl-parser";
@@ -340,10 +340,10 @@ export class P5AceEditor implements P5Editor {
     unitPackage: Package;
     global: Global;
 
-    tokenizeAsync(filename: string, data: string): Promise<any> {
-        this.code = data;
+    tokenizeAsync(filename: string): Promise<any> {
+        //this.code = data;
         let start = new Date();
-        this.sourceFile = new TextFile(filename, data);
+        this.sourceFile = new TextFile(filename, this.code);
         let tok = new Tokenizer();
         tok.onStatus = () => console.log("Tokenizer status: ", Helper.toPct(tok.cursor.index / tok.file.text.length));
         tok.file = this.sourceFile;

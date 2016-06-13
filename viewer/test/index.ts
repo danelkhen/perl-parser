@@ -6,18 +6,18 @@ import {ParserBase} from "perl-parser";
 import {ExpressionParser} from "perl-parser";
 import {Parser} from "perl-parser";
 import {
-AstNode, Expression, Statement, UnresolvedExpression, SimpleName, SubroutineDeclaration, SubroutineExpression, ArrayMemberAccessExpression, ArrayRefDeclaration,
-BarewordExpression, BeginStatement, BinaryExpression, Block, BlockExpression, BlockStatement, ElseStatement, ElsifStatement, EmptyStatement, EndStatement,
-ExpressionStatement, ForEachStatement, ForStatement, HashMemberAccessExpression, HashRefCreationExpression, IfStatement, InvocationExpression, MemberExpression,
-NamedMemberExpression, NativeFunctionInvocation, NativeInvocation_BlockAndListOrExprCommaList, NativeInvocation_BlockOrExpr, NonParenthesizedList, NoStatement,
-Operator, PackageDeclaration, ParenthesizedList, PostfixUnaryExpression, PrefixUnaryExpression, QwExpression, RawExpression, RawStatement, RegexExpression,
-ReturnExpression, TrinaryExpression, Unit, UnlessStatement, UseOrNoStatement, UseStatement, ValueExpression, VariableDeclarationExpression, VariableDeclarationStatement, WhileStatement,
-HasArrow, HasLabel,
+    AstNode, Expression, Statement, UnresolvedExpression, SimpleName, SubroutineDeclaration, SubroutineExpression, ArrayMemberAccessExpression, ArrayRefDeclaration,
+    BarewordExpression, BeginStatement, BinaryExpression, Block, BlockExpression, BlockStatement, ElseStatement, ElsifStatement, EmptyStatement, EndStatement,
+    ExpressionStatement, ForEachStatement, ForStatement, HashMemberAccessExpression, HashRefCreationExpression, IfStatement, InvocationExpression, MemberExpression,
+    NamedMemberExpression, NativeFunctionInvocation, NativeInvocation_BlockAndListOrExprCommaList, NativeInvocation_BlockOrExpr, NonParenthesizedList, NoStatement,
+    Operator, PackageDeclaration, ParenthesizedList, PostfixUnaryExpression, PrefixUnaryExpression, QwExpression, RawExpression, RawStatement, RegexExpression,
+    ReturnExpression, TrinaryExpression, Unit, UnlessStatement, UseOrNoStatement, UseStatement, ValueExpression, VariableDeclarationExpression, VariableDeclarationStatement, WhileStatement,
+    HasArrow, HasLabel,
 } from "perl-parser";
 import {PrecedenceResolver} from "perl-parser";
 import {TokenTypes} from "perl-parser";
 import {Tokenizer} from "perl-parser";
-import {safeTry, TokenReader, Logger, AstNodeFixator} from "perl-parser";
+import {TokenReader, Logger, AstNodeFixator} from "perl-parser";
 import {RefArrayToRefUtil} from "perl-parser";
 import {ExpressionTester, EtReport, EtItem} from "perl-parser";
 import {TextFile, TextFilePos, TextFileRange, Cursor} from "perl-parser";
@@ -34,10 +34,10 @@ export class IndexPage {
         this.tbUrl = $("#tbUrl");
         this.urlKey = "perl-parser\turl";
         this.tbRegex = $("#tbRegex");
-        $("#btnRefactor").click(e=> this.refactor());
-        $("#btnTestExpressions").click(e=> this.testExpressions());
-        
-        this.tbRegex.keyup(e=> {
+        $("#btnRefactor").click(e => this.refactor());
+        $("#btnTestExpressions").click(e => this.testExpressions());
+
+        this.tbRegex.keyup(e => {
             let s = this.tbRegex.val();
             try {
                 let regex = new Function("return " + s + ";")();
@@ -54,9 +54,9 @@ export class IndexPage {
         let lastUrl = localStorage[this.urlKey];
         if (lastUrl != null && lastUrl != "")
             this.tbUrl.val(lastUrl);
-        this.tbUrl.change(e=> this.update());
-        $("#cbAddParentheses").change(e=> this.update());
-        $("#cbDeparseFriendly").change(e=> this.update());
+        this.tbUrl.change(e => this.update());
+        $("#cbAddParentheses").change(e => this.update());
+        $("#cbDeparseFriendly").change(e => this.update());
         this.update();
     }
 
@@ -99,32 +99,33 @@ export class IndexPage {
         let tok = new Tokenizer();
         tok.file = file;
         localStorage.setItem("pause", "1");
-        safeTry(() => tok.process()).catch(e=> console.error(e)).then(() => {
-            let parser = new Parser();
-            parser.logger = new Logger();
-            parser.reader = new TokenReader();
-            parser.reader.logger = parser.logger;
-            parser.reader.tokens = tok.tokens;
-            parser.init();
+        tok.process();
+        //safeTry(() => tok.process()).catch(e=> console.error(e)).then(() => {
+        let parser = new Parser();
+        parser.logger = new Logger();
+        parser.reader = new TokenReader();
+        parser.reader.logger = parser.logger;
+        parser.reader.tokens = tok.tokens;
+        parser.init();
 
-            this.tokens = tok.tokens;
-            this.renderTokens();
+        this.tokens = tok.tokens;
+        this.renderTokens();
 
-            var statements = parser.parse();
-            console.log(statements);
-            let unit = new Unit();
-            unit.statements = statements;
-            this.unit = unit;
-            console.log(unit);
+        var statements = parser.parse();
+        console.log(statements);
+        let unit = new Unit();
+        unit.statements = statements;
+        this.unit = unit;
+        console.log(unit);
 
-            this.renderTree();
+        this.renderTree();
 
-            this.generateCode();
-            localStorage.removeItem("pause");
+        this.generateCode();
+        localStorage.removeItem("pause");
 
-            this.renderGeneratedCode();
+        this.renderGeneratedCode();
 
-        });
+        //});
         //$.create("pre").text(stringifyNodes(statements)).appendTo("body")
     }
 
@@ -136,9 +137,9 @@ export class IndexPage {
         //    //console.log("onExpressionFound", expressions.length);
         //    //fs.writeFileSync(expressionsFilename, expressions.select(t=> t.trim()).distinct().orderBy([t=> t.contains("\n"), t=> t.length, t=> t]).join("\n------------------------------------------------------------------------\n"));
         //};
-        return tester.testUnit(this.unit).then(list=> {
+        return tester.testUnit(this.unit).then(list => {
             console.log("Finished", list);
-            console.log("Finished: ", list.where(t=> t.success).length, "/", list.length);
+            console.log("Finished: ", list.where(t => t.success).length, "/", list.length);
             let report = new EtReport();
             report.items = list;
             return report;
@@ -151,7 +152,7 @@ export class IndexPage {
             //    report.saveSync(fs);
             //}
             //return report;
-            
+
             //let expressions = list.select(t=> t.code).distinct().orderBy([t=> t.contains("\n"), t=> t.length, t=> t]);
             //let reports = expressions.select(s=> list.first(x=> x.code == s));
             //console.log("SAVING");
@@ -188,7 +189,7 @@ export class IndexPage {
         codeEl.empty();
         if (this.tokens == null || this.tokens.length == 0)
             return;
-        this.tokens.forEach(token=> {
+        this.tokens.forEach(token => {
             let span = $.create("span").addClass(token.type.name).text(token.value).appendTo(codeEl)[0];
             this.tokenToElement.set(token, span);
         });
@@ -244,7 +245,7 @@ export class IndexPage {
             anp.text = obj.type.name + " { Token }";
             return anp;
         }
-        anp.children = Object.keys(obj).select(prop=> this.createPropertyNode(obj, prop)).exceptNulls();
+        anp.children = Object.keys(obj).select(prop => this.createPropertyNode(obj, prop)).exceptNulls();
         return anp;
     }
 
@@ -256,7 +257,7 @@ export class IndexPage {
             return anp;
         if (typeof (anp.value) == "object") {
             if (anp.value instanceof Array)
-                anp.children = anp.value.select(t=> this.createInstanceNode(t));
+                anp.children = anp.value.select(t => this.createInstanceNode(t));
             else
                 anp.children = [this.createInstanceNode(anp.value)];
         }
@@ -268,12 +269,12 @@ export class IndexPage {
         let li = $.create("li.node");
         let ul = $.create("ul.children");
         let span = li.getAppend("span.self").text(node.text);
-        span.mouseover(e=> this.onMouseOverNode(e, node));
+        span.mouseover(e => this.onMouseOverNode(e, node));
         if (node.children.length > 0) {
             li.addClass("collapsed");
-            ul.append(node.children.select(t=> this.createTree(t)));
+            ul.append(node.children.select(t => this.createTree(t)));
             li.append(ul);
-            span.mousedown(e=> { li.toggleClass("collapsed"); li.toggleClass("expanded"); });
+            span.mousedown(e => { li.toggleClass("collapsed"); li.toggleClass("expanded"); });
         }
         return li[0];
     }
@@ -288,12 +289,12 @@ export class IndexPage {
         }
         else if (obj instanceof Array) {
             if (deep)
-                return obj.select(t=> this.getTokens(t, false));
-            return obj.where(t=> t instanceof Token);
+                return obj.select(t => this.getTokens(t, false));
+            return obj.where(t => t instanceof Token);
         }
         else { // if (obj instanceof AstNode)
             if (deep)
-                return Object.keys(obj).selectMany(value=> this.getTokens(obj[value], false));
+                return Object.keys(obj).selectMany(value => this.getTokens(obj[value], false));
             return [];
         }
         //console.log("can't getTokens for", obj);
@@ -312,7 +313,7 @@ function stringifyNodes(node) {
             }
             if (obj instanceof AstNode) {
                 sb.push(obj.constructor.name);
-                Object.keys(obj).forEach(key=> {
+                Object.keys(obj).forEach(key => {
                     let value = obj[key];
                     if (key != "token")
                         sb.push(key);

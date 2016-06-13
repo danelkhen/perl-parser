@@ -259,25 +259,25 @@ export class AstNodeFixator {
 
 
 
-export let DEBUG = true;
-export function safeTry<T>(action: (...args: any[]) => T): Promise<T> {
-    return new Promise<T>((resolve, reject) => {
-        if (DEBUG) {
-            let res = action();
-            resolve(res);
-        }
-        else {
-            try {
-                let res = action();
-                resolve(res);
-            }
-            catch (e) {
-                reject(e);
-            }
-        }
+//export let DEBUG = true;
+//export function safeTry<T>(action: (...args: any[]) => T): Promise<T> {
+//    return new Promise<T>((resolve, reject) => {
+//        if (DEBUG) {
+//            let res = action();
+//            resolve(res);
+//        }
+//        else {
+//            try {
+//                let res = action();
+//                resolve(res);
+//            }
+//            catch (e) {
+//                reject(e);
+//            }
+//        }
 
-    });
-}
+//    });
+//}
 
 
 export class ArrayHelper {

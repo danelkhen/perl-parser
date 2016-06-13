@@ -17,9 +17,10 @@ AstQuery,
 import {PrecedenceResolver} from "./precedence-resolver";
 import {TokenTypes} from "./token-types";
 import {Tokenizer} from "./tokenizer";
-import {safeTry, TokenReader, Logger, AstNodeFixator} from "./utils";
+import {TokenReader, Logger, AstNodeFixator} from "./utils";
 //import "./extensions";
 import {Refactor} from "./refactor";
+
 
 
 export class ExpressionTester {
@@ -53,7 +54,7 @@ export class ExpressionTester {
         let exps = new AstQuery(unit).getDescendants().ofType(Expression).where(t=> this.shouldCheck(t));
 
         let promises = exps.select(exp => this.deparseAndTestExp(exp));
-        let x = <Promise<EtItem[]>><any>Promise.all(promises); //tsc bug
+        let x = <any>Promise.all(promises); //tsc bug
         return x.then(list=> {
             //list = list.exceptNulls();
             console.log("FINISHED TESTING", { success: list.where(t=> t.success).length, fail: list.where(t=> !t.success).length });

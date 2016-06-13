@@ -468,9 +468,9 @@ a.btn {
     display: none;
 }
 
-.ace-mode .code-view{
-    position:relative;
-    overflow:auto;
+.ace-mode .code-view {
+    position: relative;
+    overflow: auto;
 }
 
 .ace-mode #editor {
@@ -481,10 +481,11 @@ a.btn {
     bottom: 0;
 }
 
-.marker{
-    position:absolute;
+.marker {
+    position: absolute;
 }
-.marker-violation{
+
+.marker-violation {
     border-bottom: 1px dashed red;
 }
 /*.marker-link {
@@ -495,8 +496,8 @@ a.btn {
 }*/
 
 .marker-tooltip {
-    max-height:200px;
-    max-width:300px;
+    max-height: 200px;
+    max-width: 300px;
     /*max-width: 30%;*/
     font-size: 12px;
     font-family: Arial;
@@ -505,36 +506,50 @@ a.btn {
     color: black;
     border: 1px solid #ccc;
     padding: 6px;
-    overflow:auto;
-    pointer-events:auto;
+    overflow: auto;
+    pointer-events: auto;
+    white-space: normal;
+    cursor: default;
+}
+
+.popup-header {
+    border-bottom: 1px solid #ccc;
+    padding-bottom: 2px;
+}
+
+.pod{
     white-space:normal;
-    cursor:default;
 }
-.popup-header{
-    border-bottom:1px solid #ccc;
-    padding-bottom:2px;
-}
-
-
-.pod h1, 
-.pod h2, 
-.pod h3, 
+.pod h1,
+.pod h2,
+.pod h3,
 .pod h4,
 .pod p,
 .pod dl,
 .pod dt,
 .pod dd,
-.pod pre
-{
-    margin:4px 0 0 0;
+.pod pre {
+    margin: 4px 0 0 0;
 }
-.pod h1{font-size:16px;}
-.pod h2{font-size:14px;} 
-.pod h3{font-size:12px;} 
-.pod h4{font-size:10px;}
 
-.pod a[href]{
-    text-decoration:underline;
+.pod h1 {
+    font-size: 16px;
+}
+
+.pod h2 {
+    font-size: 14px;
+}
+
+.pod h3 {
+    font-size: 12px;
+}
+
+.pod h4 {
+    font-size: 10px;
+}
+
+.pod a[href] {
+    text-decoration: underline;
 }
 /*.pod dl,
 .pod dd,
@@ -542,3 +557,13 @@ a.btn {
 .pod p{
     margin:0;
 }*/
+
+.ace_tooltip.ace_doc-tooltip {
+    max-width: 300px;
+    max-height: 300px;
+    overflow: auto;
+    background: white;
+}
+div.ace_editor.ace_autocomplete{
+    background:white;
+}

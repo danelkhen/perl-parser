@@ -9,7 +9,7 @@ import {
     NamedMemberExpression, NativeFunctionInvocation, NativeInvocation_BlockAndListOrExprCommaList, NativeInvocation_BlockOrExpr, NonParenthesizedList, NoStatement,
     Operator, PackageDeclaration, ParenthesizedList, PostfixUnaryExpression, PrefixUnaryExpression, QwExpression, RawExpression, RawStatement, RegexExpression,
     ReturnExpression, TrinaryExpression, Unit, UnlessStatement, UseOrNoStatement, UseStatement, ValueExpression, VariableDeclarationExpression, VariableDeclarationStatement, WhileStatement,
-    AstQuery, PrecedenceResolver, TokenTypes, Tokenizer, safeTry, TokenReader, Logger, AstNodeFixator,
+    AstQuery, PrecedenceResolver, TokenTypes, Tokenizer, TokenReader, Logger, AstNodeFixator,
     TextFile, TextFilePos, TextFileRange, Cursor,
 } from "perl-parser";
 import {PackageResolution, AsyncFunc, TreeNodeData, Expander, Helper} from "./common";
@@ -33,7 +33,7 @@ export interface P5Editor {
     collapsable(node: AstNode, tokens?: Token[]);
     code: string;
     parse();
-    tokenizeAsync(filename: string, data: string): Promise<any>;
+    tokenizeAsync(filename: string): Promise<any>;
     setGitBlameItems(items: GitBlameItem[]);
     notifyPossibleChanges();
 
@@ -86,10 +86,9 @@ export class Editor implements P5Editor {
     }
 
 
-    tokenizeAsync(filename: string, data: string): Promise<any> {
-        this.code = data;
+    tokenizeAsync(filename: string): Promise<any> {
         let start = new Date();
-        this.sourceFile = new TextFile(filename, data);
+        this.sourceFile = new TextFile(filename, this.code);
         let tok = new Tokenizer();
         tok.onStatus = () => console.log("Tokenizer status: ", Helper.toPct(tok.cursor.index / tok.file.text.length));
         tok.file = this.sourceFile;

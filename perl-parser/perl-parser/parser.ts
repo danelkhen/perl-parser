@@ -13,7 +13,7 @@ import {
     HasArrow, HasLabel,
 } from "./ast";
 
-import {safeTry, TokenReader, Logger, AstNodeFixator} from "./utils";
+import {TokenReader, Logger, AstNodeFixator} from "./utils";
 
 
 export class Parser extends ParserBase {
@@ -25,10 +25,11 @@ export class Parser extends ParserBase {
     public parse(): Statement[] {
         this.nextToken();
         let statements: Statement[] = [];
-        safeTry(() => this.parseStatementsUntil(null, statements)).catch(e => {
-            let e2: Error = e;
-            this.logger.error([e2.message || "Unknown error:\n" + e.stack, this.token,]);
-        });
+        this.parseStatementsUntil(null, statements);
+        //safeTry(() => this.parseStatementsUntil(null, statements)).catch(e => {
+        //    let e2: Error = e;
+        //    this.logger.error([e2.message || "Unknown error:\n" + e.stack, this.token,]);
+        //});
         return statements;
     }
 
