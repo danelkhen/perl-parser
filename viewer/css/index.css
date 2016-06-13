@@ -20,7 +20,7 @@ body {
     height: 100%;
 }
 
-a {
+a[href] {
     font-size: inherit;
     text-decoration: none;
     color: #1378FF;

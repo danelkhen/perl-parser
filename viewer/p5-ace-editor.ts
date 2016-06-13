@@ -12,11 +12,9 @@ import {
     ExpressionTester, EtReport, EtItem, RefArrayToRefUtil,
     EntityResolver, Package, Subroutine, Global
 } from "perl-parser";
-import {PackageResolution, AsyncFunc, TreeNodeData, Expander, Helper} from "./common";
 import {P5Service, P5File, CritiqueResponse, CritiqueViolation, GitBlameItem} from "./p5-service";
 import {monitor, Monitor} from "./monitor";
-import {Key, Rect, Size, Point} from "./common";
-import {Editor as Viewer, Collapsable, P5Editor, CvLine, IndexSelection, TokenUtils, CodeHyperlink} from "./editor";
+import {PackageResolution, AsyncFunc, TreeNodeData, Expander, Helper, Collapsable, TokenUtils, CodeHyperlink, Key, Rect, Size, Point} from "./common";
 //import * as config from "ace/config";
 import * as ace from "ace/ace";
 import * as ModeList from "ace/ext/modelist";
@@ -38,7 +36,7 @@ import {GutterRenderer} from "ace/layer/gutter";
 import {snippetCompleter, textCompleter, keyWordCompleter} from "ace/ext/language_tools";
 import {Completer} from "ace/ext/language_tools";
 
-export class P5AceEditor implements P5Editor {
+export class P5AceEditor  {
     init() {
         this.editor = ace.edit("editor");
         this.editor.session.setMode("viewer/ace/mode/perl");

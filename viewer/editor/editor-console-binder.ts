@@ -8,15 +8,13 @@ import {
     NamedMemberExpression, NativeFunctionInvocation, NativeInvocation_BlockAndListOrExprCommaList, NativeInvocation_BlockOrExpr, NonParenthesizedList, NoStatement,
     Operator, PackageDeclaration, ParenthesizedList, PostfixUnaryExpression, PrefixUnaryExpression, QwExpression, RawExpression, RawStatement, RegexExpression,
     ReturnExpression, TrinaryExpression, Unit, UnlessStatement, UseOrNoStatement, UseStatement, ValueExpression, VariableDeclarationExpression, VariableDeclarationStatement, WhileStatement,
-    AstQuery, PrecedenceResolver, TokenTypes, Tokenizer, TokenReader, Logger, AstNodeFixator,
+    AstQuery, PrecedenceResolver, TokenTypes, Tokenizer, TokenReader, Logger, AstNodeFixator,RefArrayToRefUtil, ExpressionTester, EtReport, EtItem
 } from "perl-parser";
-import {PackageResolution, AsyncFunc, TreeNodeData, Expander, Helper} from "./common";
-import {RefArrayToRefUtil} from "perl-parser";
-import {ExpressionTester, EtReport, EtItem} from "perl-parser";
-import {P5Service, P5File, CritiqueResponse, CritiqueViolation} from "./p5-service";
-import {monitor, Monitor} from "./monitor";
-import {Key, Rect, Size, Point} from "./common";
-import {Editor, Watchable, CvLine, Collapsable, CodeHyperlink, EditorPos} from "./editor";
+import {PackageResolution, AsyncFunc, TreeNodeData, Expander, Helper, Collapsable, CodeHyperlink, } from "../common";
+import {P5Service, P5File, CritiqueResponse, CritiqueViolation} from "../p5-service";
+import {monitor, Monitor} from "../monitor";
+import {Key, Rect, Size, Point} from "../common";
+import {Editor, Watchable, CvLine, EditorPos} from "./editor";
 
 export class EditorConsoleBinder {
     el: HTMLElement;

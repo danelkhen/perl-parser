@@ -12,35 +12,17 @@ import {
     AstQuery, PrecedenceResolver, TokenTypes, Tokenizer, TokenReader, Logger, AstNodeFixator,
     TextFile, TextFilePos, TextFileRange, Cursor,
 } from "perl-parser";
-import {PackageResolution, AsyncFunc, TreeNodeData, Expander, Helper} from "./common";
+import {PackageResolution, AsyncFunc, TreeNodeData, Expander, Helper} from "../common";
 import {RefArrayToRefUtil} from "perl-parser";
 import {ExpressionTester, EtReport, EtItem} from "perl-parser";
-import {P5Service, P5File, CritiqueResponse, CritiqueViolation} from "./p5-service";
-import {monitor, Monitor} from "./monitor";
-import {Key, Rect, Size, Point} from "./common";
+import {P5Service, P5File, CritiqueResponse, CritiqueViolation} from "../p5-service";
+import {monitor, Monitor} from "../monitor";
+import {Collapsable, TokenUtils, CodeHyperlink, Key, Rect, Size, Point} from "../common";
 import {EditorDomBinder} from "./editor-dom-binder";
-import {GitBlameItem} from "./p5-service";
-
-export interface P5Editor {
-    init();
-    hyperlinkNode(opts: CodeHyperlink): HTMLAnchorElement;
-    scrollToLine(line: number);
-    tokens: Token[];
-    sourceFile: TextFile;
-    codeHyperlinks: CodeHyperlink[];
-    unit: Unit;
-    collapsables: Collapsable[];
-    collapsable(node: AstNode, tokens?: Token[]);
-    code: string;
-    parse();
-    tokenizeAsync(filename: string): Promise<any>;
-    setGitBlameItems(items: GitBlameItem[]);
-    notifyPossibleChanges();
-
-}
+import {GitBlameItem} from "../p5-service";
 
 
-export class Editor implements P5Editor {
+export class Editor  {
     notifyPossibleChanges() {
         this.binder.notifyPossibleChanges();
     }
@@ -416,18 +398,6 @@ export class Editor implements P5Editor {
 
 
 
-export interface CodeHyperlink {
-    node?: AstNode;
-    tokens?: Token[];
-    href?: string;
-    name?: string;
-    title?: string;
-    css?: string;
-    anchorEl?: HTMLAnchorElement;
-    target?: string;
-    html?:string;
-    //tooltip?:TooltipOptions;
-}
 
 
 export class CvLine {
@@ -437,180 +407,9 @@ export class CvLine {
 }
 
 
-export class IndexSelection {
-    ranges: IndexRange[] = [];
-    get lastRange(): IndexRange {
-        return this.ranges.last();
-    }
-    get lastAnchor(): number {
-        let range = this.lastRange;
-        if (range == null)
-            return null;
-        return range.from;
-    }
-    fromParam(s: string) {
-        if (s == null || s.length == 0)
-            return;
-        if (!/^L[1-9]+/.test(s))
-            return;
-        let tokens = s.split(',');
-        this.ranges.clear();
-        tokens.forEach(token => {
-            let subTokens = token.split("-");
-            if (subTokens.length == 1) {
-                let x = parseInt(subTokens[0].substr(1));
-                this.ranges.add(new IndexRange(x));
-            }
-            else {
-                let x = parseInt(subTokens[0].substr(1));
-                let y = parseInt(subTokens[1].substr(1));
-                this.ranges.add(new IndexRange(x, y));
-            }
-        });
-    }
-    toParam(): string {
-        try {
-            return this.getCompactRanges().select(t => this.rangeToParam(t)).join(",");
-        }
-        catch (e) {
-            console.error(e);
-            return "";
-        }
-    }
-    rangeToParam(range: IndexRange): string {
-        if (range.from == range.to)
-            return `L${range.from}`;
-        return `L${range.from}-L${range.to}`;
-    }
-
-
-    toCompact(): IndexSelection {
-        let sel = new IndexSelection();
-        sel.ranges = this.getCompactRanges();
-        return sel;
-    }
-    getCompactRanges(): IndexRange[] {
-        let ranges: IndexRange[] = [];
-        let list = this.getSelectedIndexes();
-        let range: IndexRange;
-        list.forEach(t => {
-            if (range == null) {
-                range = new IndexRange(t);
-                ranges.add(range);
-            }
-            else if (range.to == t - 1) {
-                range.to++;
-            }
-            else {
-                range = new IndexRange(t);
-                ranges.add(range);
-            }
-        });
-        return ranges;
-    }
-
-    normalize() {
-        let anchor = this.lastAnchor;
-        let list = [];
-        this.getSelectedIndexes().forEach(t => {
-            if (t == anchor)
-                return;
-            list.add(new IndexRange(t));
-        });
-        list.add(new IndexRange(anchor));
-        this.ranges = list;
-    }
-    generateNumbers = function (from: number, to: number) {
-        let min = Math.min(from, to);
-        let max = Math.max(from, to);
-        return Number.generate(min, max, 1);
-    };
-
-    getSelectedIndexes(): number[] {
-        let list = this.ranges.selectMany(t => this.generateNumbers(t.from, t.to));
-        let res = list.distinct().orderBy(t => t);
-        return res;
-    }
-    click(index: number, ctrl: boolean, shift: boolean) {
-        if (this.lastRange == null) {
-            this.ranges.add(new IndexRange(index));
-        }
-        else if (ctrl && !shift) {
-            this.normalize();
-            let index2 = this.ranges.findIndex(t => t.from == index);
-            if (index2 == null || index2 < 0) {
-                this.ranges.add(new IndexRange(index));
-            }
-            else {
-                this.ranges.removeAt(index2);
-            }
-        }
-        else if (!ctrl && !shift) {
-            this.ranges.clear();
-            this.ranges.add(new IndexRange(index));
-        }
-        else if (!ctrl && shift) {
-            let last = this.lastRange;
-            this.ranges.clear();
-            last.to = index;
-            this.ranges.add(last);
-        }
-        else if (ctrl && shift) {
-            let last = this.lastRange;
-            last.to = index;
-        }
-        else
-            console.error("Not Implemented", { index, ctrl, shift });
-    }
-
-}
-
-export class IndexRange {
-    constructor(from?: number, to?: number) {
-        if (from == null)
-            return;
-        if (to == null)
-            to = from;
-        this.from = from;
-        this.to = to;
-    }
-    from: number;
-    to: number;
-    contains(x: number): boolean {
-        let min = Math.min(this.from, this.to);
-        let max = Math.max(this.from, this.to);
-        return x >= min && x <= max;
-    }
-}
 
 
 
-export class TokenUtils {
-    static collectTokens(obj: any): Token[] {
-        let tokens: Token[] = [];
-        this._collectTokens(obj, tokens);
-        return tokens;
-    }
-    static _collectTokens(obj: any, tokens: Token[]) {
-        if (obj instanceof Token) {
-            tokens.add(obj);
-        }
-        else if (obj instanceof Array) {
-            obj.forEach(t => this._collectTokens(t, tokens));
-        }
-        else if (obj instanceof AstNode) {
-            let writer = new AstWriter();
-            writer.main();
-            let func = writer.map.get(obj.constructor);
-            if (func == null) {
-                console.warn("no ast writer handler for node", obj);
-                return;
-            }
-            let res = func(obj);
-            this._collectTokens(res, tokens);
-        }
-    }
-}
 
 export interface KeyBinding {
     key: Key | Key[];
@@ -730,11 +529,6 @@ export class Watchable<T>{
 }
 
 
-export interface Collapsable {
-    node: AstNode;
-    tokens: Token[];
-    isCollapsed: boolean;
-}
 
 
 export interface EditorPos {

@@ -13,13 +13,10 @@ import {
     ExpressionTester, EtReport, EtItem, RefArrayToRefUtil,
     EntityResolver, Package, Subroutine,
 } from "perl-parser";
-import {PackageResolution, AsyncFunc, TreeNodeData, Expander, Helper} from "./common";
+import {PackageResolution, AsyncFunc, TreeNodeData, Expander, Helper, TokenUtils, CodeHyperlink, Collapsable, IndexRange, IndexSelection} from "./common";
 import {P5Service, P5File, CritiqueResponse, CritiqueViolation, GitBlameItem, PerlDocRequest} from "./p5-service";
 import {monitor, Monitor} from "./monitor";
 import {Key, Rect, Size, Point} from "./common";
-import {Editor as Viewer, Collapsable, P5Editor, CvLine, IndexSelection, TokenUtils, CodeHyperlink, IndexRange} from "./editor";
-import {EditorConsoleBinder} from "./editor-console-binder";
-//import * as config from "ace/config";
 import * as ace from "ace/ace";
 import * as ModeList from "ace/ext/modelist";
 import {Range} from "ace/range";
@@ -35,7 +32,7 @@ export class IndexPage {
         PerlCompleter.getDocHtml = (type, name) => this.PerlCompleter_getDocHtml(type, name);
     }
 
-    editor: P5Editor;
+    editor: P5AceEditor;
     isMouseDown = false;
     selection: IndexSelection;
     service: P5Service;
@@ -43,13 +40,10 @@ export class IndexPage {
     cvBaseUrl = "/";
     lastUrl: string;
     generatedCode: string;
-    aceMode = true;
     monitor: Monitor;
     url: { pathname: string, hash: string, href: string };
     critiqueRes: CritiqueResponse;
-
-    get p5Editor(): P5AceEditor { return <P5AceEditor>this.editor; }
-
+    
     getCvUrlForIncludeAndPacakge(include: string, packageName: string) {
         let url = Helper.urlJoin([this.cvBaseUrl, include, packageName.split("::")]) + ".pm";
         return url;
@@ -79,27 +73,18 @@ export class IndexPage {
     main() {
         this.monitor = monitor;
         this.selection.fromParam(location.hash.substr(1));
-        if (this.aceMode) {
-            $("body").addClass("ace-mode");
-            this.editor = new P5AceEditor();
-            this.editor.init();
-            this.p5Editor.editor.on("changeSelection", e => {
-                if (this.ignoreCursorEvents)
-                    return;
-                if (this.file == null)
-                    return;
-                let range = this.p5Editor.editor.selection.getRange();
-                this.selection.ranges = [new IndexRange(range.start.row + 1, range.end.row + 1)];
-                this.saveSelection();
-            });
-        }
-        else {
-            this.editor = new Viewer();
-            this.editor.init();
-            $(".lines").mousedown(e => this.onLineNumberMouseDown(e));
-            $(".lines").mouseover(e => this.onLineNumberMouseOver(e));
-            $(".lines").mouseup(e => this.onLineNumberMouseUp(e));
-        }
+        $("body").addClass("ace-mode");
+        this.editor = new P5AceEditor();
+        this.editor.init();
+        this.editor.editor.on("changeSelection", e => {
+            if (this.ignoreCursorEvents)
+                return;
+            if (this.file == null)
+                return;
+            let range = this.editor.editor.selection.getRange();
+            this.selection.ranges = [new IndexRange(range.start.row + 1, range.end.row + 1)];
+            this.saveSelection();
+        });
 
         this.update();
         $(window).on("urlchange", e => this.window_urlchange(e));
@@ -109,23 +94,14 @@ export class IndexPage {
         let loc = document.location;
         let prevUrl = this.url;
         this.url = { pathname: loc.pathname, hash: loc.hash, href: loc.href };
-        //console.log("urlchange", e, prevUrl, this.url);
-        //console.log(e);
         this.update();
     }
-    //pageSize: number;
-
 
     critique() {
-        //this.service.perlDoc("use").then(e=>console.log(e));
-        //this.service.perlModuleClassify(["Bookings::JSON::Schema::Helper", "Try::Tiny"]).then(e=>console.log(e));
         this.service.perlCritique(this.file.path).then(res => {
             this.critiqueRes = res;
             console.log(res);
-            //let firstViolationLine = null;
             this.dataBind();
-            //Helper.dataBind($(".bottom-bar")[0], this);
-            //Helper.repeat(".critique-row", res.violations);
             let hls = res.violations.select(violation => {
                 let pos = this.editor.sourceFile.getPos3(violation.source.location.line, violation.source.location.column);
                 //let pos = new TextFilePos();
@@ -136,41 +112,22 @@ export class IndexPage {
                     return;
                 let hl: CodeHyperlink = { tokens, css: "hl hl-violation" };
                 let text = `${violation.description}\n${violation.policy}\nseverity:${violation.severity}`;
-                if (this.aceMode) {
-                    let range = this.editor.sourceFile.getRange2(pos, violation.source.code.length);
-                    this.p5Editor.addMarker({
-                        range,
-                        className: "marker marker-violation",
-                        annotation: { text, type: "error" }
-                    });
-                    let html = `<div><div class="popup-header">${violation.policy}</div><div><div>severity:${violation.severity}</div><div>${violation.description}</div></div>`;
-                    this.p5Editor.addPopupMarker({
-                        range,
-                        html: html,
-                    });
-                }
-                else {
-                    this.editor.hyperlinkNode(hl);
-                    Helper.tooltip(hl.anchorEl, { content: text, });
-                }
+                let range = this.editor.sourceFile.getRange2(pos, violation.source.code.length);
+                this.editor.addMarker({
+                    range,
+                    className: "marker marker-violation",
+                    annotation: { text, type: "error" }
+                });
+                let html = `<div><div class="popup-header">${violation.policy}</div><div><div>severity:${violation.severity}</div><div>${violation.description}</div></div>`;
+                this.editor.addPopupMarker({
+                    range,
+                    html: html,
+                });
                 return { violation, hl };
-                //if (firstViolationLine == null)
-                //    firstViolationLine = violation.source.location.line;
-                //tokens.forEach(token => {
-                //    let el = this.tokenToElement.get(token);
-                //    if (el == null)
-                //        return;
-                //    $(el).addClass("hl hl-violation");
-
-                //    this.tooltip({ target: el, content: `${violation.description}\n${violation.policy}\nseverity:${violation.severity}`, });
-                //});
             });
             if (hls.length > 0) {
                 this.editor.scrollToLine(hls[0].violation.source.location.line);
             }
-            //$(hls[0]).blur().focus();
-            //if (firstViolationLine !=null )
-            //    this.scrollToLine(firstViolationLine);
         });
     }
 
@@ -237,13 +194,6 @@ export class IndexPage {
         range.to = line;
         this.renderSelection();
         this.saveSelection();
-
-
-        //if (this.renderSelectionTimeout != null) {
-        //    window.clearTimeout(this.renderSelectionTimeout);
-        //    this.renderSelectionTimeout = null;
-        //}
-        //this.renderSelectionTimeout = window.setTimeout(t => { this.renderSelectionTimeout = null; this.renderSelection(); }, 0);
     }
     renderSelectionTimeout: number;
     onLineNumberMouseUp(e: JQueryMouseEventObject) {
@@ -259,29 +209,15 @@ export class IndexPage {
     saveSelection() {
         history.replaceState(undefined, undefined, window.location.pathname + "#" + this.selection.toParam());
         $(window).trigger("urlchange");
-        //location.hash = this.selection.toParam();
-        //console.log(this.selection.toParam());
     }
 
     renderSelection() {
-        if (this.aceMode) {
-            let range = this.selection.lastRange;
-            if (range != null) {
-                this.ignoreCursorEvents = true;
-                this.p5Editor.editor.gotoLine(range.from - 1);
-                this.p5Editor.editor.selection.setRange(new Range(range.from - 1, 0, range.to - 1, 0), false);
-                this.ignoreCursorEvents = false;
-            }
-            return;
-        }
-        let obj: { [key: string]: boolean } = {};
-        this.selection.getSelectedIndexes().forEach(t => obj[t] = true);
-        let node = <HTMLElement>$(".lines")[0].firstChild;
-        let index = 1;
-        while (node != null) {
-            $(node).toggleClass("selected", obj[index] == true);
-            node = <HTMLElement>node.nextSibling;
-            index++;
+        let range = this.selection.lastRange;
+        if (range != null) {
+            this.ignoreCursorEvents = true;
+            this.editor.editor.gotoLine(range.from - 1);
+            this.editor.editor.selection.setRange(new Range(range.from - 1, 0, range.to - 1, 0), false);
+            this.ignoreCursorEvents = false;
         }
     }
 
@@ -298,7 +234,6 @@ export class IndexPage {
         let tok = new Tokenizer();
         tok.onStatus = () => console.log("Tokenizer status: ", Helper.toPct(tok.cursor.index / tok.file.text.length));
         tok.file = sourceFile;
-        //tok.process();
         return tok.processAsync().then(() => {
             let end = performance.now();
             console.log("tokenization took " + (end - start) + "ms");
@@ -332,14 +267,11 @@ export class IndexPage {
                     this.ignoreCursorEvents = true;
                     this.editor.code = data;
                     this.ignoreCursorEvents = false;
-                    if (this.aceMode)
-                        this.renderSelection();
+                    this.renderSelection();
                     window.setTimeout(() => {
                         this.editor.tokenizeAsync(url).then(() => {
                             window.setTimeout(() => {
                                 this.editor.parse();
-                                if (!this.aceMode)
-                                    this.navigateToHash();
                                 this.dataBind();
                                 this.resolveAndHighlightUsedPackages().then(() => {
                                     console.log("finished...");
@@ -349,10 +281,7 @@ export class IndexPage {
                     }, 10);
                 });
             }
-            //$(".dir-view").toggleClass("active", this.file.children != null);
-            //$(".code-view").toggleClass("active", this.file.children == null);
             this.dataBind();
-            //this.editor.initCaret();
         });
         this.dataBind();
     }
@@ -395,34 +324,13 @@ export class IndexPage {
 
     testExpressions(): Promise<EtReport> {
         let tester = new ExpressionTester();
-        //let expressions: string[] = [];
-        //tester.onExpressionFound = e => {
-        //    expressions.push(e.code);
-        //    //console.log("onExpressionFound", expressions.length);
-        //    //fs.writeFileSync(expressionsFilename, expressions.select(t=> t.trim()).distinct().orderBy([t=> t.contains("\n"), t=> t.length, t=> t]).join("\n------------------------------------------------------------------------\n"));
-        //};
         return tester.testUnit(this.editor.unit).then(list => {
             console.log("Finished", list);
             console.log("Finished: ", list.where(t => t.success).length, "/", list.length);
             let report = new EtReport();
             report.items = list;
             return report;
-            //report.filename = expressionsFilename;
-            //report.loadSync(fs);
-            //report.items.addRange(list);
-            //report.cleanup();
-            //if (this.save) {
-            //    console.log("merging and saving results");
-            //    report.saveSync(fs);
-            //}
-            //return report;
-
-            //let expressions = list.select(t=> t.code).distinct().orderBy([t=> t.contains("\n"), t=> t.length, t=> t]);
-            //let reports = expressions.select(s=> list.first(x=> x.code == s));
-            //console.log("SAVING");
-            //return fs.writeFileSync(expressionsFilename, reports.select(t=> [JSON.stringify({success:t.success}), t.code, t.dprs, t.mine].join("\n")).join("\n------------------------------------------------------------------------\n"));
         });
-        //console.log("DONE");//, unit);
 
     }
 
@@ -440,7 +348,6 @@ export class IndexPage {
 
     refactor() {
         new AstNodeFixator().process(this.editor.unit);
-        //new FindEvalsWithout1AtTheEnd().process(this.unit);
         new RefArrayToRefUtil(this.editor.unit).process();
         this.generateCode();
         //this.editor.render();
@@ -465,8 +372,6 @@ export class IndexPage {
                 return Object.keys(obj).selectMany(value => this.getTokens(obj[value], false));
             return [];
         }
-        //console.log("can't getTokens for", obj);
-        //return null;
     }
 
     resolvePerldocAndAnnotate(node: AstNode, isBuiltinFunction: boolean): Promise<any> {
@@ -537,16 +442,6 @@ export class IndexPage {
         });
         console.log({ refs, inUse });
         let subs = this.findSubs();
-        if (!this.aceMode) {
-            subs.where(t => t.name != null).forEach(node => {
-                if (!(node.parentNode instanceof SubroutineDeclaration))
-                    return;
-                //if (node.parentNode.parentNode == null || !(node.parentNode.parentNode instanceof PackageDeclaration))
-                //    return;
-                let name = node.name.toCode().trim();
-                this.editor.hyperlinkNode({ node: node.name, href: "#sub:" + name, name: "sub:" + name });
-            });
-        }
         builtins.forEach(node => this.resolvePerldocAndAnnotate(node, true));
         pragmas.forEach(node => this.resolvePerldocAndAnnotate(node, false));
         builtins2.forEach(node => this.resolvePerldocAndAnnotate2(node, true));
@@ -597,9 +492,7 @@ export class IndexPage {
                         node: node,
                         href: href,
                         name: name,
-                        //title: "(package) " + pkg.name + "\nctrl+click to open documentation",
                         css: "package-name",
-                        //html: `<iframe src="${href}" />`
                         html: html,
                         target: "_blank",
                     });
@@ -652,12 +545,6 @@ export class IndexPage {
     }
 
     isInsideUse(node: Expression): boolean {
-        //let s = node.query().getParentStatement().toCode().trim();
-        ////if (s.startsWith("use "))
-        ////    console.log("failed detecting use", s, node);
-        //if (s.startsWith("use if"))
-        //    console.log("failed detecting use", s, node);
-        //console.log("isInsideUse", node);
         let parent = node.parentNode;
         let parentProp = node.parentNodeProp;
         if (parent instanceof InvocationExpression && node.parentNodeProp == "target") {
@@ -678,8 +565,6 @@ export class IndexPage {
 
 
     perlDocCache: ObjectMap<Promise<string>> = {};
-    //multiPerlDocHtml(req: { name?: string, funcName?: string }[]): Promise<string> {
-    //}
     perlDocFromStorageOnly(req: PerlDocRequest): string {
         let key = req.name + "_" + req.funcName;
         let storageKey = "perldoc_" + key;
