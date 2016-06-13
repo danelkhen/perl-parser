@@ -5,21 +5,9 @@
 /// <reference path="../typings/globals/es6-shim/index.d.ts" />
 /// <reference path="../built/perl-parser/perl-parser.d.ts" />
 /// <reference path="../typings/globals/require/index.d.ts" />
-/// <reference path="../ace/ace.d.ts" />
+/// <reference path="../manual_typings/ace/ace.d.ts" />
 /// <reference path="../typings/globals/bootstrap/index.d.ts" />
 
-/// !reference path="../typings/globals/ace/index.d.ts" />
-
-//declare class Tooltip {
-//    constructor(opts?: TooltipOptions);
-//}
-
-//declare interface TooltipOptions {
-//    target: any;
-//    position?: string;
-//    content?: any;
-//    classes?: string;
-//}
 
 interface ObjectMap<T> {
     [key:string]:T;

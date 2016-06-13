@@ -246,6 +246,6 @@ let theme = {
 
 };
 
-var dom = require("../lib/dom");
+var dom = require("ace/lib/dom");
 dom.importCssString(theme.cssText, theme.cssClass);
 export = theme;

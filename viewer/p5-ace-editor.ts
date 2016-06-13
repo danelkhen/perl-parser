@@ -41,8 +41,8 @@ import {Completer} from "ace/ext/language_tools";
 export class P5AceEditor implements P5Editor {
     init() {
         this.editor = ace.edit("editor");
-        this.editor.session.setMode("ace/mode/perl");
-        this.editor.setTheme("ace/theme/vs");
+        this.editor.session.setMode("viewer/ace/mode/perl");
+        this.editor.setTheme("viewer/ace/theme/vs");
         this.editor.$blockScrolling = Infinity; //automatically scrolling cursor into view after selection change this will be disabled in the next version set editor.$blockScrolling = Infinity to disable this message
         this.editor.setOptions({
             enableLinking: true,
@@ -311,7 +311,7 @@ export class P5AceEditor implements P5Editor {
         return this.editor.getValue();
     }
     set code(value: string) {
-        let session = new EditSession(value, "ace/mode/perl");
+        let session = new EditSession(value, "viewer/ace/mode/perl");
         session.gutterRenderer = new P5GutterRenderer(this);
         this.editor.setSession(session);
         //this.editor.setValue(value, -1);

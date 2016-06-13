@@ -103,7 +103,7 @@ export class Mode extends TextMode {
     }
     $id: string;
 }
-Mode.prototype.$id = "ace/mode/perl";
+Mode.prototype.$id = "viewer/ace/mode/perl";
 
 
 //TODO:? oop.inherits(Mode, TextMode);
