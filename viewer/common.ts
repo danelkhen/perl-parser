@@ -325,7 +325,7 @@ export interface AsyncFunc<T> {
 
 
 export interface PackageResolution {
-    node?: AstNode;
+    //node?: AstNode;
     name?: string;
     resolvedIncludePath?: string;
     resolved: PerlModuleClassify;

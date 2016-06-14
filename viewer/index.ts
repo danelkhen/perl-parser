@@ -68,7 +68,9 @@ export class IndexPage {
         this.perlFile.onPropChanged(t => t.sourceFile, () => {
             this.dataBind();
             console.log("setting editor code");
+            this.ignoreCursorEvents = true;
             this.editor.setCode(this.perlFile.sourceFile.text);
+            this.ignoreCursorEvents = false;
         });
         this.perlFile.onPropChanged(t => t.codeHyperlinks, () => {
             this.editor.hyperlinkNode(this.perlFile.codeHyperlinks.last());
@@ -121,6 +123,8 @@ export class IndexPage {
 
 
     saveSelection() {
+        if (location.hash == "#" + this.selection.toParam())
+            return;
         history.replaceState(undefined, undefined, window.location.pathname + "#" + this.selection.toParam());
         $(window).trigger("urlchange");
     }
