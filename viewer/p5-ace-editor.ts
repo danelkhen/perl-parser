@@ -35,6 +35,7 @@ import {Annotation as AceAnnotation} from "ace/annotation";
 import {GutterRenderer} from "ace/layer/gutter";
 import {snippetCompleter, textCompleter, keyWordCompleter} from "ace/ext/language_tools";
 import {Completer} from "ace/ext/language_tools";
+import {PerlFile} from "./perl-file";
 
 export class P5AceEditor {
     linkEvent: LinkEvent;
@@ -42,15 +43,14 @@ export class P5AceEditor {
     linkUnderMouseMarkerId: number;
     linkUnderMouse: CodeHyperlink;
     tokens: Token[];
-    sourceFile: TextFile;
+    //sourceFile: TextFile;
     codeHyperlinks: CodeHyperlink[];
-    unit: Unit;
-    collapsables: Collapsable[];
-    collapsable(node: AstNode, tokens?: Token[]) { }
     lastCheckedTokenUnderMouse: TokenInfo;
     tokenUnderMouse2: TokenInfo;
     popupMarkers: PopupMarker[] = [];
     editor: Editor;
+    perlFile: PerlFile;
+
     metaText: Map<number, string> = new Map<number, string>();
     statusBarEl: HTMLElement;
     statusTextEl: HTMLElement;
@@ -289,44 +289,9 @@ export class P5AceEditor {
         //this.editor.moveCursorTo(0, 0, false);
     }
 
-    parse() {
-        let parser = new Parser();
-        parser.logger = new Logger();
-        parser.reader = new TokenReader();
-        parser.reader.logger = parser.logger;
-        parser.reader.tokens = this.tokens;
-        parser.init();
-
-        var statements = parser.parse();
-        let unit = new Unit();
-        unit.statements = statements;
-        this.unit = unit;
-        console.log(unit);
-        new AstNodeFixator().process(this.unit);
-        this.unitPackage = EntityResolver.process(this.unit)[0];
-        console.log({ package: this.unitPackage });
-        this.global = new Global();
-        this.global.packages.push(this.unitPackage);
-    }
-    unitPackage: Package;
-    global: Global;
-
-    tokenizeAsync(filename: string): Promise<any> {
-        //this.code = data;
-        let start = new Date();
-        this.sourceFile = new TextFile(filename, this.getCode());
-        let tok = new Tokenizer();
-        tok.onStatus = () => console.log("Tokenizer status: ", Helper.toPct(tok.cursor.index / tok.file.text.length));
-        tok.file = this.sourceFile;
-        return tok.processAsync().then(() => {
-            let end = new Date();
-            console.log("tokenization took " + (end.valueOf() - start.valueOf()) + "ms");
-            this.tokens = tok.tokens;
-        });
-    }
     setGitBlameItems(items: GitBlameItem[]) {
         let anns = items.map(item => {
-            let pos = this.sourceFile.getPos3(parseInt(item.line_num), 1);
+            let pos = this.perlFile.sourceFile.getPos3(parseInt(item.line_num), 1);
             this.metaText.set(pos.line, item.author);
             //let range = this.sourceFile.getRange2(pos, 10);
             //let marker = <Marker>{ html: "<span>" + item.author, range: range, className:"marker-git-blame", inFront:true };

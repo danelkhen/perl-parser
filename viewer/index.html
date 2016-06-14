@@ -70,9 +70,9 @@
         <tr class="bottom">
             <td>
                 <div class="status-bar"><span class="status-text"></span></div>
-                <div class="bottom-bar" _if="critiqueRes!=null" style="display:none">
+                <div class="bottom-bar" _if="perlFile.critiqueRes!=null" style="display:none">
                     <div class="pane">
-                        <div class="critique" _if="critiqueRes!=null">
+                        <div class="critique" _if="perlFile.critiqueRes!=null">
                             <table class="grid">
                                 <thead>
                                     <tr>
@@ -83,7 +83,7 @@
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    <tr class="critique-row template" _for="critiqueRes.violations" _onclick="(e, violation) => this.violation_click(e, violation)">
+                                    <tr class="critique-row template" _for="perlFile.critiqueRes.violations" _onclick="(e, violation) => this.violation_click(e, violation)">
                                         <td>{{description}}</td>
                                         <td>{{policy}}</td>
                                         <td>{{source.location.line}}</td>
