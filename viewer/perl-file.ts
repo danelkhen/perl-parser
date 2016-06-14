@@ -271,6 +271,7 @@ export class PerlFile {
         });
     }
 
+    isBuiltin(name: string): boolean { return this.isBuiltinFunction(name) || this.isPragma(name); }
     isBuiltinFunction(name: string): boolean {
         return TokenTypes.builtinFunctions.contains(name);
     }
@@ -278,42 +279,24 @@ export class PerlFile {
         return TokenTypes.pragmas.contains(name);
     }
 
-    resolveAndHighlightUsedPackages(): Promise<any> {
+    resolveAndHighlightUsedPackages(): Promise<void> {
         if (this.unit == null)
             return;
 
-        let builtinFunctionAndPragmaTokens: Token[] = this.tokens.where(t => (t.isIdentifier() || t.isKeyword()) && (this.isBuiltinFunction(t.value) || this.isPragma(t.value)));
-        //let pragmaTokens: Token[] = this.tokens.where(t => (t.isIdentifier() || t.isKeyword()) && this.isPragma(t.value));
+        let builtinTokens: Token[] = this.tokens.where(t => (t.isIdentifier() || t.isKeyword()) && (this.isBuiltin(t.value)));
         let pkgRefNodes = this.findPackageRefs(this.unit);
         let inUse: NamedMemberExpression[] = [];
-        let builtinFunctionAndPragmaNodes: NamedMemberExpression[] = [];
+        let builtinNodes: NamedMemberExpression[] = [];
         pkgRefNodes.forEach(t => {
             let name = t.toCode().trim();
-            if (this.isBuiltinFunction(name) || this.isPragma(name)) {
-                builtinFunctionAndPragmaNodes.push(t);
-            }
-            else if (this.isInsideUse(t)) {
+            if (this.isBuiltin(name))
+                builtinNodes.push(t);
+            else if (this.isInsideUse(t))
                 inUse.push(t);
-            }
         });
-        //console.log("pkgRefNodes", pkgRefNodes.select(t => t.toCode().trim()).distinct().orderBy(t => t));
-        //console.log("pragmas", pragmas.select(t => t.toCode().trim()).distinct().orderBy(t => t));
-        //console.log("builtins", builtins.select(t => t.toCode().trim()).distinct().orderBy(t => t));
-        //console.log("builtinTokens", builtinTokens.select(t => t.value).distinct().orderBy(t => t));
-        //console.log("pragmaTokens", pragmaTokens.select(t => t.value).distinct().orderBy(t => t));
-        //console.log({ refs, inUse, pragmas, builtins });
 
-        builtinFunctionAndPragmaNodes.forEach(node => this.resolvePerldocAndAnnotate(node));
-        builtinFunctionAndPragmaTokens.forEach(token => this.resolvePerldocAndAnnotate2(token));
-        //pragmaTokens.forEach(token => this.resolvePerldocAndAnnotate2(token));
-
-
-        //let packageNames = pkgRefNodes.where(t => this.isInsideUse(t)).map(t => t.toCode().trim());
-        //packageNames.addRange(builtinTokens.map(t => t.value));
-        //packageNames.addRange(pragmaTokens.map(t => t.value));
-        //packageNames = packageNames.distinct().orderBy(t => t);
-        //console.log(packageNames);
-        //let resolutions = packageNames.select(name => (<PackageResolution>{ name, resolved: null }));
+        builtinNodes.forEach(node => this.resolvePerldocAndAnnotate(node));
+        builtinTokens.forEach(token => this.resolvePerldocAndAnnotate2(token));
 
         let resolutions = inUse.select(node => (<PackageResolution>{ name: node.toCode().trim(), resolved: null }));
         return this.resolvePackages(resolutions).then(() => {
@@ -323,6 +306,22 @@ export class PerlFile {
             let hls = pkgRefNodes.map(node => this.pkgRefToCodeHyperlink(node));
             hls.exceptNulls().forEach(t => this.hyperlinkNode(t));
         });
+
+
+        //console.log("pkgRefNodes", pkgRefNodes.select(t => t.toCode().trim()).distinct().orderBy(t => t));
+        //console.log("pragmas", pragmas.select(t => t.toCode().trim()).distinct().orderBy(t => t));
+        //console.log("builtins", builtins.select(t => t.toCode().trim()).distinct().orderBy(t => t));
+        //console.log("builtinTokens", builtinTokens.select(t => t.value).distinct().orderBy(t => t));
+        //console.log("pragmaTokens", pragmaTokens.select(t => t.value).distinct().orderBy(t => t));
+        //console.log({ refs, inUse, pragmas, builtins });
+        //pragmaTokens.forEach(token => this.resolvePerldocAndAnnotate2(token));
+        //let packageNames = pkgRefNodes.where(t => this.isInsideUse(t)).map(t => t.toCode().trim());
+        //packageNames.addRange(builtinTokens.map(t => t.value));
+        //packageNames.addRange(pragmaTokens.map(t => t.value));
+        //packageNames = packageNames.distinct().orderBy(t => t);
+        //console.log(packageNames);
+        //let resolutions = packageNames.select(name => (<PackageResolution>{ name, resolved: null }));
+
     }
 
     pkgRefToCodeHyperlink(node: NamedMemberExpression): CodeHyperlink {
