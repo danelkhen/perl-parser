@@ -24,8 +24,8 @@
             //baseUrl: "/another/path",
             //waitSeconds: 15
             paths: {
-                "viewer":"/res/built/viewer",
-                "ace":"/res/ace",
+                "viewer": "/res/built/viewer",
+                "ace": "/res/ace",
                 "perl-parser": "/res/built/perl-parser/perl-parser",
                 "perl-parser/extensions": "/res/built/perl-parser/perl-parser",
             },
@@ -47,6 +47,9 @@
                         <button class="btn" _onclick="e => this.editor.expandOrCollapseAll()">toggle</button>
                         <button class="btn" _onclick="e => this.gitBlame()">blame</button>
                         <button class="btn" _onclick="e => this.reparse()">reset</button>
+                        <button class="btn" _onclick="e => this.gitLog()">log</button>
+                        <input type="text" _value="grepText" _oninput="e => this.grepText = e.target.value" />
+                        <button class="btn" _onclick="e => this.gitGrep()">grep</button>
                     </div>
                 </div>
             </td>
@@ -70,9 +73,9 @@
         <tr class="bottom">
             <td>
                 <div class="status-bar"><span class="status-text"></span></div>
-                <div class="bottom-bar" _if="perlFile.critiqueRes!=null" style="display:none">
-                    <div class="pane">
-                        <div class="critique" _if="perlFile.critiqueRes!=null">
+                <div class="bottom-bar" _if="showBottomBar()" style="display:none">
+                    <div class="critique scroll-grid" _if="perlFile.critiqueRes!=null">
+                        <div class="scroll-grid-content">
                             <table class="grid">
                                 <thead>
                                     <tr>
@@ -91,6 +94,64 @@
                                     </tr>
                                 </tbody>
                             </table>
+                        </div>
+                    </div>
+                    <div class="git-log scroll-grid" _if="t => t.perlFile.gitLogItems!=null && t.perlFile.gitShowResponse==null">
+                        <div class="scroll-grid-content">
+                            <table class="grid">
+                                <colgroup>
+                                    <col />
+                                    <col />
+                                    <col />
+                                    <col />
+                                </colgroup>
+                                <thead>
+                                    <tr>
+                                        <th><span>commit</span></th>
+                                        <th><span>author</span></th>
+                                        <th><span>date</span></th>
+                                        <th><span>message</span></th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr class="git-log-row template" _for="perlFile.gitLogItems" _onclick="(e, gitLogItem) => this.gitLogItem_click(e, gitLogItem)">
+                                        <td class="nowrap">{{sha}}</td>
+                                        <td class="nowrap">{{author.name}}</td>
+                                        <td class="nowrap">{{date}}</td>
+                                        <td class="pre">{{message}}</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    <div class="git-show" _if="perlFile.gitShowResponse!=null" style="height:100%">
+                        <div style="height:50%;overflow:auto">
+                            <div><span>commit: </span><span>{{perlFile.gitShowResponse.sha}}</span></div>
+                            <div><span>author: </span><span>{{perlFile.gitShowResponse.author.name}}</span></div>
+                            <div><span>date: </span><span>{{perlFile.gitShowResponse.date}}</span></div>
+                            <div class="pre">{{perlFile.gitShowResponse.message}}</div>
+                        </div>
+                        <div class="scroll-grid" style="height:50%">
+                            <div class="scroll-grid-content">
+                                <table class="grid">
+                                    <thead>
+                                        <tr>
+                                            <th><span>action</span></th>
+                                            <th><span>added</span></th>
+                                            <th><span>removed</span></th>
+                                            <th><span>path</span></th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr class="git-show-row template" _for="perlFile.gitShowResponse.files" _onclick="(e, file) => this.gitShowFile_click(e, file)">
+                                            <td class="nowrap">{{action}}</td>
+                                            <td class="nowrap">{{added}}</td>
+                                            <td class="nowrap">{{removed}}</td>
+                                            <td class="pre">{{path}}</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
                         </div>
                     </div>
                 </div>

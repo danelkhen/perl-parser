@@ -14,7 +14,7 @@ import {
     EntityResolver, Package, Subroutine,
 } from "perl-parser";
 import {PackageResolution, AsyncFunc, TreeNodeData, Expander, Helper, TokenUtils, CodeHyperlink, Collapsable, IndexRange, IndexSelection} from "./common";
-import {P5Service, P5File, CritiqueResponse, CritiqueViolation, GitBlameItem, PerlDocRequest} from "./p5-service";
+import {P5Service, P5File, CritiqueResponse, CritiqueViolation, GitBlameItem, PerlDocRequest, GitLogItem, GitShow, GitShowFile} from "./p5-service";
 import {monitor, Monitor} from "./monitor";
 import {Key, Rect, Size, Point} from "./common";
 import * as ace from "ace/ace";
@@ -24,6 +24,7 @@ import {Editor} from "ace/editor";
 import {P5AceEditor} from "./p5-ace-editor";
 import {PerlCompleter} from "./ace/mode/perl-completer";
 import {PerlFile} from "./perl-file";
+import {Template} from "./template";
 
 export class IndexPage {
     constructor() {
@@ -44,6 +45,7 @@ export class IndexPage {
     ignoreCursorEvents = false;
     renderSelectionTimeout: number;
     dataBindTimeout: number;
+    grepText: string = "";
 
 
     main() {
@@ -75,7 +77,7 @@ export class IndexPage {
         this.perlFile.onPropChanged(t => t.codeHyperlinks, () => {
             this.editor.hyperlinkNode(this.perlFile.codeHyperlinks.last());
         });
-
+        this.dataBind();
         this.update();
         $(window).on("urlchange", e => this.window_urlchange(e));
     }
@@ -121,6 +123,14 @@ export class IndexPage {
         this.perlFile.gitBlame().then(() => this.editor.setGitBlameItems(this.perlFile.gitBlameItems));
     }
 
+    gitLog() {
+        this.perlFile.gitShowResponse = null;
+        this.perlFile.gitLog().then(e => this.dataBind());
+    }
+
+    gitGrep() {
+        this.perlFile.service.gitGrep(this.grepText).then(res=>console.log(res));
+    }
 
     saveSelection() {
         if (location.hash == "#" + this.selection.toParam())
@@ -170,7 +180,7 @@ export class IndexPage {
     }
 
     dataBindNow() {
-        Helper.dataBind(document.body, this, this);
+        Template.dataBind(document.body, this, this);
         this.editor.notifyPossibleChanges();
     }
 
@@ -214,8 +224,23 @@ export class IndexPage {
         return this.file != null && this.file.children == null;
     }
 
+    showBottomBar() {
+        let f = this.perlFile;
+        return [f.critiqueRes, f.gitLogItems, f.gitShowResponse].exceptNulls().length > 0;
+    }
+
     PerlCompleter_getDocHtml(type: string, name: string): string {
         return this.perlFile.perlDocFromStorageOnly({ name: name });
+    }
+
+    gitLogItem_click(e: Event, item: GitLogItem) {
+        this.perlFile.gitShow(item.sha).then(() => this.dataBind());
+    }
+
+    gitShowFile_click(e: Event, item: GitShowFile) {
+        window.location.href = "/" + item.path;
+        //this.perlFile.url = item.path;
+        //this.perlFile.update();
     }
 
 }

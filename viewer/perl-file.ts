@@ -14,7 +14,7 @@ import {
     EntityResolver, Package, Subroutine, Global
 } from "perl-parser";
 import {PackageResolution, AsyncFunc, TreeNodeData, Expander, Helper, TokenUtils, CodeHyperlink, Collapsable, IndexRange, IndexSelection} from "./common";
-import {P5Service, P5File, CritiqueResponse, CritiqueViolation, GitBlameItem, PerlDocRequest} from "./p5-service";
+import {P5Service, P5File, CritiqueResponse, CritiqueViolation, GitBlameItem, PerlDocRequest, GitLogItem, GitShow, GitShowFile} from "./p5-service";
 import {monitor, Monitor} from "./monitor";
 import {Key, Rect, Size, Point} from "./common";
 import {PropertyChangeTracker, ObjProperty} from "./property-change-tracker";
@@ -93,6 +93,19 @@ export class PerlFile {
     gitBlame(): Promise<any> {
         return this.service.gitBlame(this.file.path).then(items => this.gitBlameItems = items);
     }
+
+    gitLog(): Promise<any> {
+        return this.service.gitLog(this.file.path).then(e => this.gitLogItems = e);
+    }
+
+    gitShow(sha: string): Promise<any> {
+        return this.service.gitShow(sha).then(res => this.gitShowResponse = res);
+    }
+
+    gitShowResponse: GitShow;
+
+
+    gitLogItems: GitLogItem[];
 
 
     tokens: Token[];

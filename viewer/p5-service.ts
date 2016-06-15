@@ -26,6 +26,30 @@ export class P5Service {
         return this.ajax({ url: "git/blame/:path", query: { path } });
     }
 
+    gitLog(path: string): Promise<GitLogItem[]> {
+        return this.ajax({ url: "git/log/:path", query: { path } });
+    }
+    gitShow(sha: string): Promise<GitShow> {
+        return this.ajax<GitShow>({ url: "git/show/:sha", query: { sha } }).then(res => {
+            //TODO: numify numbers on the backend
+            res.files.forEach(t => {
+                t.added = Number(t.added);
+                t.removed = Number(t.removed);
+            });
+            return res;
+        });
+    }
+    gitGrep(search: string): Promise<GitGrepItem[]> {
+        return this.ajax<GitGrepItem[]>({ url: "git/grep/:search", query: { search } }).then(res => {
+            res.forEach(item => {
+                item.matches.forEach(match => {
+                    match.line_num = Number(match.line_num);
+                });
+            });
+            return res;
+        });
+    }
+
     //pathJoin(basePath: string, ...paths: string[]) {
     //    let path = basePath;
     //    paths.forEach(t => {
@@ -156,3 +180,60 @@ export interface PerlModuleClassify {
     path: string;
     url: string;
 }
+
+
+export interface GitLogItem {
+    author: GitAuthor;
+    date: string;
+    message: string;
+    sha: string;
+}
+
+export interface GitAuthor {
+    email: string;
+    name: string;
+}
+
+export interface GitShow {
+    author: GitAuthor;
+    date: string;
+    files: GitShowFile[];
+    message: string;
+    sha: string;
+}
+
+export interface GitShowFile {
+    action: string;
+    path: string;
+    added: number;
+    removed: number;
+}
+
+export interface GitGrepItem {
+    matches: GitGrepMatch[];
+    path: string;
+}
+export interface GitGrepMatch {
+    line: string;
+    line_num: number;
+}
+/*
+{matches: [{line: "use Bookings::Loader::DateTime; # load and fixup DateTime", line_num: "153"},…],…}
+matches
+:
+[{line: "use Bookings::Loader::DateTime; # load and fixup DateTime", line_num: "153"},…]
+0
+:
+{line: "use Bookings::Loader::DateTime; # load and fixup DateTime", line_num: "153"}
+line
+:
+"use Bookings::Loader::DateTime; # load and fixup DateTime"
+line_num
+:
+"153"
+1
+:
+{line: "use DateTime::TimeZone;", line_num: "154"}
+path
+:
+"apps/admin/affiliateadmin/affiliate.html"*/
