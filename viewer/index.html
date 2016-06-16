@@ -8,7 +8,8 @@
     <link href='//fonts.googleapis.com/css?family=Source+Code+Pro' rel='stylesheet' type='text/css'>
     <!--<link href="//cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.3.6/css/bootstrap.min.css" rel="stylesheet" />-->
     <link href="/res/viewer/css/index.css" rel="stylesheet" />
-    <link href="/res/viewer/css/theme-light.css" rel="stylesheet" />
+    <!--<link href="/res/viewer/css/theme-light.css" rel="stylesheet" />-->
+    <!--<link href="/res/viewer/css/theme-dark.css" rel="stylesheet" />-->
     <!--<link href="//cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.3.6/css/bootstrap-theme.min.css" rel="stylesheet" />-->
 
     <script src="//cdnjs.cloudflare.com/ajax/libs/jquery/2.2.4/jquery.min.js"></script>
@@ -34,7 +35,7 @@
     </script>
 </head>
 <body>
-    <div class="loading">Loading...</div>
+    <div class="loading">Loading</div>
     <div class="debug"></div>
     <table class="layout">
         <tr class="top">
@@ -48,7 +49,7 @@
                         <button class="btn" _onclick="e => this.gitBlame()">blame</button>
                         <button class="btn" _onclick="e => this.reparse()">reset</button>
                         <button class="btn" _onclick="e => this.gitLog()">log</button>
-                        <input type="text" _value="grepText" _oninput="e => this.grepText = e.target.value" />
+                        <input class="tb" type="text" _value="grepText" _oninput="e => this.grepText = e.target.value" _onkeydown="e => e.keyCode==13 ? this.gitGrep() : 0;" placeholder="grep" />
                         <button class="btn" _onclick="e => this.gitGrep()">grep</button>
                     </div>
                 </div>
@@ -57,9 +58,18 @@
         <tr class="main">
             <td>
                 <div class="dir-view" _if="isFolder()">
-                    <table>
-                        <tr class="{{t => 'child template'}}" _for="file.children"><td><a href="{{href}}">{{name}}</a></td><td>{{size||""}}</td></tr>
-                    </table>
+                    <div class="scroll-grid">
+                        <div class="scroll-grid-content">
+                            <table class="grid">
+                                <thead>
+                                    <tr><th><span>name</span></th></tr>
+                                </thead>
+                                <tbody>
+                                    <tr class="child template" _for="file.children" _onmousedown="(e, file)=>this.grid_mousedown(e, '.child')"><td><a href="{{href}}">{{name}}</a></td><td>{{size||""}}</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
                 </div>
                 <div _if="isFile()" class="code-view">
                     <div id="editor" _ignore></div>
@@ -86,7 +96,10 @@
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    <tr class="critique-row template" _for="perlFile.critiqueRes.violations" _onclick="(e, violation) => this.violation_click(e, violation)">
+                                    <tr class="critique-row template"
+                                        _for="perlFile.critiqueRes.violations"
+                                        _ondblclick="(e, violation) => this.violation_dblclick(e, violation)"
+                                        _onmousedown="(e, violation)=>this.grid_mousedown(e, 'critique-row')">
                                         <td>{{description}}</td>
                                         <td>{{policy}}</td>
                                         <td>{{source.location.line}}</td>
@@ -114,7 +127,10 @@
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    <tr class="git-log-row template" _for="perlFile.gitLogItems" _onclick="(e, gitLogItem) => this.gitLogItem_click(e, gitLogItem)">
+                                    <tr class="git-log-row template"
+                                        _for="perlFile.gitLogItems"
+                                        _ondblclick="(e, gitLogItem) => this.gitLogItem_click(e, gitLogItem)"
+                                        _onmousedown="(e, gitLogItem)=>this.grid_mousedown(e, '.git-log-row')">
                                         <td class="nowrap">{{sha}}</td>
                                         <td class="nowrap">{{author.name}}</td>
                                         <td class="nowrap">{{date}}</td>
@@ -143,7 +159,10 @@
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        <tr class="git-show-row template" _for="perlFile.gitShowResponse.files" _onclick="(e, file) => this.gitShowFile_click(e, file)">
+                                        <tr class="git-show-row template"
+                                            _for="perlFile.gitShowResponse.files"
+                                            _ondblclick="(e, file) => this.gitShowFile_click(e, file)"
+                                            _onmousedown="(e, file)=>this.grid_mousedown(e, '.git-show-row')">
                                             <td class="nowrap">{{action}}</td>
                                             <td class="nowrap">{{added}}</td>
                                             <td class="nowrap">{{removed}}</td>

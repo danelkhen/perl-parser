@@ -503,7 +503,7 @@ export class TokenTypes {
     static braceClose = _r(/\}/);
     static bracketOpen = _r(/\[/);
     static bracketClose = _r(/\]/);
-    static interpolatedString = _r(/\"[^"]*\"/);
+    static interpolatedString = _r(/\"(\\.|[^"])*\"/);//_r(/\"[^"]*\"/);
     static string = _r(/\'[^\']*\'/);
     static regex = _custom(TokenTypes._matchRegex);//_r(/\/.*\/[a-z]*/);
     static regexSubstitute = _rs([/s\/.*\/.*\/[a-z]*/, /s#.*#.*#[a-z]*/, /s\{.*\}\{.*\}[a-z]*/]);  // s/abc/def/mg

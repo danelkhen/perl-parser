@@ -129,7 +129,7 @@ export class IndexPage {
     }
 
     gitGrep() {
-        this.perlFile.service.gitGrep(this.grepText).then(res=>console.log(res));
+        this.perlFile.service.gitGrep(this.grepText).then(res => console.log(res));
     }
 
     saveSelection() {
@@ -184,9 +184,6 @@ export class IndexPage {
         this.editor.notifyPossibleChanges();
     }
 
-    violation_click(e: JQueryEventObject, violation: CritiqueViolation) {
-        this.editor.scrollToLine(violation.source.location.line);
-    }
 
     navigateToHash() {
         let hash = window.location.hash.substr(1);
@@ -233,12 +230,23 @@ export class IndexPage {
         return this.perlFile.perlDocFromStorageOnly({ name: name });
     }
 
+
+    grid_mousedown(e: JQueryEventObject, selector:string) {
+        let tr = $(e.target).closest(selector);
+        tr.parent().children().removeClass("selected");
+        tr.addClass("selected");
+    }
+
+    violation_dblclick(e: JQueryEventObject, violation: CritiqueViolation) {
+        this.editor.scrollToLine(violation.source.location.line);
+    }
+    
     gitLogItem_click(e: Event, item: GitLogItem) {
         this.perlFile.gitShow(item.sha).then(() => this.dataBind());
     }
 
-    gitShowFile_click(e: Event, item: GitShowFile) {
-        window.location.href = "/" + item.path;
+    gitShowFile_click(e: Event, file: GitShowFile) {
+        window.location.href = "/" + file.path;
         //this.perlFile.url = item.path;
         //this.perlFile.update();
     }
