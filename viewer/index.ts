@@ -49,6 +49,7 @@ export class IndexPage {
 
 
     main() {
+        Template.onPromise = p => this.onPromise(p);
         this.selection.fromParam(location.hash.substr(1));
         $("body").addClass("ace-mode");
         this.editor = new P5AceEditor();
@@ -88,7 +89,7 @@ export class IndexPage {
     }
 
     critique() {
-        this.perlFile.critique().then(() => {
+        return this.perlFile.critique().then(() => {
             let res = this.perlFile.critiqueRes;
             console.log(res);
             this.dataBind();
@@ -120,16 +121,17 @@ export class IndexPage {
 
     gitBlame() {
         $(".code-container").addClass("git-blame-mode");
-        this.perlFile.gitBlame().then(() => this.editor.setGitBlameItems(this.perlFile.gitBlameItems));
+        return this.perlFile.gitBlame().then(() => this.editor.setGitBlameItems(this.perlFile.gitBlameItems));
     }
 
     gitLog() {
         this.perlFile.gitShowResponse = null;
-        this.perlFile.gitLog().then(e => this.dataBind());
+        return this.perlFile.gitLog().then(e => this.dataBind());
+        //this.perlFile.gitLog().then(e => this.dataBind());
     }
 
     gitGrep() {
-        this.perlFile.service.gitGrep(this.grepText).then(res => console.log(res));
+        return this.perlFile.service.gitGrep(this.grepText).then(res => console.log(res));
     }
 
     saveSelection() {
@@ -231,24 +233,32 @@ export class IndexPage {
     }
 
 
-    grid_mousedown(e: JQueryEventObject, selector:string) {
+    grid_mousedown(e: JQueryEventObject, selector: string) {
         let tr = $(e.target).closest(selector);
         tr.parent().children().removeClass("selected");
         tr.addClass("selected");
     }
 
     violation_dblclick(e: JQueryEventObject, violation: CritiqueViolation) {
-        this.editor.scrollToLine(violation.source.location.line);
+        return this.editor.scrollToLine(violation.source.location.line);
     }
-    
+
     gitLogItem_click(e: Event, item: GitLogItem) {
-        this.perlFile.gitShow(item.sha).then(() => this.dataBind());
+        return this.perlFile.gitShow(item.sha).then(() => this.dataBind());
     }
 
     gitShowFile_click(e: Event, file: GitShowFile) {
         window.location.href = "/" + file.path;
         //this.perlFile.url = item.path;
         //this.perlFile.update();
+    }
+
+    onPromise(promise: Promise<any>): Promise<any> {
+        $(".loading").css({ display: "" });
+        return promise.then(t => {
+            $(".loading").css({ display: "none" });
+            return t;
+        });
     }
 
 }

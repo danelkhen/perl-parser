@@ -35,22 +35,22 @@
     </script>
 </head>
 <body>
-    <div class="loading">Loading</div>
+    <div class="loading">Loading...</div>
     <div class="debug"></div>
     <table class="layout">
         <tr class="top">
             <td>
                 <div class="top-bar">
                     <div class="menu">
-                        <a class="btn btnUp is-folder" href=".." _if="isFolder()">up</a>
-                        <a class="btn btnUp is-file" href="." _if="isFile()">up</a>
-                        <button class="btn" _onclick="e => this.critique()">critique</button>
-                        <button class="btn" _onclick="e => this.editor.expandOrCollapseAll()">toggle</button>
-                        <button class="btn" _onclick="e => this.gitBlame()">blame</button>
-                        <button class="btn" _onclick="e => this.reparse()">reset</button>
-                        <button class="btn" _onclick="e => this.gitLog()">log</button>
-                        <input class="tb" type="text" _value="grepText" _oninput="e => this.grepText = e.target.value" _onkeydown="e => e.keyCode==13 ? this.gitGrep() : 0;" placeholder="grep" />
-                        <button class="btn" _onclick="e => this.gitGrep()">grep</button>
+                        <a class="btn btnUp is-folder" href=".." _if="isFolder()">Up</a>
+                        <a class="btn btnUp is-file" href="." _if="isFile()">Up</a>
+                        <button class="btn" title="Expand/Collapse All" _onclick="e => this.editor.expandOrCollapseAll()">Toggle</button>
+                        <button class="btn" title="Reparse Code" _onclick="e => this.reparse()">Reparse</button>
+                        <button class="btn" title="Perl Critic" _onclick="e => this.critique()">Critique</button>
+                        <button class="btn" title="Git Blame" _onclick="e => this.gitBlame()">Blame</button>
+                        <button class="btn" title="Git Log" _onclick="e => this.gitLog()">Log</button>
+                        <input class="tb" title="Git Grep" type="text" _value="grepText" _oninput="e => this.grepText = e.target.value" _onkeydown="e => e.keyCode==13 ? this.gitGrep() : 0;" placeholder="Grep" />
+                        <!--<button class="btn" _onclick="e => this.gitGrep()">grep</button>-->
                     </div>
                 </div>
             </td>
@@ -62,10 +62,15 @@
                         <div class="scroll-grid-content">
                             <table class="grid">
                                 <thead>
-                                    <tr><th><span>name</span></th></tr>
+                                    <tr><th><span>Name</span></th></tr>
                                 </thead>
                                 <tbody>
-                                    <tr class="child template" _for="file.children" _onmousedown="(e, file)=>this.grid_mousedown(e, '.child')"><td><a href="{{href}}">{{name}}</a></td><td>{{size||""}}</td></tr>
+                                    <tr class="child template" 
+                                        _for="file.children" 
+                                        _ondblclick="(e, file) => location.href = file.href"
+                                        _onmousedown="(e, file)=>this.grid_mousedown(e, '.child')">
+                                        <td><a href="{{href}}">{{name}}</a></td><td>{{size||""}}</td>
+                                    </tr>
                                 </tbody>
                             </table>
                         </div>
@@ -89,10 +94,10 @@
                             <table class="grid">
                                 <thead>
                                     <tr>
-                                        <th>description</th>
-                                        <th>policy</th>
-                                        <th>line</th>
-                                        <th>severity</th>
+                                        <th>Description</th>
+                                        <th>Policy</th>
+                                        <th>Line</th>
+                                        <th>Severity</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -120,10 +125,10 @@
                                 </colgroup>
                                 <thead>
                                     <tr>
-                                        <th><span>commit</span></th>
-                                        <th><span>author</span></th>
-                                        <th><span>date</span></th>
-                                        <th><span>message</span></th>
+                                        <th><span>Commit</span></th>
+                                        <th><span>Author</span></th>
+                                        <th><span>Date</span></th>
+                                        <th><span>Message</span></th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -152,10 +157,10 @@
                                 <table class="grid">
                                     <thead>
                                         <tr>
-                                            <th><span>action</span></th>
-                                            <th><span>added</span></th>
-                                            <th><span>removed</span></th>
-                                            <th><span>path</span></th>
+                                            <th><span>Action</span></th>
+                                            <th><span>Added</span></th>
+                                            <th><span>Removed</span></th>
+                                            <th><span>Path</span></th>
                                         </tr>
                                     </thead>
                                     <tbody>

@@ -33,9 +33,13 @@ import "ace/ext/language_tools";
 import {EditSession} from "ace/edit_session";
 import {Annotation as AceAnnotation} from "ace/annotation";
 import {GutterRenderer} from "ace/layer/gutter";
+import {VirtualRenderer} from "ace/virtual_renderer";
 import {snippetCompleter, textCompleter, keyWordCompleter} from "ace/ext/language_tools";
 import {Completer} from "ace/ext/language_tools";
 import {PerlFile} from "./perl-file";
+import * as aceConfig from "ace/config";
+
+VirtualRenderer.prototype.$options.theme.initialValue = "viewer/ace/theme/vs-dark";
 
 export class P5AceEditor {
     linkEvent: LinkEvent;

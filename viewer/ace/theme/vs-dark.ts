@@ -148,7 +148,7 @@ let theme = {
 .ace-vs-dark .ace_regexSubstitute,
 .ace-vs-dark .ace_qr { color: #d25b29; }
 
-.ace-vs-dark .ace_sigiledIdentifier { color: #cebacc;}
+.ace-vs-dark .ace_sigiledIdentifier { color: rgb(215, 186, 125);}
 
 
 .ace-vs-dark .ace_entity.ace_other.ace_attribute-name { color: #994409; }

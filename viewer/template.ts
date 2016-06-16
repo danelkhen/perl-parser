@@ -1,5 +1,8 @@
 ﻿import {FunctionHelper} from "./common";
 
+export function isPromise(obj: any): boolean {
+    return obj != null && obj.then && obj.catch;
+}
 export class Template {
     static compileTemplateString(s: string) {
         if (s.startsWith("{{") && s.endsWith("}}")) {
@@ -21,6 +24,7 @@ export class Template {
         return func;
     }
 
+    static onPromise(promise: Promise<any>): Promise<any> { return promise; }
     static dataBind(node: Node, obj: any, thisContext: any) {
         if (node.nodeType == 3) {
             let s = node.nodeValue;
@@ -32,7 +36,7 @@ export class Template {
             if (func != null)
                 node.nodeValue = func(obj);
         }
-        else {
+        else if (node.nodeType == 1) {
             let el = <HTMLElement>node;
             let ignoreAtt = el.getAttribute("_ignore");
             if (ignoreAtt != null)
@@ -63,7 +67,13 @@ export class Template {
                     if (att.name.startsWith("_on")) {
                         let evName = att.name.substr(3);
                         let evFullName = evName + ".templator";
-                        $(el).off(evFullName).on(evFullName, e => func.call(thisContext, e, obj));
+                        $(el).off(evFullName).on(evFullName, e => {
+                            let res = func.call(thisContext, e, obj);
+                            if (isPromise(res)) {
+                                res = this.onPromise(res);
+                            }
+                            return res;
+                        });
                     }
                     else {
                         let res = func(obj);
