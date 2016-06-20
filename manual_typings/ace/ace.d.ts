@@ -298,6 +298,8 @@ declare module "ace/edit_session" {
     import {Range} from "ace/range";
     import {Position} from "ace/position";
     import {GutterRenderer} from "ace/layer/gutter";
+    import {IFold} from "ace/edit_session/fold";
+
 
     /**
      * Stores all the data about [[Editor `Editor`]] state providing easy way to change editors state.
@@ -323,7 +325,9 @@ declare module "ace/edit_session" {
 
         expandFold(arg: any): void;
 
-        unfold(arg1: any, arg2: boolean): void;
+        unfold(arg1?: any, arg2?: boolean): void;
+        getAllFolds(): IFold[];
+        foldAll(): void;
 
         screenToDocumentColumn(row: number, column: number): void;
 
@@ -3272,4 +3276,14 @@ declare module "ace/autocomplete/util" {
     export function retrievePrecedingIdentifier(text: string, pos: number, regex?: RegExp);
     export function retrieveFollowingIdentifier(text: string, pos: number, regex?: RegExp);
     export function getCompletionPrefix(editor: Editor);
+}
+
+declare module "ace/edit_session/fold" {
+    import {IRangeList} from "ace/range_list";
+    export interface IFold extends IRangeList {
+
+    }
+    export var Fold: {
+        new (): IFold
+    }
 }

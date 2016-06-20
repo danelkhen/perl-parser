@@ -44,7 +44,7 @@
                     <div class="menu">
                         <a class="btn btnUp is-folder" href=".." _if="isFolder()">Up</a>
                         <a class="btn btnUp is-file" href="." _if="isFile()">Up</a>
-                        <button class="btn" title="Expand/Collapse All" _onclick="e => this.editor.expandOrCollapseAll()">Toggle</button>
+                        <button class="btn" title="Expand/Collapse All" _onclick="e => this.editor.toggleAllFolds()">Toggle</button>
                         <button class="btn" title="Reparse Code" _onclick="e => this.reparse()">Reparse</button>
                         <button class="btn" title="Perl Critic" _onclick="e => this.critique()">Critique</button>
                         <button class="btn" title="Git Blame" _onclick="e => this.gitBlame()">Blame</button>

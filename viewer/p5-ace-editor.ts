@@ -98,6 +98,12 @@ export class P5AceEditor {
         }, 200);
     }
 
+    toggleAllFolds() {
+        if(this.editor.session.getAllFolds().length==0)
+            this.editor.session.foldAll();
+        else
+            this.editor.session.unfold();
+    }
     checkHover() {
         let pos = this.mouseDocPos;
         if (pos != null && this.isMouseOnDoc) {
