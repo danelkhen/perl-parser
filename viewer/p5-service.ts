@@ -109,10 +109,11 @@ export class P5Service {
 export interface P5File {
     name?: string;
     path?: string;
-    is_dir?: string;
+    is_dir?: boolean;
     children?: P5File[];
     src?: string;
     href?: string;
+    exists?:boolean;
 }
 
 

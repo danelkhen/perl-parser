@@ -167,6 +167,9 @@ export class PerlFile {
         this.lastUrl = url;
 
         return this.service.fs(this.url)
+            .catch(e => {
+                return <P5File> {name:this.url, is_dir:false, src:"", exists:false};
+            })
             .then(file => this.processFile2(file))
             .then(file => this.file = file)
             .then(file => this.childFiles = file.children)
@@ -181,7 +184,7 @@ export class PerlFile {
             file.children = file.children.orderBy([t => !t.is_dir, t => t.name]);
             return Promise.resolve(file);
         }
-        return this.service.src(this.url).then(data => { file.src = data; return file; });
+        return this.service.src(this.url).catch(() => "").then(data => { file.src = data; return file; });
     }
     processFile(): Promise<any> {
         if (this.file.is_dir)
