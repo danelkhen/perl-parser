@@ -50,6 +50,13 @@ export class IndexPage {
 
     main() {
         //$.get("/res/viewer/hello.html").then(t =>          Template.registerTag("hello", t)       );
+        $.getJSON("/res/local/config.json").then(t => {
+            console.log("local/config.json found", t);
+            localStorage.setItem("p5-service-url", t.p5ServiceUrl);
+        }).then(() => this.main2());
+    }
+    
+    main2() {
         Template.onPromise = p => this.onPromise(p);
         this.selection.fromParam(location.hash.substr(1));
         $("body").addClass("ace-mode");

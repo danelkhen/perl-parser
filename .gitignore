@@ -1,4 +1,5 @@
-built
+built/
+local/
 web.config
 DateTime.pm
 
