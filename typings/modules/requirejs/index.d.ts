@@ -1104,10 +1104,10 @@ module requirejs {
 export = requirejs;
 }
 declare module 'requirejs/index' {
-import alias = require('~requirejs/index');
-export = alias;
+import main = require('~requirejs/index');
+export = main;
 }
 declare module 'requirejs' {
-import alias = require('~requirejs/index');
-export = alias;
+import main = require('~requirejs/index');
+export = main;
 }

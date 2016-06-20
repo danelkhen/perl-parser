@@ -1,8 +1,0 @@
-{
-  "resolution": "main",
-  "tree": {
-    "src": "https://raw.githubusercontent.com/DefinitelyTyped/DefinitelyTyped/eef739049cdd4509bb02f6b71e1b7cc7bacd7c2b/codemirror/codemirror.d.ts",
-    "raw": "registry:dt/codemirror#0.0.0+20160423074321",
-    "typings": "https://raw.githubusercontent.com/DefinitelyTyped/DefinitelyTyped/eef739049cdd4509bb02f6b71e1b7cc7bacd7c2b/codemirror/codemirror.d.ts"
-  }
-}

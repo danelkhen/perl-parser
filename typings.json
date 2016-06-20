@@ -5,15 +5,14 @@
     "devDependencies": {},
     "globalDependencies": {
         "ace": "registry:dt/ace#0.0.0+20160317120654",
-        "bootstrap": "registry:dt/bootstrap#3.3.5+20160316155526",
-        "codemirror": "registry:dt/codemirror#0.0.0+20160423074321",
+        "bootstrap": "registry:dt/bootstrap#3.3.5+20160619023404",
         "es6-shim": "github:DefinitelyTyped/DefinitelyTyped/es6-shim/es6-shim.d.ts#4de74cb527395c13ba20b438c3a7a419ad931f1c",
         "express": "registry:dt/express#4.0.0+20160317120654",
-        "express-serve-static-core": "registry:dt/express-serve-static-core#0.0.0+20160322035842",
+        "express-serve-static-core": "registry:dt/express-serve-static-core#0.0.0+20160602151406",
         "jquery": "github:DefinitelyTyped/DefinitelyTyped/jquery/jquery.d.ts#fab0b336b0414fac23963bde83f7d7077f6cf14c",
         "mime": "registry:dt/mime#0.0.0+20160316155526",
         "node": "github:DefinitelyTyped/DefinitelyTyped/node/node.d.ts#aee0039a2d6686ec78352125010ebb38a7a7d743",
         "require": "registry:dt/require#2.1.20+20160316155526",
-        "serve-static": "registry:dt/serve-static#0.0.0+20160317120654"
+        "serve-static": "registry:dt/serve-static#0.0.0+20160606155157"
     }
 }

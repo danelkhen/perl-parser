@@ -1,6 +1,5 @@
 /// <reference path="globals/ace/index.d.ts" />
 /// <reference path="globals/bootstrap/index.d.ts" />
-/// <reference path="globals/codemirror/index.d.ts" />
 /// <reference path="globals/es6-shim/index.d.ts" />
 /// <reference path="globals/express-serve-static-core/index.d.ts" />
 /// <reference path="globals/express/index.d.ts" />
