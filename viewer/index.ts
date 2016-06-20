@@ -27,12 +27,6 @@ import {PerlFile} from "./perl-file";
 import {Template} from "./template";
 
 export class IndexPage {
-    constructor() {
-        let win: any = window;
-        this.selection = new IndexSelection();
-        PerlCompleter.getDocHtml = (type, name) => this.PerlCompleter_getDocHtml(type, name);
-        this.perlFile = new PerlFile();
-    }
 
     editor: P5AceEditor;
     perlFile: PerlFile;
@@ -57,6 +51,9 @@ export class IndexPage {
     }
     
     main2() {
+        this.selection = new IndexSelection();
+        PerlCompleter.getDocHtml = (type, name) => this.PerlCompleter_getDocHtml(type, name);
+        this.perlFile = new PerlFile();
         Template.onPromise = p => this.onPromise(p);
         this.selection.fromParam(location.hash.substr(1));
         $("body").addClass("ace-mode");
