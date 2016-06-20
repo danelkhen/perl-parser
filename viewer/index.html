@@ -62,14 +62,15 @@
                         <div class="scroll-grid-content">
                             <table class="grid">
                                 <thead>
-                                    <tr><th><span>Name</span></th></tr>
+                                    <tr><th><span>Name<input class="tb" _value="fileSearchText" _oninput="e => this.fileSearchText = e.target.value" /></span></th></tr>
                                 </thead>
                                 <tbody>
-                                    <tr class="child template" 
-                                        _for="file.children" 
+                                    <tr class="child template"
+                                        _for="perlFile.childFiles"
                                         _ondblclick="(e, file) => location.href = file.href"
                                         _onmousedown="(e, file)=>this.grid_mousedown(e, '.child')">
-                                        <td><a href="{{href}}">{{name}}</a></td><td>{{size||""}}</td>
+                                        <td><a href="{{href}}">{{name}}</a></td>
+                                        <td>{{size||""}}</td>
                                     </tr>
                                 </tbody>
                             </table>
@@ -104,7 +105,7 @@
                                     <tr class="critique-row template"
                                         _for="perlFile.critiqueRes.violations"
                                         _ondblclick="(e, violation) => this.violation_dblclick(e, violation)"
-                                        _onmousedown="(e, violation)=>this.grid_mousedown(e, 'critique-row')">
+                                        _onmousedown="(e, violation)=>this.grid_mousedown(e, '.critique-row')">
                                         <td>{{description}}</td>
                                         <td>{{policy}}</td>
                                         <td>{{source.location.line}}</td>

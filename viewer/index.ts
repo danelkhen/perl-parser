@@ -25,6 +25,7 @@ import {P5AceEditor} from "./p5-ace-editor";
 import {PerlCompleter} from "./ace/mode/perl-completer";
 import {PerlFile} from "./perl-file";
 import {Template} from "./template";
+import {PropertyChangeTracker, ObjProperty} from "./property-change-tracker";
 
 export class IndexPage {
 
@@ -40,7 +41,11 @@ export class IndexPage {
     renderSelectionTimeout: number;
     dataBindTimeout: number;
     grepText: string = "";
-
+    fileSearchText: string = "";
+    files: P5File[];
+    tracker: PropertyChangeTracker<this> = new PropertyChangeTracker(this);
+    onPropChanged(getter: (obj: this) => any, handler: Function) { return this.tracker.on(getter, handler); }
+    offPropChanged(getter: (obj: this) => any, handler: Function) { return this.tracker.off(getter, handler); }
 
     main() {
         //$.get("/res/viewer/hello.html").then(t =>          Template.registerTag("hello", t)       );
@@ -49,7 +54,11 @@ export class IndexPage {
             localStorage.setItem("p5-service-url", t.p5ServiceUrl);
         }).then(() => this.main2());
     }
-    
+
+    matchesFilter(file: P5File): boolean {
+        return this.fileSearchText.length == 0 || file.name.contains(this.fileSearchText);
+    }
+
     main2() {
         this.selection = new IndexSelection();
         PerlCompleter.getDocHtml = (type, name) => this.PerlCompleter_getDocHtml(type, name);
@@ -70,6 +79,16 @@ export class IndexPage {
             this.saveSelection();
         });
 
+        this.onPropChanged(t => t.fileSearchText, () => {
+            if (this.fileSearchText.length == 0) {
+                this.perlFile.childFiles = this.perlFile.file.children;
+            }
+            else {
+                let s = this.fileSearchText.toLowerCase();
+                this.perlFile.childFiles = this.perlFile.file.children.where(t => t.name.toLowerCase().contains(s));
+            }
+            this.dataBind();
+        });
         this.perlFile.onPropChanged(t => t.file, () => {
             this.dataBind();
         });

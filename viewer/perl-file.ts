@@ -58,6 +58,7 @@ export class PerlFile {
     global: Global;
     gitBlameItems: GitBlameItem[];
     gitGrepItems:GitGrepItem[];
+    childFiles:P5File[];
 
 
     gitShowResponse: GitShow;
@@ -168,6 +169,7 @@ export class PerlFile {
         return this.service.fs(this.url)
             .then(file => this.processFile2(file))
             .then(file => this.file = file)
+            .then(file => this.childFiles = file.children)
             .then(() => this.processFile());
     }
 

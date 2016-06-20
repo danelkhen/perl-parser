@@ -576,10 +576,15 @@ a.btn {
     cursor: default;
 }
 
-.marker-tooltip::-webkit-scrollbar { background-color:#3e3e42; }
-.marker-tooltip::-webkit-scrollbar-corner { background-color:#3e3e42; }
-.marker-tooltip::-webkit-scrollbar-thumb { background-color:#686868; border:solid 3px #3e3e42;}
-.marker-tooltip::-webkit-scrollbar-button { background-color:#686868; border:solid 6px #3e3e42;}
+/*.marker-tooltip
+.marker-tooltip
+.marker-tooltip
+.marker-tooltip*/
+
+::-webkit-scrollbar { background-color:#3e3e42; }
+::-webkit-scrollbar-corner { background-color:#3e3e42; }
+::-webkit-scrollbar-thumb { background-color:#686868; border:solid 3px #3e3e42;}
+::-webkit-scrollbar-button { background-color:#686868; border:solid 6px #3e3e42;}
 
 .popup-header {
     border-bottom: 1px solid #585858;
