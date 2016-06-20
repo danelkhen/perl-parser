@@ -5,7 +5,8 @@ Perl parser written in TypeScript, can run on nodejs or a browser
 * Install nodejs
 ```
 npm install -g typescript typings
-git clone git@github.com:danelkhen/perl-parser.git
+git clone https://github.com/danelkhen/perl-parser.git
+git clone https://github.com/ajaxorg/ace.git
 cd perl-parser
 npm install
 typings install
@@ -13,20 +14,18 @@ typings install
 
 ## Compilation
 ```
-tsc -p src-node
-tsc -p test
+tsc -p perl-parser-es6
+tsc -p server
+
+tsc -p perl-parser
+tsc -p viewer
 ```
 
 * add `-w` to watch and recompile automatically
 
 ## Running the server
-Windows
 ```
-node built\src-node\src-node\server.js
-```
-Linux
-```
-node built/src-node/src-node/server.js
+node built/server/server.js
 ```
 
 
