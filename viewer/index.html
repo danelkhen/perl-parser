@@ -91,6 +91,7 @@
                 <div class="status-bar"><span class="status-text"></span></div>
                 <div class="bottom-bar" _if="showBottomBar()" style="display:none">
                     <div class="critique scroll-grid" _if="perlFile.critiqueRes!=null">
+                        <button class="btn btnClose" _onclick="e => { this.perlFile.critiqueRes = null; this.dataBind(); }">X</button>
                         <div class="scroll-grid-content">
                             <table class="grid">
                                 <thead>
@@ -116,6 +117,7 @@
                         </div>
                     </div>
                     <div class="git-log scroll-grid" _if="t => t.perlFile.gitLogItems!=null && t.perlFile.gitShowResponse==null">
+                        <button class="btn btnClose" _onclick="e => { this.perlFile.gitLogItems = null; this.dataBind(); }">X</button>
                         <div class="scroll-grid-content">
                             <table class="grid">
                                 <thead>
@@ -148,6 +150,7 @@
                             <div class="pre">{{perlFile.gitShowResponse.message}}</div>
                         </div>
                         <div class="scroll-grid" style="height:50%">
+                            <button class="btn btnClose" _onclick="e => { this.perlFile.gitShowResponse = null; this.dataBind(); }">X</button>
                             <div class="scroll-grid-content">
                                 <table class="grid">
                                     <thead>
@@ -173,22 +176,47 @@
                             </div>
                         </div>
                     </div>
-                    <div class="git-grep scroll-grid" _if="perlFile.gitGrepItems!=null">
+                    <div class="git-grep scroll-grid" _if="t => t.perlFile.gitGrepItems!=null && t.gitGrepItem==null">
+                        <button class="btn btnClose" _onclick="e => { this.perlFile.gitGrepItems = null; this.dataBind(); }">X</button>
                         <div class="scroll-grid-content">
                             <table class="grid">
                                 <thead>
                                     <tr>
-                                        <th><span>Path</span></th>
                                         <th><span>Matches</span></th>
+                                        <th><span>Path</span></th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     <tr class="git-grep-row template"
                                         _for="perlFile.gitGrepItems"
-                                        _ondblclick="(e, gitLogItem) => this.gitGrepItem_click(e, gitLogItem)"
-                                        _onmousedown="(e, gitLogItem)=>this.grid_mousedown(e, '.git-grep-row')">
-                                        <td class="nowrap">{{path}}</td>
+                                        _ondblclick="(e, item) => this.gitGrepItem_click(e, item)"
+                                        _onmousedown="(e, item)=>this.grid_mousedown(e, '.git-grep-row')">
                                         <td class="nowrap">{{matches.length}}</td>
+                                        <td class="nowrap">{{path}}</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    <div class="git-grep scroll-grid" _if="gitGrepItem!=null">
+                        <button class="btn btnClose" _onclick="e => { this.gitGrepItem = null; this.dataBind(); }">X</button>
+                        <div class="scroll-grid-content">
+                            <table class="grid">
+                                <thead>
+                                    <tr>
+                                        <th><span>Path</span></th>
+                                        <th><span>line_num</span></th>
+                                        <th><span>line</span></th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr class="git-grep-match-row template"
+                                        _for="gitGrepItem.matches"
+                                        _ondblclick="(e, match) => this.gitGrepItemMatch_click(e, match)"
+                                        _onmousedown="(e, match)=>this.grid_mousedown(e, '.git-grep-match-row')">
+                                        <td class="nowrap">{{t => this.gitGrepItem.path}}</td>
+                                        <td class="nowrap">{{line_num}}</td>
+                                        <td class="ellipsis-100px">{{line}}</td>
                                     </tr>
                                 </tbody>
                             </table>

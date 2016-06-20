@@ -57,8 +57,8 @@ export class PerlFile {
     unitPackage: Package;
     global: Global;
     gitBlameItems: GitBlameItem[];
-    gitGrepItems:GitGrepItem[];
-    childFiles:P5File[];
+    gitGrepItems: GitGrepItem[];
+    childFiles: P5File[];
 
 
     gitShowResponse: GitShow;
@@ -113,7 +113,7 @@ export class PerlFile {
         return this.service.gitShow(sha).then(res => this.gitShowResponse = res);
     }
 
-    gitGrep(grepText:string) {
+    gitGrep(grepText: string) {
         return this.service.gitGrep(grepText).then(res => this.gitGrepItems = res);
     }
 
@@ -463,23 +463,28 @@ export class PerlFile {
 
 
     parse() {
-        let parser = new Parser();
-        parser.logger = new Logger();
-        parser.reader = new TokenReader();
-        parser.reader.logger = parser.logger;
-        parser.reader.tokens = this.tokens;
-        parser.init();
+        try {
+            let parser = new Parser();
+            parser.logger = new Logger();
+            parser.reader = new TokenReader();
+            parser.reader.logger = parser.logger;
+            parser.reader.tokens = this.tokens;
+            parser.init();
 
-        var statements = parser.parse();
-        let unit = new Unit();
-        unit.statements = statements;
-        this.unit = unit;
-        console.log(unit);
-        new AstNodeFixator().process(this.unit);
-        this.unitPackage = EntityResolver.process(this.unit)[0];
-        console.log({ package: this.unitPackage });
-        this.global = new Global();
-        this.global.packages.push(this.unitPackage);
+            var statements = parser.parse();
+            let unit = new Unit();
+            unit.statements = statements;
+            this.unit = unit;
+            console.log(unit);
+            new AstNodeFixator().process(this.unit);
+            this.unitPackage = EntityResolver.process(this.unit)[0];
+            console.log({ package: this.unitPackage });
+            this.global = new Global();
+            this.global.packages.push(this.unitPackage);
+        }
+        catch (e) {
+            console.warn("parsing failed", e);
+        }
     }
 
     tokenizeAsync(): Promise<any> {

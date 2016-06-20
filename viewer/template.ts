@@ -26,12 +26,21 @@ export class Template {
     }
     static _compileTemplateExpression(code: string) {
         let parsed = FunctionHelper.parse(code);
-        if (parsed != null && parsed.type == "ArrowExpressionFunction") {
-            let body = parsed.body;
-            let prmsAndBody = parsed.prms.toArray();
-            prmsAndBody.push("return " + body);
-            let func = Function.apply(null, prmsAndBody);
-            return func;
+        if (parsed != null) {
+            if (parsed.type == "ArrowExpressionFunction") {
+                let body = parsed.body;
+                let prmsAndBody = parsed.prms.toArray();
+                prmsAndBody.push("return " + body);
+                let func = Function.apply(null, prmsAndBody);
+                return func;
+            }
+            else if (parsed.type == "ArrowFunction") {
+                let body = parsed.body;
+                let prmsAndBody = parsed.prms.toArray();
+                prmsAndBody.push(body);
+                let func = Function.apply(null, prmsAndBody);
+                return func;
+            }
         }
         let func = new Function("___", "return ___." + code);
         return func;

@@ -659,3 +659,10 @@ div.ace_editor.ace_autocomplete {
     text-overflow: ellipsis;
     overflow: hidden;
 }
+
+.scroll-grid > .btnClose{
+    position: absolute;
+    right: 0;
+    top: -3px;
+    z-index: 1;
+}

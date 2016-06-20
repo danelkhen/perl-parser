@@ -14,7 +14,7 @@ import {
     EntityResolver, Package, Subroutine,
 } from "perl-parser";
 import {PackageResolution, AsyncFunc, TreeNodeData, Expander, Helper, TokenUtils, CodeHyperlink, Collapsable, IndexRange, IndexSelection} from "./common";
-import {P5Service, P5File, CritiqueResponse, CritiqueViolation, GitBlameItem, PerlDocRequest, GitLogItem, GitShow, GitShowFile} from "./p5-service";
+import {P5Service, P5File, CritiqueResponse, CritiqueViolation, GitBlameItem, PerlDocRequest, GitLogItem, GitShow, GitShowFile, GitGrepItem, GitGrepMatch} from "./p5-service";
 import {monitor, Monitor} from "./monitor";
 import {Key, Rect, Size, Point} from "./common";
 import * as ace from "ace/ace";
@@ -191,7 +191,15 @@ export class IndexPage {
         console.log("rendering", url);
         this.lastUrl = url;
         this.perlFile.url = url;
-        return this.perlFile.update();
+        return this.perlFile.update().then(() => {
+            let hash = document.location.hash.substr(1);
+            if (hash.startsWith("L")) {
+                let line = parseInt(hash.substr(1));
+                this.ignoreCursorEvents = true;
+                this.editor.editor.gotoLine(line);
+                this.ignoreCursorEvents = false;
+            }
+        });
     }
 
     dataBind() {
@@ -284,6 +292,22 @@ export class IndexPage {
             return t;
         });
     }
+
+    gitGrepItem_click(e: Event, item: GitGrepItem) {
+        this.gitGrepItem = item;
+        this.dataBind();
+    }
+    gitGrepItemMatch_click(e: Event, match: GitGrepMatch) {
+        let item = this.gitGrepItem;
+        if (item == null)
+            return;
+        let url = "/" + item.path + "#L" + match.line_num;
+        window.open(url);
+        //this.gitGrepItem = item;
+        //this.dataBind();
+    }
+
+    gitGrepItem: GitGrepItem;
 
 }
 

@@ -164,7 +164,7 @@ export class Helper {
      * @param value
      * @returns {string} escaped text
      */
-    static htmlEncode(value:string) {
+    static htmlEncode(value: string) {
         return value.
             replace(/&/g, '&amp;').
             replace(this.SURROGATE_PAIR_REGEXP, function (value) {
@@ -210,7 +210,7 @@ export interface PackageResolution {
     name?: string;
     resolvedIncludePath?: string;
     resolved: PerlModuleClassify;
-    docHtml?:string;
+    docHtml?: string;
 }
 
 
@@ -228,9 +228,11 @@ export class FunctionHelper {
             var arrowEnd = s.indexOf("=>") + 2;
             var body = s.substr(arrowEnd);
             var type = "ArrowExpressionFunction";
-            if (body.trim().startsWith("{"))
+            let body2 = body.trim();
+            if (body2.startsWith("{") && body2.endsWith("}")) {
                 type = "ArrowFunction";
-
+                body = body2.substring(1, body2.length-1);
+            }
             return { body: body, prms: prms, type: type, name: null };
         }
         prms = this.parsePrms(s);
@@ -501,7 +503,7 @@ export interface CodeHyperlink {
     css?: string;
     anchorEl?: HTMLAnchorElement;
     target?: string;
-    html?:string;
+    html?: string;
     //tooltip?:TooltipOptions;
 }
 export class IndexSelection {
