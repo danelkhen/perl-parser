@@ -15,7 +15,16 @@ export class Template {
         }
         return null;
     }
+    static compiledExpressionsCache = new Map<string, Function>();
     static compileTemplateExpression(code: string) {
+        let func = this.compiledExpressionsCache.get(code);
+        if (func === undefined) {
+            func = this._compileTemplateExpression(code);
+            this.compiledExpressionsCache.set(code, func);
+        }
+        return func;
+    }
+    static _compileTemplateExpression(code: string) {
         let parsed = FunctionHelper.parse(code);
         if (parsed != null && parsed.type == "ArrowExpressionFunction") {
             let body = parsed.body;
