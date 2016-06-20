@@ -19,7 +19,7 @@ HasArrow, HasLabel,
 import {PrecedenceResolver} from "perl-parser-es6";
 import {TokenTypes} from "perl-parser-es6";
 import {Tokenizer} from "perl-parser-es6";
-import {safeTry, TokenReader, Logger, AstNodeFixator} from "perl-parser-es6";
+import {TokenReader, Logger, AstNodeFixator} from "perl-parser-es6";
 import {Deparse} from "./deparse";
 import {Refactor} from "perl-parser-es6";
 import {ExpressionTester, EtReport, EtItem} from "perl-parser-es6";

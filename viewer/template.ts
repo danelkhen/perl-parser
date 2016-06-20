@@ -4,6 +4,10 @@ export function isPromise(obj: any): boolean {
     return obj != null && obj.then && obj.catch;
 }
 export class Template {
+    static tags: Map<string, string> = new Map<string, string>();
+    static registerTag(tag: string, html: string) {
+        this.tags.set(tag.toUpperCase(), html);
+    }
     static compileTemplateString(s: string) {
         if (s.startsWith("{{") && s.endsWith("}}")) {
             let code = s.substring(2, s.length - 2);
@@ -41,6 +45,10 @@ export class Template {
             let ignoreAtt = el.getAttribute("_ignore");
             if (ignoreAtt != null)
                 return;
+            let tmpl = this.tags.get(el.nodeName);
+            if (tmpl != null && el.childNodes.length == 0) {
+                el.innerHTML = tmpl;
+            }
             let ifAtt = el.getAttribute("_if");
             let forAtt = el.getAttribute("_for");
             if (ifAtt != null) {
@@ -119,9 +127,9 @@ export class Template {
             el2.after(els);
         }
     }
-    static initTemplate(el: HTMLElement, ctl: Object) {
-        this.dataBind(el, ctl, ctl);
-    }
+    //static initTemplate(el: HTMLElement, ctl: Object) {
+    //    this.dataBind(el, ctl, ctl);
+    //}
 
     //static initTemplate2(el: HTMLElement, ctl: Object) {
     //    let tracker = new ChangeTracker(ctl);

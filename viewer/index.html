@@ -117,12 +117,6 @@
                     <div class="git-log scroll-grid" _if="t => t.perlFile.gitLogItems!=null && t.perlFile.gitShowResponse==null">
                         <div class="scroll-grid-content">
                             <table class="grid">
-                                <colgroup>
-                                    <col />
-                                    <col />
-                                    <col />
-                                    <col />
-                                </colgroup>
                                 <thead>
                                     <tr>
                                         <th><span>Commit</span></th>
@@ -176,6 +170,27 @@
                                     </tbody>
                                 </table>
                             </div>
+                        </div>
+                    </div>
+                    <div class="git-grep scroll-grid" _if="perlFile.gitGrepItems!=null">
+                        <div class="scroll-grid-content">
+                            <table class="grid">
+                                <thead>
+                                    <tr>
+                                        <th><span>Path</span></th>
+                                        <th><span>Matches</span></th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr class="git-grep-row template"
+                                        _for="perlFile.gitGrepItems"
+                                        _ondblclick="(e, gitLogItem) => this.gitGrepItem_click(e, gitLogItem)"
+                                        _onmousedown="(e, gitLogItem)=>this.grid_mousedown(e, '.git-grep-row')">
+                                        <td class="nowrap">{{path}}</td>
+                                        <td class="nowrap">{{matches.length}}</td>
+                                    </tr>
+                                </tbody>
+                            </table>
                         </div>
                     </div>
                 </div>

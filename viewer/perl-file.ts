@@ -14,7 +14,7 @@ import {
     EntityResolver, Package, Subroutine, Global
 } from "perl-parser";
 import {PackageResolution, AsyncFunc, TreeNodeData, Expander, Helper, TokenUtils, CodeHyperlink, Collapsable, IndexRange, IndexSelection} from "./common";
-import {P5Service, P5File, CritiqueResponse, CritiqueViolation, GitBlameItem, PerlDocRequest, GitLogItem, GitShow, GitShowFile} from "./p5-service";
+import {P5Service, P5File, CritiqueResponse, CritiqueViolation, GitBlameItem, PerlDocRequest, GitLogItem, GitShow, GitShowFile, GitGrepItem, GitGrepMatch} from "./p5-service";
 import {monitor, Monitor} from "./monitor";
 import {Key, Rect, Size, Point} from "./common";
 import {PropertyChangeTracker, ObjProperty} from "./property-change-tracker";
@@ -57,6 +57,16 @@ export class PerlFile {
     unitPackage: Package;
     global: Global;
     gitBlameItems: GitBlameItem[];
+    gitGrepItems:GitGrepItem[];
+
+
+    gitShowResponse: GitShow;
+
+
+    gitLogItems: GitLogItem[];
+
+
+    tokens: Token[];
 
     getCvUrlForIncludeAndPacakge(include: string, packageName: string) {
         let url = Helper.urlJoin([this.cvBaseUrl, include, packageName.split("::")]) + ".pm";
@@ -102,13 +112,10 @@ export class PerlFile {
         return this.service.gitShow(sha).then(res => this.gitShowResponse = res);
     }
 
-    gitShowResponse: GitShow;
+    gitGrep(grepText:string) {
+        return this.service.gitGrep(grepText).then(res => this.gitGrepItems = res);
+    }
 
-
-    gitLogItems: GitLogItem[];
-
-
-    tokens: Token[];
     findTokens(pos: TextFilePos, length: number): Token[] {
         let token = this.findToken(pos);
         if (token == null)

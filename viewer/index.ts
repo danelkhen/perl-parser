@@ -49,6 +49,7 @@ export class IndexPage {
 
 
     main() {
+        //$.get("/res/viewer/hello.html").then(t =>          Template.registerTag("hello", t)       );
         Template.onPromise = p => this.onPromise(p);
         this.selection.fromParam(location.hash.substr(1));
         $("body").addClass("ace-mode");
@@ -131,7 +132,7 @@ export class IndexPage {
     }
 
     gitGrep() {
-        return this.perlFile.service.gitGrep(this.grepText).then(res => console.log(res));
+        return this.perlFile.gitGrep(this.grepText).then(res => this.dataBind());
     }
 
     saveSelection() {
@@ -225,7 +226,7 @@ export class IndexPage {
 
     showBottomBar() {
         let f = this.perlFile;
-        return [f.critiqueRes, f.gitLogItems, f.gitShowResponse].exceptNulls().length > 0;
+        return [f.critiqueRes, f.gitLogItems, f.gitShowResponse, f.gitGrepItems].exceptNulls().length > 0;
     }
 
     PerlCompleter_getDocHtml(type: string, name: string): string {
