@@ -3287,3 +3287,83 @@ declare module "ace/edit_session/fold" {
         new (): IFold
     }
 }
+
+declare module "ace/undomanager" {
+    class UndoManager {
+        /**
+         * Provides a means for implementing your own undo manager. `options` has one property, `args`, an [[Array `Array`]], with two elements:
+         *
+         * - `args[0]` is an array of deltas
+         * - `args[1]` is the document to associate with
+         *
+         * @param {Object} options Contains additional properties
+         *
+         **/
+        execute(options);
+
+        /**
+         * [Perform an undo operation on the document, reverting the last change.]{: #UndoManager.undo}
+         * @param {Boolean} dontSelect {:dontSelect}
+         *
+         * 
+         * @returns {Range} The range of the undo.
+         **/
+        undo(dontSelect?:boolean);
+
+        /**
+         * [Perform a redo operation on the document, reimplementing the last change.]{: #UndoManager.redo}
+         * @param {Boolean} dontSelect {:dontSelect}
+         *
+         * 
+         **/
+        redo(dontSelect?:boolean);
+
+        /**
+         * 
+         * Destroys the stack of undo and redo redo operations.
+         **/
+        reset();
+
+        /**
+         * 
+         * Returns `true` if there are undo operations left to perform.
+         * @returns {Boolean}
+         **/
+        hasUndo():boolean;
+
+        /**
+         * 
+         * Returns `true` if there are redo operations left to perform.
+         * @returns {Boolean}
+         **/
+        hasRedo():boolean;
+
+        /**
+         *
+         * Marks the current status clean
+         **/
+        markClean();
+
+        /**
+         *
+         * Returns if the current status is clean
+         * @returns {Boolean}
+         **/
+        isClean():boolean;
+
+        // Serializes deltaSets to reduce memory usage.
+        $serializeDeltas(deltaSets);
+
+        // Deserializes deltaSets to allow application to the document.
+        $deserializeDeltas(deltaSets);
+
+        //function $serializeDelta(delta);
+
+        //function $deserializeDelta(delta);
+
+        //function cloneDeltaSetsObj(deltaSets_old, fnGetModifiedDelta);
+
+    }
+}
+
+

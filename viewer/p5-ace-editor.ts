@@ -38,6 +38,8 @@ import {snippetCompleter, textCompleter, keyWordCompleter} from "ace/ext/languag
 import {Completer} from "ace/ext/language_tools";
 import {PerlFile} from "./perl-file";
 import * as aceConfig from "ace/config";
+import {UndoManager} from "ace/undomanager";
+
 
 VirtualRenderer.prototype.$options.theme.initialValue = "viewer/ace/theme/vs-dark";
 
@@ -63,7 +65,6 @@ export class P5AceEditor {
 
     init() {
         this.editor = ace.edit("editor");
-        this.editor.session.setMode("viewer/ace/mode/perl");
         this.editor.setTheme("viewer/ace/theme/vs-dark");
         this.editor.$blockScrolling = Infinity; //automatically scrolling cursor into view after selection change this will be disabled in the next version set editor.$blockScrolling = Infinity to disable this message
         this.editor.setOptions({
@@ -77,6 +78,7 @@ export class P5AceEditor {
         this.editor.renderer.getMouseEventTarget().addEventListener("mouseenter", e => this.editor_mouseenter(e));
         this.editor.renderer.getMouseEventTarget().addEventListener("mouseleave", e => this.editor_mouseleave(e));
         this.enableHover();
+        this.setCode("");
 
         this.statusBarEl = $(".status-bar")[0];
         this.statusTextEl = $(this.statusBarEl).find(".status-text")[0];
@@ -293,10 +295,9 @@ export class P5AceEditor {
     }
     setCode(value: string) {
         let session = new EditSession(value, "viewer/ace/mode/perl");
+        session.setUndoManager(new UndoManager());
         session.gutterRenderer = new P5GutterRenderer(this);
         this.editor.setSession(session);
-        //this.editor.setValue(value, -1);
-        //this.editor.moveCursorTo(0, 0, false);
     }
 
     setGitBlameItems(items: GitBlameItem[]) {
