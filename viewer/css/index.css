@@ -80,14 +80,23 @@ a[href] {
     -webkit-user-select: none;
 }
 
-.loading {
+.loading-bar {
     position: absolute;
     right: 0;
     line-height: 26px;
     background-color: #636363;
-    padding: 0 20px;
+    padding: 0 60px;
+    display:none;
 }
 
+.loading .loading-bar,
+.notready .loading-bar {
+    display: block;
+}
+
+.notready .layout{
+    visibility:hidden;
+}
 
 /*.selected:after {
     content: " ";

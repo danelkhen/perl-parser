@@ -111,7 +111,7 @@ export class IndexPage {
             this.editor.hyperlinkNode(this.perlFile.codeHyperlinks.last());
         });
         this.dataBind();
-        this.update();
+        this.update().then(() => $(document.body).removeClass("notready"));
         $(window).on("urlchange", e => this.window_urlchange(e));
     }
 
@@ -310,11 +310,11 @@ export class IndexPage {
     onPromise(promise: Promise<any>): Promise<any> {
         this.promiseCount++;
         console.log({ promiseCount: this.promiseCount });
-        $(".loading").css({ display: "" });
+        $(document.body).toggleClass("loading", true);
         return promise.then(t => {
             this.promiseCount--;
             console.log({ promiseCount: this.promiseCount });
-            $(".loading").css({ display: "none" });
+            $(document.body).toggleClass("loading", false);
             return t;
         });
     }
