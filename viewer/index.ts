@@ -89,15 +89,23 @@ export class IndexPage {
             }
             this.dataBind();
         });
+        this.perlFile.onPropChanged(t => t.dir, () => {
+            this.dataBind();
+        });
         this.perlFile.onPropChanged(t => t.file, () => {
             this.dataBind();
+            let code = this.perlFile.file == null ? "" : this.perlFile.file.src;
+            console.log("setting editor code", {code});
+            this.ignoreCursorEvents = true;
+            this.editor.setCode(code);
+            this.ignoreCursorEvents = false;
         });
         this.perlFile.onPropChanged(t => t.sourceFile, () => {
             this.dataBind();
-            console.log("setting editor code");
-            this.ignoreCursorEvents = true;
-            this.editor.setCode(this.perlFile.sourceFile.text);
-            this.ignoreCursorEvents = false;
+            //console.log("setting editor code");
+            //this.ignoreCursorEvents = true;
+            //this.editor.setCode(this.perlFile.sourceFile.text);
+            //this.ignoreCursorEvents = false;
         });
         this.perlFile.onPropChanged(t => t.codeHyperlinks, () => {
             this.editor.hyperlinkNode(this.perlFile.codeHyperlinks.last());
@@ -109,7 +117,7 @@ export class IndexPage {
 
     window_urlchange(e: JQueryEventObject) {
         this.perlFile.url = document.location.href;
-        this.update();
+        this.onPromise(this.update());
     }
 
     critique() {
@@ -184,10 +192,10 @@ export class IndexPage {
     reparse() {
         return this.perlFile.reparse();
     }
-    update() {
+    update(): Promise<any> {
         let url = this.getUrl();
         if (this.lastUrl == url)
-            return;
+            return Promise.resolve();
         console.log("rendering", url);
         this.lastUrl = url;
         this.perlFile.url = url;
@@ -199,6 +207,7 @@ export class IndexPage {
                 this.editor.editor.gotoLine(line);
                 this.ignoreCursorEvents = false;
             }
+            this.dataBindNow();
         });
     }
 
@@ -213,9 +222,20 @@ export class IndexPage {
         }, 10);
     }
 
+    time(action: () => any, name?: string): number {
+        let start = new Date();
+        action();
+        let end = new Date();
+        let ms = end.valueOf() - start.valueOf();
+        if (name != null)
+            console.log(`${name} took ${ms}ms`);
+        return ms;
+    }
     dataBindNow() {
-        Template.dataBind(document.body, this, this);
-        this.editor.notifyPossibleChanges();
+        this.time(() => {
+            Template.dataBind(document.body, this, this);
+            this.editor.notifyPossibleChanges();
+        }, "dataBindNow");
     }
 
 
@@ -285,9 +305,15 @@ export class IndexPage {
         //this.perlFile.update();
     }
 
+    promiseCount = 0;
+
     onPromise(promise: Promise<any>): Promise<any> {
+        this.promiseCount++;
+        console.log({ promiseCount: this.promiseCount });
         $(".loading").css({ display: "" });
         return promise.then(t => {
+            this.promiseCount--;
+            console.log({ promiseCount: this.promiseCount });
             $(".loading").css({ display: "none" });
             return t;
         });

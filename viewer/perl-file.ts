@@ -34,7 +34,7 @@ export class PerlFile {
         this.tracker.on(t => t.unitPackage, () => console.log("unitPackage property changed"));
         this.tracker.on(t => t.global, () => console.log("global property changed"));
         this.tracker.on(t => t.unit, () => console.log("unitproperty changed"));
-        this.tracker.on(t => t.codeHyperlinks, () => console.log("codeHyperlinks changed"));
+        //this.tracker.on(t => t.codeHyperlinks, () => console.log("codeHyperlinks changed"));
         this.tracker.on(t => t.resolutions, () => console.log("resolutions changed"));
     }
     onPropChanged(getter: (obj: this) => any, handler: Function) { return this.tracker.on(getter, handler); }
@@ -44,6 +44,7 @@ export class PerlFile {
     url: string;
     sourceFile: TextFile;
     file: P5File;
+    dir: P5File;
 
     resolutions: PackageResolution[];
     codeHyperlinks: CodeHyperlink[] = [];
@@ -136,10 +137,6 @@ export class PerlFile {
         return this.tokens.first(t => t.range != null && t.range.start.line == pos.line && t.range.start.column == pos.column);
     }
 
-    getUrl() {
-        return this.url;
-    }
-
     testTokenize(code: string) {
         if (code == null)
             code = this.sourceFile.text;
@@ -159,36 +156,85 @@ export class PerlFile {
             this.parse();
         });
     }
+
+    getDirPath(path: string) {
+        if (path.length <= 1)
+            return path;
+        if (path.endsWith("/"))
+            path = path.substr(0, path.length - 1);
+        let index = path.lastIndexOf("/");
+        if (index <= 0)
+            return path;
+        return path.substring(0, index);
+    }
+
+    /**
+    process the url, and retrieve the file
+    if url points to a dir, set the dir and childFiles properties, unset the file property
+    if url points to a file, get the src and set file property, then get the parent dir and set dir and childFiles properties
+    */
     update(): Promise<any> {
-        let url = this.getUrl();
+        let url = this.url;
         if (this.lastUrl == url)
-            return;
-        console.log("rendering", url);
+            return Promise.resolve();
         this.lastUrl = url;
+        let path = this.url;
 
-        return this.service.fs(this.url)
-            .catch(e => {
-                return <P5File> {name:this.url, is_dir:false, src:"", exists:false};
-            })
-            .then(file => this.processFile2(file))
-            .then(file => this.file = file)
-            .then(file => this.childFiles = file.children)
-            .then(() => this.processFile());
+        return this.getFile(path).then(file => {
+            if (file.is_dir) {
+                this.dir = file;
+                this.childFiles = this.dir.children;
+                this.file = null;
+            }
+            else {
+                this.file = file;
+                let dirPath = this.getDirPath(path);
+                return this.getFile(dirPath).then(dir => {
+                    this.dir = dir;
+                    this.childFiles = this.dir.children;
+                });
+            }
+        }).then(() => {
+            this.processFile();
+        });
     }
 
-    processFile2(file: P5File): Promise<P5File> {
-        if (file.children != null) {
-            file.children.forEach(t => t.name = t.path);
-            file.children.forEach(t => t.path = Helper.urlJoin([file.path, t.path]));
-            file.children.forEach(t => t.href = t.is_dir ? "/" + t.path + "/" : "/" + t.path);
-            file.children = file.children.orderBy([t => !t.is_dir, t => t.name]);
+    /** 
+    gets a file from the server, 
+    if it's a dir, fixes the children data, 
+    if it's a file, gets the contents fo the file (TODO: only do this with a limit of file size, and check file extension is supported) 
+    */
+    getFile(path: string): Promise<P5File> {
+        return this.service.fs(path)
+            .catch(e => <P5File>{ name: this.url, is_dir: false, src: "", exists: false })
+            .then(file => this.verifyChildren(file))
+            .then(file => this.verifySrc(file));
+    }
+
+
+    verifyChildren(file: P5File): P5File {
+        if(file.exists===undefined)
+            file.exists = true;
+        if (!file.is_dir)
+            return file;
+        file.children.forEach(t => t.exists = true);
+        file.children.forEach(t => t.name = t.path);
+        file.children.forEach(t => t.path = Helper.urlJoin([file.path, t.path]));
+        file.children.forEach(t => t.href = t.is_dir ? "/" + t.path + "/" : "/" + t.path);
+        file.children = file.children.orderBy([t => !t.is_dir, t => t.name]);
+        return file;
+    }
+    verifySrc(file: P5File): Promise<P5File> {
+        if (file.is_dir)
             return Promise.resolve(file);
-        }
-        return this.service.src(this.url).catch(() => "").then(data => { file.src = data; return file; });
+        if (!file.exists)
+            return Promise.resolve(file);
+        return this.service.src(file.path).catch(() => "").then(data => { file.src = data; return file; });
     }
+
     processFile(): Promise<any> {
-        if (this.file.is_dir)
-            return;
+        if (this.file == null || this.file.is_dir)
+            return Promise.resolve();
         this.sourceFile = new TextFile(this.file.name, this.file.src);
         return Promise.resolve()
             .then(() => this.setTimeout(10))

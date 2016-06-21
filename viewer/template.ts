@@ -72,13 +72,10 @@ export class Template {
             if (ifAtt != null) {
                 let func = this.compileTemplateExpression(ifAtt);
                 let res = func.call(thisContext, obj);
-                if (!res) {
-                    el.style.display = "none";
+                $(el).toggleClass("if_true", res);
+                $(el).toggleClass("if_false", !res);
+                if(!res)
                     return;
-                }
-                else {
-                    el.style.display = "";
-                }
             }
             if (forAtt != null) {
                 let sourceFunc = this.compileTemplateExpression(forAtt);

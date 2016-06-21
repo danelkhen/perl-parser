@@ -86,7 +86,6 @@ a[href] {
     line-height: 26px;
     background-color: #636363;
     padding: 0 20px;
-
 }
 
 
@@ -351,7 +350,7 @@ a:target {
     border: 1px solid #3f3f42;
     color: inherit;
     line-height: 20px;
-    padding:0 4px;
+    padding: 0 4px;
 }
 
 input:hover {
@@ -366,14 +365,17 @@ input:hover {
     font: inherit;
     line-height: 28px;
     display: inline-block;
-    cursor:default;
+    cursor: default;
 }
 
 button.btn:active {
     /*background-color: rgba(51, 153, 255, 0.5);*/
     background-color: rgba(51, 153, 255, 0.5);
 }
-button.btn:focus { outline:none;}
+
+button.btn:focus {
+    outline: none;
+}
 
 /*button::-moz-focus-inner,
 input[type="reset"]::-moz-focus-inner,
@@ -396,7 +398,7 @@ a.btn {
 
 .scroll-grid {
     height: 100%;
-    padding-top: 20px;
+    padding-top: 22px;
     box-sizing: border-box;
 }
 
@@ -411,12 +413,12 @@ a.btn {
 
 .scroll-grid-content > table > thead > tr > th > span {
     position: absolute;
-    margin-top: -20px;
+    margin-top: -22px;
     padding-left: 4px;
     border-left: 1px solid #424242;
     border-bottom: 1px solid #424242;
     width: 100%;
-    height: 20px;
+    height: 22px;
     box-sizing: border-box;
 }
 
@@ -429,7 +431,7 @@ a.btn {
 .grid > thead > tr > th {
     /*border: 1px solid #ccc;*/
     text-align: left;
-    font-weight:normal;
+    font-weight: normal;
     /*padding: 2px 4px;*/
 }
 
@@ -581,10 +583,23 @@ a.btn {
 .marker-tooltip
 .marker-tooltip*/
 
-::-webkit-scrollbar { background-color:#3e3e42; }
-::-webkit-scrollbar-corner { background-color:#3e3e42; }
-::-webkit-scrollbar-thumb { background-color:#686868; border:solid 3px #3e3e42;}
-::-webkit-scrollbar-button { background-color:#686868; border:solid 6px #3e3e42;}
+::-webkit-scrollbar {
+    background-color: #3e3e42;
+}
+
+::-webkit-scrollbar-corner {
+    background-color: #3e3e42;
+}
+
+::-webkit-scrollbar-thumb {
+    background-color: #686868;
+    border: solid 3px #3e3e42;
+}
+
+::-webkit-scrollbar-button {
+    background-color: #686868;
+    border: solid 6px #3e3e42;
+}
 
 .popup-header {
     border-bottom: 1px solid #585858;
@@ -660,9 +675,22 @@ div.ace_editor.ace_autocomplete {
     overflow: hidden;
 }
 
-.scroll-grid > .btnClose{
+.scroll-grid > .btnClose {
     position: absolute;
     right: 0;
     top: -3px;
     z-index: 1;
+}
+
+.if_false {
+    display: none;
+}
+
+/*.if_true {
+    display: block;
+}*/
+
+.code-view.if_false {
+    display: block;
+    visibility: hidden;
 }

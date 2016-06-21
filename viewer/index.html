@@ -42,8 +42,8 @@
             <td>
                 <div class="top-bar">
                     <div class="menu">
-                        <a class="btn btnUp is-folder" href=".." _if="isFolder()">Up</a>
-                        <a class="btn btnUp is-file" href="." _if="isFile()">Up</a>
+                        <a class="btn btnUp is-folder" href=".." _if="t => this.perlFile.file==null && this.perlFile.dir!=null">Up</a>
+                        <a class="btn btnUp is-file" href="." _if="perlFile.file!=null">Up</a>
                         <button class="btn" title="Expand/Collapse All" _onclick="e => this.editor.toggleAllFolds()">Toggle</button>
                         <button class="btn" title="Reparse Code" _onclick="e => this.reparse()">Reparse</button>
                         <button class="btn" title="Perl Critic" _onclick="e => this.critique()">Critique</button>
@@ -57,7 +57,7 @@
         </tr>
         <tr class="main">
             <td>
-                <div class="dir-view" _if="isFolder()">
+                <div class="dir-view" _if="t => this.perlFile.dir!=null && this.perlFile.file==null">
                     <div class="scroll-grid">
                         <div class="scroll-grid-content">
                             <table class="grid">
@@ -77,7 +77,7 @@
                         </div>
                     </div>
                 </div>
-                <div _if="isFile()" class="code-view">
+                <div _if="perlFile.file!=null" class="code-view">
                     <div id="editor" _ignore></div>
                     <div class="code-container" _ignore>
                         <div class="lines"><div class="line"><div class="line-overlay"></div><a class="line-number">1</a><div class="expander-container"></div></div></div>
@@ -89,17 +89,17 @@
         <tr class="bottom">
             <td>
                 <div class="status-bar"><span class="status-text"></span></div>
-                <div class="bottom-bar" _if="showBottomBar()" style="display:none">
+                <div class="bottom-bar" _if="showBottomBar()">
                     <div class="critique scroll-grid" _if="perlFile.critiqueRes!=null">
                         <button class="btn btnClose" _onclick="e => { this.perlFile.critiqueRes = null; this.dataBind(); }">X</button>
                         <div class="scroll-grid-content">
                             <table class="grid">
                                 <thead>
                                     <tr>
-                                        <th>Description</th>
-                                        <th>Policy</th>
-                                        <th>Line</th>
-                                        <th>Severity</th>
+                                        <th><span>Description</span></th>
+                                        <th><span>Policy</span></th>
+                                        <th><span>Line</span></th>
+                                        <th><span>Severity</span></th>
                                     </tr>
                                 </thead>
                                 <tbody>
