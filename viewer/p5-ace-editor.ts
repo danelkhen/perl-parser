@@ -39,7 +39,7 @@ import {Completer} from "ace/ext/language_tools";
 import {PerlFile} from "./perl-file";
 import * as aceConfig from "ace/config";
 import {UndoManager} from "ace/undomanager";
-
+import * as DarkTheme from "./ace/theme/vs-dark";
 
 VirtualRenderer.prototype.$options.theme.initialValue = "viewer/ace/theme/vs-dark";
 

@@ -9,9 +9,22 @@ let theme = {
   color: rgb(220,220,220);
   font-size:14px;
 }
+
+.ace-vs-dark.ace_autocomplete {
+  background-color: #1e1e1e;
+  color: rgb(220,220,220);
+  font-size:12px;
+  font-family:Arial;
+}
+
+.ace-vs-dark .ace_rightAlignedText {
+   color: rgb(86, 156, 214); 
+}
+
 .ace-vs-dark .ace_scrollbar::-webkit-scrollbar { background-color:#3e3e42; }
 .ace-vs-dark .ace_scrollbar::-webkit-scrollbar-thumb { background-color:#686868; border:solid 3px #3e3e42;}
 .ace-vs-dark .ace_scrollbar::-webkit-scrollbar-button { background-color:#686868; border:solid 6px #3e3e42;}
+
 
 .ace-vs-dark .ace_gutter {
   color: rgb(43, 145, 175);
@@ -109,6 +122,12 @@ let theme = {
   background: rgba(51, 153, 255, 0.5);
 }
 
+.ace-vs-dark .ace_marker-layer .ace_selected-word {
+  background: rgba(51, 153, 255, 0.3);
+  border: 1px solid rgba(200, 200, 250, 0.3);
+}
+
+
 .ace-vs-dark .ace_marker-layer .ace_step {
   background: rgb(252, 255, 0);
 }
@@ -122,6 +141,11 @@ let theme = {
   border: 1px solid rgb(192, 192, 192);
 }
 
+.ace-vs-dark.ace_autocomplete .ace_marker-layer .ace_active-line{
+    background-color: rgba(51, 153, 255, 0.5);
+}
+
+
 .ace-vs-dark .ace_marker-layer .ace_active-line {
     background:black;
 }
@@ -129,12 +153,6 @@ let theme = {
 .ace-vs-dark .ace_gutter-active-line {
 /*  background: rgba(200, 200, 200, 0.2);*/
 }
-
-.ace-vs-dark .ace_marker-layer .ace_selected-word {
-  background: rgb(250, 250, 255);
-  border: 1px solid rgb(200, 200, 250);
-}
-
 
 .ace-vs-dark .ace_heredoc,
 .ace-vs-dark .ace_heredocValue,

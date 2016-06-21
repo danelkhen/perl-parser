@@ -652,12 +652,13 @@ a.btn {
     max-width: 300px;
     max-height: 300px;
     overflow: auto;
-    background: white;
+    background: #1e1e1e;
+    color: rgb(220,220,220);
 }
 
-div.ace_editor.ace_autocomplete {
+/*div.ace_editor.ace_autocomplete {
     background: white;
-}
+}*/
 
 
 .nowrap {
