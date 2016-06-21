@@ -59,6 +59,7 @@
             <td>
                 <div class="dir-view" _if="t => this.perlFile.dir!=null && this.perlFile.file==null">
                     <div class="scroll-grid">
+                        <input class="scroll-grid-input" _onkeydown="e=>this.scrollGrid_keydown(e)" />
                         <div class="scroll-grid-content">
                             <table class="grid">
                                 <thead>

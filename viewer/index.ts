@@ -95,7 +95,7 @@ export class IndexPage {
         this.perlFile.onPropChanged(t => t.file, () => {
             this.dataBind();
             let code = this.perlFile.file == null ? "" : this.perlFile.file.src;
-            console.log("setting editor code", {code});
+            console.log("setting editor code", { code });
             this.ignoreCursorEvents = true;
             this.editor.setCode(code);
             this.ignoreCursorEvents = false;
@@ -285,7 +285,24 @@ export class IndexPage {
     }
 
 
+    scrollGrid_keydown(e: JQueryEventObject) {
+        console.log("scrollGrid_keydown", e);
+        if (e.keyCode == Key.UP || e.keyCode == Key.DOWN) {
+            e.preventDefault();
+            let grid = $(e.target).closest(".scroll-grid").find(".grid > tbody");
+            let selected = grid.children(".selected");
+            let sibling = e.keyCode == Key.UP ? selected.prev(":visible") : selected.next(":visible");
+            if (sibling.length > 0) {
+                selected.removeClass("selected");
+                sibling.addClass("selected");
+            }
+        }
+    }
     grid_mousedown(e: JQueryEventObject, selector: string) {
+        e.preventDefault();
+        let input = <HTMLInputElement>$(e.target).closest(".scroll-grid").children(".scroll-grid-input")[0];
+        if (input != null)
+            input.focus();
         let tr = $(e.target).closest(selector);
         tr.parent().children().removeClass("selected");
         tr.addClass("selected");

@@ -704,3 +704,11 @@ a.btn {
     display: block;
     visibility: hidden;
 }
+
+.scroll-grid-input{
+    height:0;
+    width:0;
+    margin:0;
+    padding:0;
+    border:none;
+}
