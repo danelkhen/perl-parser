@@ -47,6 +47,7 @@ export class PerlCompleter implements Completer {
             let statements = parser.parse();
             let unit = new Unit();
             unit.statements = statements;
+            unit.tokens = this.tokens;
             this.unit = unit;
             new AstNodeFixator().process(this.unit);
             let packages = EntityResolver.process(this.unit);

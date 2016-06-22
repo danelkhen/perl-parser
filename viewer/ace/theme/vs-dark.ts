@@ -155,6 +155,10 @@ let theme = {
     background-color: rgba(51, 153, 255, 0.5);
 }
 
+.ace-vs-dark.ace_autocomplete .ace_completion-highlight {
+    color:white;
+}
+
 
 .ace-vs-dark .ace_marker-layer .ace_active-line {
     background:black;

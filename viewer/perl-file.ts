@@ -523,6 +523,7 @@ export class PerlFile {
             var statements = parser.parse();
             let unit = new Unit();
             unit.statements = statements;
+            unit.allTokens = this.tokens;
             this.unit = unit;
             console.log(unit);
             new AstNodeFixator().process(this.unit);

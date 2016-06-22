@@ -84,6 +84,7 @@ export class ArrayRefDeclaration extends Expression {
 }
 export class Unit extends AstNode {
     statements: Statement[];
+    allTokens:Token[]
 }
 
 export class PackageDeclaration extends Statement {

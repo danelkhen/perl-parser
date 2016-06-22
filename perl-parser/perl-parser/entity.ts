@@ -48,6 +48,7 @@ export class Global {
 }
 export class Entity {
     name: string;
+    documentation: string;
     node: AstNode;
 }
 
@@ -98,11 +99,37 @@ export class EntityResolver {
         return pkg;
     }
 
+    getDocumentation(node: AstNode): string {
+        let allTokens = this.unit.allTokens;
+        if (allTokens == null)
+            return null;
+        let index = allTokens.indexOf(node.token);
+        if (index < 0)
+            return null;
+        let i = index - 1;
+        let tokens: Token[] = [];
+        while (i >= 0) {
+            let token = allTokens[i];
+            if (!token.isAny([TokenTypes.whitespace, TokenTypes.comment, TokenTypes.pod]))
+                break;
+            tokens.push(token);
+            i--;
+        }
+        if (tokens.length > 0) {
+            let s = tokens.map(t => t.value).join("").trim();
+            if (s.length == 0)
+                return null;
+            return s;
+        }
+        return null;
+    }
+
     processNode(node: AstNode) {
         if (node instanceof PackageDeclaration) {
             let pkg = new Package();
             pkg.node = node;
             pkg.name = node.name.toCode().trim();
+            pkg.documentation = this.getDocumentation(node);
             this.packages.push(pkg);
             node.statements.forEach(t => this.processNode(t));
         }
@@ -110,6 +137,7 @@ export class EntityResolver {
             let sub = new Subroutine();
             sub.node = node;
             sub.name = node.declaration.name.toCode().trim();
+            sub.documentation = this.getDocumentation(node);
             let pkg = this.getCreatePackage();
             pkg.members.push(sub);
             sub.package = pkg;
