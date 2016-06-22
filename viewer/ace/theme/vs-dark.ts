@@ -63,7 +63,17 @@ let theme = {
   color: white;
 }
 
-.ace-vs-dark .ace_fold {
+.ace-vs-dark .ace_line .ace_fold {
+    background-image:none;
+    border-color:#777;
+    height:auto;
+}
+
+.ace-vs-dark .ace_line .ace_fold:after {
+    content: "...";
+    position: relative;
+    color: #777;
+    left: -24px;
 }
 
 .ace-vs-dark .ace_support.ace_function {

@@ -12,36 +12,38 @@ import {
     ExpressionTester, EtReport, EtItem, RefArrayToRefUtil,
     EntityResolver, Package, Subroutine, Global
 } from "perl-parser";
-import {P5Service, P5File, CritiqueResponse, CritiqueViolation, GitBlameItem} from "./p5-service";
-import {monitor, Monitor} from "./monitor";
-import {PackageResolution, AsyncFunc, TreeNodeData, Expander, Helper, Collapsable, TokenUtils, CodeHyperlink, Key, Rect, Size, Point} from "./common";
-//import * as config from "ace/config";
-import * as ace from "ace/ace";
-import * as ModeList from "ace/ext/modelist";
-import {Editor} from "ace/editor";
-import {IEditSession} from "ace/edit_session";
-import {Range} from "ace/range";
-import {TokenInfo} from "ace/token_info";
-import {TokenIterator} from "ace/token_iterator";
-import {Position} from "ace/position";
-import {MouseEvent} from "ace/mouse/mouse_event";
-import {Tooltip} from "ace/tooltip";
-import {StatusBar} from "ace/ext/statusbar";
+import { P5Service, P5File, CritiqueResponse, CritiqueViolation, GitBlameItem} from "./p5-service";
+import { monitor, Monitor} from "./monitor";
+import { PackageResolution, AsyncFunc, TreeNodeData, Expander, Helper, Collapsable, TokenUtils, CodeHyperlink, Key, Rect, Size, Point} from "./common";
+import { PerlFile        } from "./perl-file";
 import "ace/ext/linking";
-import {Config} from "ace/config";
 import "ace/ext/language_tools";
-import {EditSession} from "ace/edit_session";
-import {Annotation as AceAnnotation} from "ace/annotation";
-import {GutterRenderer} from "ace/layer/gutter";
-import {VirtualRenderer} from "ace/virtual_renderer";
-import {snippetCompleter, textCompleter, keyWordCompleter} from "ace/ext/language_tools";
-import {Completer} from "ace/ext/language_tools";
-import {PerlFile} from "./perl-file";
-import * as aceConfig from "ace/config";
-import {UndoManager} from "ace/undomanager";
-import * as DarkTheme from "./ace/theme/vs-dark";
 
-VirtualRenderer.prototype.$options.theme.initialValue = "viewer/ace/theme/vs-dark";
+import * as ace         from "ace/ace";
+import * as ModeList    from "ace/ext/modelist";
+import * as aceConfig   from "ace/config";
+import * as DarkTheme   from "./ace/theme/vs-dark";
+
+import {Annotation as AceAnnotation} from "ace/annotation";
+import {snippetCompleter, textCompleter, keyWordCompleter} from "ace/ext/language_tools";
+
+import { Editor          } from "ace/editor";
+import { IEditSession    } from "ace/edit_session";
+import { Range           } from "ace/range";
+import { TokenInfo       } from "ace/token_info";
+import { TokenIterator   } from "ace/token_iterator";
+import { Position        } from "ace/position";
+import { MouseEvent      } from "ace/mouse/mouse_event";
+import { Tooltip         } from "ace/tooltip";
+import { StatusBar       } from "ace/ext/statusbar";
+import { Config          } from "ace/config";
+import { EditSession     } from "ace/edit_session";
+import { GutterRenderer  } from "ace/layer/gutter";
+import { VirtualRenderer } from "ace/virtual_renderer";
+import { Completer       } from "ace/ext/language_tools";
+import { UndoManager     } from "ace/undomanager";
+import { Autocomplete    } from "ace/autocomplete";
+
 
 export class P5AceEditor {
     linkEvent: LinkEvent;
@@ -101,7 +103,7 @@ export class P5AceEditor {
     }
 
     toggleAllFolds() {
-        if(this.editor.session.getAllFolds().length==0)
+        if (this.editor.session.getAllFolds().length == 0)
             this.editor.session.foldAll();
         else
             this.editor.session.unfold();
@@ -295,6 +297,7 @@ export class P5AceEditor {
     }
     setCode(value: string) {
         let session = new EditSession(value, "viewer/ace/mode/perl");
+        //session.setUseSoftTabs(true);
         session.setUndoManager(new UndoManager());
         session.gutterRenderer = new P5GutterRenderer(this);
         this.editor.setSession(session);
@@ -375,6 +378,36 @@ export class P5GutterRenderer implements GutterRenderer {
 
 }
 
+function hackAce() {
+    //set default theme as vs-dark
+    VirtualRenderer.prototype.$options.theme.initialValue = "viewer/ace/theme/vs-dark";
+
+    //disable up/down key when reaches the start/end of autocomplete popup, and not cycle back
+    let baseGoTo = Autocomplete.prototype.goTo;
+    Autocomplete.prototype.goTo = function (where: string) {
+        let _this: Autocomplete = this;
+        let isDown = where == "down";
+        let isUp = where == "up";
+        if (isDown || isUp) {
+            let row = _this.popup.getRow();
+            if (isUp) {
+                if (row <= 0) {
+                    where = "start";
+                    return baseGoTo.call(this, where);
+                }
+            }
+            else if (isDown) {
+                let max = _this.popup.session.getLength() - 1;
+                if (row >= max)
+                    where = "end";
+                return baseGoTo.call(this, where);
+            }
+        }
+        return baseGoTo.apply(this, arguments);
+    }
+}
+hackAce();
+
 
 
 //editor_linkHover(e: LinkEvent) {
@@ -422,3 +455,5 @@ export class P5GutterRenderer implements GutterRenderer {
 //}
 //let width = length * config.characterWidth;
 //return width;
+
+

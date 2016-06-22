@@ -3270,6 +3270,46 @@ declare module "ace/ext/language_tools" {
 
 }
 
+declare module "ace/autocomplete" {
+    import {Editor} from "ace/editor";
+    import {HashHandler} from "ace/keyboard/hash_handler";
+    import {EditorCommand} from "ace/editor_command";
+    import {AcePopup} from "ace/autocomplete/popup";
+
+    export class Autocomplete {
+        autoInsert: boolean;
+        autoSelect: boolean;
+        exactMatch: boolean;
+        gatherCompletionsId: number;
+        keyboardHandler: HashHandler;
+        changeTimer();
+        tooltipTimer();
+        $init();
+        popup: AcePopup;
+        getPopup(): AcePopup;
+        openPopup(editor: Editor, prefix: string, keepPopupPosition);
+        static startCommand: EditorCommand;
+        detach();
+        changeListener(e);
+        blurListener(e);
+        mousedownListener(e);
+        mousewheelListener(e);
+        goTo(where: "start" | "end" | "up" | "down" | string);
+        insertMatch(data, options);
+        commands: { [key: string]: (e: Editor) => any };
+        gatherCompletions(editor: Editor, callback);
+        showPopup(editor: Editor);
+        updateCompletions(keepPopupPosition);
+        cancelContextMenu();
+        updateDocTooltip();
+        showDocTooltip(item);
+        hideDocTooltip();
+    }
+
+    export class FilteredList {
+    }
+}
+
 declare module "ace/autocomplete/util" {
     import {Editor} from "ace/editor";
     export function parForEach(array, fn, callback);
@@ -3277,6 +3317,27 @@ declare module "ace/autocomplete/util" {
     export function retrieveFollowingIdentifier(text: string, pos: number, regex?: RegExp);
     export function getCompletionPrefix(editor: Editor);
 }
+
+declare module "ace/autocomplete/popup" {
+    import {Editor} from "ace/editor";
+    export class AcePopup extends Editor {
+        constructor(parentNode);
+        isOpen: boolean;
+        isTopdown: boolean;
+        data: any[];
+        setData(list);
+        getData(row);
+
+        getRow();
+        setRow(line);
+        hide();
+        show(pos, lineHeight, topdownOnly);
+        getTextLeftOffset();
+        $imageSize: number;
+        $borderSize: number;
+    }
+}
+
 
 declare module "ace/edit_session/fold" {
     import {IRangeList} from "ace/range_list";
@@ -3308,7 +3369,7 @@ declare module "ace/undomanager" {
          * 
          * @returns {Range} The range of the undo.
          **/
-        undo(dontSelect?:boolean);
+        undo(dontSelect?: boolean);
 
         /**
          * [Perform a redo operation on the document, reimplementing the last change.]{: #UndoManager.redo}
@@ -3316,7 +3377,7 @@ declare module "ace/undomanager" {
          *
          * 
          **/
-        redo(dontSelect?:boolean);
+        redo(dontSelect?: boolean);
 
         /**
          * 
@@ -3329,14 +3390,14 @@ declare module "ace/undomanager" {
          * Returns `true` if there are undo operations left to perform.
          * @returns {Boolean}
          **/
-        hasUndo():boolean;
+        hasUndo(): boolean;
 
         /**
          * 
          * Returns `true` if there are redo operations left to perform.
          * @returns {Boolean}
          **/
-        hasRedo():boolean;
+        hasRedo(): boolean;
 
         /**
          *
@@ -3349,7 +3410,7 @@ declare module "ace/undomanager" {
          * Returns if the current status is clean
          * @returns {Boolean}
          **/
-        isClean():boolean;
+        isClean(): boolean;
 
         // Serializes deltaSets to reduce memory usage.
         $serializeDeltas(deltaSets);

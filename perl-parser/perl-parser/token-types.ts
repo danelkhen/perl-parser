@@ -506,7 +506,7 @@ export class TokenTypes {
     static interpolatedString = _r(/\"(\\.|[^"])*\"/);//_r(/\"[^"]*\"/);
     static string = _r(/\'[^\']*\'/);
     static regex = _custom(TokenTypes._matchRegex);//_r(/\/.*\/[a-z]*/);
-    static regexSubstitute = _rs([/s\/.*\/.*\/[a-z]*/, /s#.*#.*#[a-z]*/, /s\{.*\}\{.*\}[a-z]*/]);  // s/abc/def/mg
+    static regexSubstitute = _rs([/s\/.*\/.*\/[a-z]*/, /s#.*#.*#[a-z]*/, /s\{.*\}\{.*\}[a-z]*/, /s\,[^\,]*\,[^\,]*\,[a-z]*/]);  // s/abc/def/mg
     static regexMatch = _rs([/m\/.*\/[a-z]*/, /m#.*#[a-z]*/, /m\{.*?\}[a-z]*/]);  // s/abc/def/mg
 
     static colon = _r(/\:/);
@@ -558,6 +558,7 @@ export class TokenTypes {
 
 
 
+    static unknown = _r(/.*/);
 
 
 

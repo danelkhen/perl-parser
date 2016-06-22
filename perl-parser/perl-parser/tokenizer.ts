@@ -3,13 +3,17 @@
 import {Token, TokenType} from "./token";
 import {TextFile, TextFilePos, TextFileRange, Cursor} from "./text";
 import {TokenTypes} from "./token-types";
+import {Logger} from "./utils";
 
 export class Tokenizer {
     file: TextFile;
     cursor: Cursor;
     tempTokenTypes: TokenType[] = [];
     tokenTypes: TokenType[];
+    logger: Logger;
+
     constructor() {
+        this.logger = new Logger();
         TokenTypes.init();
         this.tokenTypes = TokenTypes.all.toArray();
     }
@@ -28,6 +32,8 @@ export class Tokenizer {
             let count = tokenType.tryTokenize(this);
             return count > 0;
         });
+        if (tt.name == "unknown")
+            this.logger.warn(["unknown tokentype detected"]);
         if (tt == null)
             throw new Error();
     }

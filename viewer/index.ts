@@ -78,6 +78,7 @@ export class IndexPage {
             this.selection.ranges = [new IndexRange(range.start.row + 1, range.end.row + 1)];
             this.saveSelection();
         });
+        
 
         this.onPropChanged(t => t.fileSearchText, () => {
             if (this.fileSearchText.length == 0) {
@@ -100,13 +101,7 @@ export class IndexPage {
             this.editor.setCode(code);
             this.ignoreCursorEvents = false;
         });
-        this.perlFile.onPropChanged(t => t.sourceFile, () => {
-            this.dataBind();
-            //console.log("setting editor code");
-            //this.ignoreCursorEvents = true;
-            //this.editor.setCode(this.perlFile.sourceFile.text);
-            //this.ignoreCursorEvents = false;
-        });
+        this.perlFile.onPropChanged(t => t.sourceFile, () => this.dataBind());
         this.perlFile.onPropChanged(t => t.codeHyperlinks, () => {
             this.editor.hyperlinkNode(this.perlFile.codeHyperlinks.last());
         });
@@ -120,7 +115,7 @@ export class IndexPage {
         this.onPromise(this.update());
     }
 
-    critique() {
+    critique():Promise<any> {
         return this.perlFile.critique().then(() => {
             let res = this.perlFile.critiqueRes;
             console.log(res);
@@ -151,19 +146,18 @@ export class IndexPage {
         });
     }
 
-    gitBlame() {
+    gitBlame():Promise<any> {
         $(".code-container").addClass("git-blame-mode");
         return this.perlFile.gitBlame().then(() => this.editor.setGitBlameItems(this.perlFile.gitBlameItems));
     }
 
-    gitLog() {
+    gitLog():Promise<any> {
         this.perlFile.gitShowResponse = null;
-        return this.perlFile.gitLog().then(e => this.dataBind());
-        //this.perlFile.gitLog().then(e => this.dataBind());
+        return this.perlFile.gitLog();
     }
 
-    gitGrep() {
-        return this.perlFile.gitGrep(this.grepText).then(res => this.dataBind());
+    gitGrep():Promise<any> {
+        return this.perlFile.gitGrep(this.grepText);
     }
 
     saveSelection() {
@@ -264,17 +258,6 @@ export class IndexPage {
     }
 
 
-    isFolder(file?: P5File) {
-        if (arguments.length == 0)
-            file = this.file;
-        return this.file != null && this.file.children != null;
-    }
-    isFile(file?: P5File) {
-        if (arguments.length == 0)
-            file = this.file;
-        return this.file != null && this.file.children == null;
-    }
-
     showBottomBar() {
         let f = this.perlFile;
         return [f.critiqueRes, f.gitLogItems, f.gitShowResponse, f.gitGrepItems].exceptNulls().length > 0;
@@ -312,18 +295,17 @@ export class IndexPage {
         return this.editor.scrollToLine(violation.source.location.line);
     }
 
-    gitLogItem_click(e: Event, item: GitLogItem) {
-        return this.perlFile.gitShow(item.sha).then(() => this.dataBind());
+    gitLogItem_click(e: JQueryEventObject, item: GitLogItem):Promise<any> {
+        return this.perlFile.gitShow(item.sha);
     }
 
-    gitShowFile_click(e: Event, file: GitShowFile) {
-        window.location.href = "/" + file.path;
+    gitShowFile_click(e: JQueryEventObject, file: GitShowFile) {
+        window.open("/" + file.path);
         //this.perlFile.url = item.path;
         //this.perlFile.update();
     }
 
     promiseCount = 0;
-
     onPromise(promise: Promise<any>): Promise<any> {
         this.promiseCount++;
         console.log({ promiseCount: this.promiseCount });
@@ -332,6 +314,7 @@ export class IndexPage {
             this.promiseCount--;
             console.log({ promiseCount: this.promiseCount });
             $(document.body).toggleClass("loading", false);
+            this.dataBind();
             return t;
         });
     }
@@ -346,8 +329,6 @@ export class IndexPage {
             return;
         let url = "/" + item.path + "#L" + match.line_num;
         window.open(url);
-        //this.gitGrepItem = item;
-        //this.dataBind();
     }
 
     gitGrepItem: GitGrepItem;
@@ -386,57 +367,4 @@ export function main() {
 
 }
 
-
 $(main);
-
-
-
-//getLineFromLineNumberEl(el: HTMLElement) {
-//    if (el == null || !$(el).is(".line-number"))
-//        return null;
-//    let line = parseInt(el.textContent);
-//    if (isNaN(line))
-//        return null;
-//    return line;
-//}
-//onLineNumberMouseDown(e: JQueryMouseEventObject) {
-//    if (e.which != 1)
-//        return;
-//    if (!$(e.target).hasClass("line-number"))
-//        return;
-//    let line = this.getLineFromLineNumberEl(<HTMLElement>e.target);
-//    if (line == null)
-//        return;
-//    e.preventDefault();
-//    this.isMouseDown = true;
-//    let shift = e.shiftKey;
-//    let ctrl = e.ctrlKey;
-//    this.clickLine(line, ctrl, shift);
-//}
-
-//onLineNumberMouseOver(e: JQueryMouseEventObject) {
-//    if (!this.isMouseDown)
-//        return;
-//    let line = this.getLineFromLineNumberEl(<HTMLElement>e.target);
-//    if (line == null)
-//        return;
-//    let range = this.selection.lastRange;
-//    if (range == null)
-//        return;
-//    if (range.to == line)
-//        return;
-//    e.preventDefault();
-//    range.to = line;
-//    this.renderSelection();
-//    this.saveSelection();
-//}
-//onLineNumberMouseUp(e: JQueryMouseEventObject) {
-//    this.isMouseDown = false;
-//}
-
-
-//clickLine(line: number, ctrl: boolean, shift: boolean) {
-//    this.selection.click(line, ctrl, shift);
-//    this.renderSelection();
-//    this.saveSelection();
-//}
