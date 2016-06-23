@@ -19,7 +19,7 @@ body {
     /*padding: 30px 0 30px 0;*/
     margin: 0;
     padding: 0;
-    overflow: hidden;
+    /*overflow: hidden;*/
     height: 100%;
 }
 
@@ -711,4 +711,5 @@ a.btn {
     margin:0;
     padding:0;
     border:none;
+    position:absolute;
 }

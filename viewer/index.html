@@ -68,7 +68,7 @@
                                 <tbody>
                                     <tr class="child template"
                                         _for="perlFile.childFiles"
-                                        _ondblclick="(e, file) => location.href = file.href"
+                                        _ondblclick="(e, file) => this.file_dblclick(e, file)"
                                         _onmousedown="(e, file)=>this.grid_mousedown(e, '.child')">
                                         <td><a href="{{href}}">{{name}}</a></td>
                                         <td>{{size||""}}</td>

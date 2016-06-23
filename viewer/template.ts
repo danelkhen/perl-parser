@@ -74,7 +74,7 @@ export class Template {
                 let res = func.call(thisContext, obj);
                 $(el).toggleClass("if_true", res);
                 $(el).toggleClass("if_false", !res);
-                if(!res)
+                if (!res)
                     return;
             }
             if (forAtt != null) {
@@ -85,6 +85,8 @@ export class Template {
             }
             let atts = Array.from(node.attributes);
             atts.forEach(att => {
+                if (["_for", "_if"].contains(att.name))
+                    return;
                 if (att.name.startsWith("_")) {
                     let func = this.compileTemplateExpression(att.value);
                     if (att.name.startsWith("_on")) {
@@ -116,7 +118,11 @@ export class Template {
                     node[propName] = res;
                 }
             });
-            Array.from(node.childNodes).forEach(t => this.dataBind(t, obj, thisContext));
+            Array.from(node.childNodes).forEach((t, i) => {
+                if($(t).is(".template-instance"))
+                    return; //these should be hanlded by forAtt
+                this.dataBind(t, obj, thisContext);
+            });
         }
     }
     static repeat(el: any, list: any[], thisContext: any) {

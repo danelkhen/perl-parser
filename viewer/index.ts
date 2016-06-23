@@ -78,7 +78,7 @@ export class IndexPage {
             this.selection.ranges = [new IndexRange(range.start.row + 1, range.end.row + 1)];
             this.saveSelection();
         });
-        
+
 
         this.onPropChanged(t => t.fileSearchText, () => {
             if (this.fileSearchText.length == 0) {
@@ -115,7 +115,7 @@ export class IndexPage {
         this.onPromise(this.update());
     }
 
-    critique():Promise<any> {
+    critique(): Promise<any> {
         return this.perlFile.critique().then(() => {
             let res = this.perlFile.critiqueRes;
             console.log(res);
@@ -146,17 +146,17 @@ export class IndexPage {
         });
     }
 
-    gitBlame():Promise<any> {
+    gitBlame(): Promise<any> {
         $(".code-container").addClass("git-blame-mode");
         return this.perlFile.gitBlame().then(() => this.editor.setGitBlameItems(this.perlFile.gitBlameItems));
     }
 
-    gitLog():Promise<any> {
+    gitLog(): Promise<any> {
         this.perlFile.gitShowResponse = null;
         return this.perlFile.gitLog();
     }
 
-    gitGrep():Promise<any> {
+    gitGrep(): Promise<any> {
         return this.perlFile.gitGrep(this.grepText);
     }
 
@@ -267,17 +267,90 @@ export class IndexPage {
         return this.perlFile.perlDocFromStorageOnly({ name: name });
     }
 
+    //taken from jquery-ui 
+    findScrollParent(el: HTMLElement, includeHidden?: boolean): HTMLElement {
+        let el2 = $(el);
+        let position = el2.css("position");
+        let excludeStaticParent = position === "absolute";
+        let overflowRegex = includeHidden ? /(auto|scroll|hidden)/ : /(auto|scroll)/;
+        let scrollParent = el2.parents().filter((index, element) => {
+            var parent = $(element);
+            if (excludeStaticParent && parent.css("position") === "static")
+                return false;
+            return overflowRegex.test(parent.css("overflow") + parent.css("overflow-y") + parent.css("overflow-x"));
+        }).eq(0);
+
+        if (position === "fixed" || !scrollParent.length)
+            return null; //el.ownerDocument || document :
+        return scrollParent[0];
+    };
+
+    /** returns the minimum diff for scrollTop of the scrollParent required for an element to be inside the scrollArea */
+    getScrollTopViewOffset(el: HTMLElement) {
+        let scrollEl = this.findScrollParent(el);
+        let scrollTop = scrollEl.scrollTop;
+        let scrollHeight = scrollEl.offsetHeight;
+        let scrollBottom = scrollTop + scrollHeight;
+        let top = el.offsetTop;
+        let height = el.offsetHeight;
+        let bottom = top + height;
+        if (top < scrollTop) {
+            return top - scrollTop;
+        }
+        else if (bottom > scrollBottom) {
+            return bottom - scrollHeight - scrollTop;
+        }
+        return 0;
+    }
+    scrollIntoViewIfNeeded(el: HTMLElement) {
+        let offset = this.getScrollTopViewOffset(el);
+        if (offset == 0)
+            return;
+        console.log(offset);
+        let scrollEl = this.findScrollParent(el);
+        scrollEl.scrollTop += offset;
+    }
 
     scrollGrid_keydown(e: JQueryEventObject) {
-        console.log("scrollGrid_keydown", e);
-        if (e.keyCode == Key.UP || e.keyCode == Key.DOWN) {
+        if (e.keyCode == Key.ENTER) {
             e.preventDefault();
             let grid = $(e.target).closest(".scroll-grid").find(".grid > tbody");
             let selected = grid.children(".selected");
-            let sibling = e.keyCode == Key.UP ? selected.prev(":visible") : selected.next(":visible");
+            selected.trigger("dblclick");
+            return;
+        }
+        if (e.keyCode == Key.UP || e.keyCode == Key.DOWN || e.keyCode == Key.PAGE_UP || e.keyCode == Key.PAGE_DOWN) {
+            e.preventDefault();
+            let grid = $(e.target).closest(".scroll-grid").find(".grid > tbody");
+            let selected = grid.children(".selected");
+            let scrollParent = this.findScrollParent(grid[0]);
+            let height = scrollParent.offsetHeight;
+            let sibling = selected;
+            let dir = e.keyCode == Key.UP || e.keyCode == Key.PAGE_UP ? -1 : 1;
+            let prevOffset: number = null;
+            let offset: number = null;
+            let count = 0;
+            while (true) {
+                let next = dir == -1 ? sibling.prev(":visible") : sibling.next(":visible");
+                if (next.length == 0)
+                    break;
+                if (e.keyCode == Key.UP || e.keyCode == Key.DOWN) {
+                    sibling = next;
+                    break;
+                }
+                prevOffset = offset;
+                offset = this.getScrollTopViewOffset(sibling[0]);
+                if (offset != 0 && prevOffset == 0 && count != 1)
+                    break;
+                sibling = next;
+                if (Math.abs(offset) >= height)
+                    break;
+                count++;
+            }
             if (sibling.length > 0) {
                 selected.removeClass("selected");
                 sibling.addClass("selected");
+                this.scrollIntoViewIfNeeded(sibling[0]);
             }
         }
     }
@@ -295,7 +368,7 @@ export class IndexPage {
         return this.editor.scrollToLine(violation.source.location.line);
     }
 
-    gitLogItem_click(e: JQueryEventObject, item: GitLogItem):Promise<any> {
+    gitLogItem_click(e: JQueryEventObject, item: GitLogItem): Promise<any> {
         return this.perlFile.gitShow(item.sha);
     }
 
@@ -303,6 +376,9 @@ export class IndexPage {
         window.open("/" + file.path);
         //this.perlFile.url = item.path;
         //this.perlFile.update();
+    }
+    file_dblclick(e: JQueryEventObject, file: P5File) {
+        navigate(file.href);//location.href = file.href;
     }
 
     promiseCount = 0;
@@ -336,6 +412,10 @@ export class IndexPage {
 }
 
 
+export function navigate(url) {
+    window.history.pushState("", "", url);
+    $(window).trigger("urlchange");
+}
 export function main() {
     window.onpopstate = e => {
         e.preventDefault();
@@ -352,8 +432,7 @@ export function main() {
             let href = e.target.getAttribute("href");
             if (href == null || href == "" || href.startsWith("javascript:"))
                 return;
-            window.history.pushState("", "", href);
-            $(window).trigger("urlchange");
+            navigate(href);
         }
     });
     let win: any = window;
