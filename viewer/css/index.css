@@ -441,7 +441,7 @@ a.btn {
     /*border: 1px solid #ccc;*/
     text-align: left;
     font-weight: normal;
-    /*padding: 2px 4px;*/
+    padding: 0;
 }
 
 .grid > tbody > tr > td {

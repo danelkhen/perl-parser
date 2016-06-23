@@ -59,11 +59,11 @@
             <td>
                 <div class="dir-view" _if="t => this.perlFile.dir!=null && this.perlFile.file==null">
                     <div class="scroll-grid">
-                        <input class="scroll-grid-input" _onkeydown="e=>this.scrollGrid_keydown(e)" />
+                        <input class="scroll-grid-input autofocus" _onkeydown="e=>this.filesGrid_keydown(e)" _oninput="e=>this.filesGrid_input(e)" autocorrect="off" autocapitalize="off" spellcheck="false"/>
                         <div class="scroll-grid-content">
                             <table class="grid">
                                 <thead>
-                                    <tr><th><span>Name<input class="tb" _value="fileSearchText" _oninput="e => this.fileSearchText = e.target.value" /></span></th></tr>
+                                    <tr><th><span>Name<input _if="false" class="tb" _value="fileSearchText" _oninput="e => this.fileSearchText = e.target.value" /></span></th></tr>
                                 </thead>
                                 <tbody>
                                     <tr class="child template"

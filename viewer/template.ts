@@ -1,4 +1,4 @@
-﻿import {FunctionHelper} from "./common";
+﻿import {Helper, FunctionHelper} from "./common";
 
 export function isPromise(obj: any): boolean {
     return obj != null && obj.then && obj.catch;
@@ -67,26 +67,23 @@ export class Template {
             if (tmpl != null && el.childNodes.length == 0) {
                 el.innerHTML = tmpl;
             }
-            let ifAtt = el.getAttribute("_if");
-            let forAtt = el.getAttribute("_for");
-            if (ifAtt != null) {
-                let func = this.compileTemplateExpression(ifAtt);
-                let res = func.call(thisContext, obj);
-                $(el).toggleClass("if_true", res);
-                $(el).toggleClass("if_false", !res);
-                if (!res)
-                    return;
-            }
-            if (forAtt != null) {
-                let sourceFunc = this.compileTemplateExpression(forAtt);
-                let source = sourceFunc.call(thisContext, obj);
-                this.repeat(el, source, thisContext);
-                return;
-            }
-            let atts = Array.from(node.attributes);
-            atts.forEach(att => {
-                if (["_for", "_if"].contains(att.name))
-                    return;
+            let atts = Helper.getAttributes(node);
+            let stop = atts.first(att => {
+                if (att.name == "_if") {
+                    let func = this.compileTemplateExpression(att.value);
+                    let res = func.call(thisContext, obj);
+                    $(el).toggleClass("if_true", res);
+                    $(el).toggleClass("if_false", !res);
+                    if (!res)
+                        return true;
+                }
+                if (att.name == "_for") {
+                    let sourceFunc = this.compileTemplateExpression(att.value);
+                    let source = sourceFunc.call(thisContext, obj);
+                    this.repeat(el, source, thisContext);
+                    return true;
+                }
+
                 if (att.name.startsWith("_")) {
                     let func = this.compileTemplateExpression(att.value);
                     if (att.name.startsWith("_on")) {
@@ -107,7 +104,7 @@ export class Template {
                             propName = "className";
                         node[propName] = res;
                     }
-                    return;
+                    return false;
                 }
                 let func = this.compileTemplateString(att.value);
                 if (func != null) {
@@ -117,9 +114,12 @@ export class Template {
                         propName = "className";
                     node[propName] = res;
                 }
+                return false;
             });
+            if (stop)
+                return;
             Array.from(node.childNodes).forEach((t, i) => {
-                if($(t).is(".template-instance"))
+                if ($(t).is(".template-instance"))
                     return; //these should be hanlded by forAtt
                 this.dataBind(t, obj, thisContext);
             });

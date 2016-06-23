@@ -228,8 +228,19 @@ export class IndexPage {
     dataBindNow() {
         this.time(() => {
             Template.dataBind(document.body, this, this);
+            this.autoFocus();
             this.editor.notifyPossibleChanges();
         }, "dataBindNow");
+    }
+
+    autoFocus() {
+        if (document.activeElement != document.body)
+            return;
+        let el = $(".autofocus:visible:first")[0];
+        if (el == null)
+            return;
+        console.log("autofocus", el);
+        el.focus();
     }
 
 
@@ -306,9 +317,47 @@ export class IndexPage {
         let offset = this.getScrollTopViewOffset(el);
         if (offset == 0)
             return;
-        console.log(offset);
         let scrollEl = this.findScrollParent(el);
         scrollEl.scrollTop += offset;
+    }
+
+    up() {
+        if (this.perlFile.file != null) {
+            navigate(".");
+            return;
+        }
+        navigate("..");
+    }
+
+    filesGrid_input(e: JQueryEventObject) {
+        let s = $(e.target).val();
+        let grid = $(e.target).closest(".scroll-grid").find(".grid > tbody");
+        let selected = grid.children(".selected:first")[0];
+        let all = grid.children(":visible").toArray();
+        let index = all.indexOf(selected);
+        if (index > 0) { 
+            let part1 = all.slice(0, index);
+            let part2 = all.slice(index);
+            //start search from selected, then below, then from beginning
+            part2.addRange(part1);
+            all = part2;
+        }
+        let el = all.first(tr => tr.textContent.toLowerCase().startsWith(s));
+        if (el == null)
+            return;
+        if ($(el).is(".selected"))
+            return;
+        $(el).parent().children(".selected").removeClass("selected");
+        $(el).addClass("selected");
+        this.scrollIntoViewIfNeeded(el);
+    }
+
+    filesGrid_keydown(e: JQueryEventObject) {
+        this.scrollGrid_keydown(e);
+        if (e.keyCode == Key.BACKSPACE) {
+            e.preventDefault();
+            this.up();
+        }
     }
 
     scrollGrid_keydown(e: JQueryEventObject) {
@@ -319,33 +368,48 @@ export class IndexPage {
             selected.trigger("dblclick");
             return;
         }
-        if (e.keyCode == Key.UP || e.keyCode == Key.DOWN || e.keyCode == Key.PAGE_UP || e.keyCode == Key.PAGE_DOWN) {
+        if ([Key.UP, Key.DOWN, Key.PAGE_UP, Key.PAGE_DOWN, Key.HOME, Key.END].contains(e.keyCode)) {
             e.preventDefault();
+            $(e.target).val("");
             let grid = $(e.target).closest(".scroll-grid").find(".grid > tbody");
             let selected = grid.children(".selected");
-            let scrollParent = this.findScrollParent(grid[0]);
-            let height = scrollParent.offsetHeight;
             let sibling = selected;
-            let dir = e.keyCode == Key.UP || e.keyCode == Key.PAGE_UP ? -1 : 1;
-            let prevOffset: number = null;
-            let offset: number = null;
-            let count = 0;
-            while (true) {
-                let next = dir == -1 ? sibling.prev(":visible") : sibling.next(":visible");
-                if (next.length == 0)
-                    break;
-                if (e.keyCode == Key.UP || e.keyCode == Key.DOWN) {
+            if (e.keyCode == Key.HOME) {
+                sibling = grid.children(":visible:first");
+            }
+            else if (e.keyCode == Key.END) {
+                sibling = grid.children(":visible:last");
+            }
+            else if (selected.length == 0) {
+                sibling = grid.children(":visible:first");
+                let next = sibling.next(":visible");
+                if (next.length > 0)
                     sibling = next;
-                    break;
+            }
+            else {
+                let scrollParent = this.findScrollParent(grid[0]);
+                let height = scrollParent.offsetHeight;
+                let dir = e.keyCode == Key.UP || e.keyCode == Key.PAGE_UP ? -1 : 1;
+                let prevOffset: number = null;
+                let offset: number = null;
+                let count = 0;
+                while (true) {
+                    let next = dir == -1 ? sibling.prev(":visible") : sibling.next(":visible");
+                    if (next.length == 0)
+                        break;
+                    if (e.keyCode == Key.UP || e.keyCode == Key.DOWN) {
+                        sibling = next;
+                        break;
+                    }
+                    prevOffset = offset;
+                    offset = this.getScrollTopViewOffset(sibling[0]);
+                    if (offset != 0 && prevOffset == 0 && count != 1)
+                        break;
+                    sibling = next;
+                    if (Math.abs(offset) >= height)
+                        break;
+                    count++;
                 }
-                prevOffset = offset;
-                offset = this.getScrollTopViewOffset(sibling[0]);
-                if (offset != 0 && prevOffset == 0 && count != 1)
-                    break;
-                sibling = next;
-                if (Math.abs(offset) >= height)
-                    break;
-                count++;
             }
             if (sibling.length > 0) {
                 selected.removeClass("selected");
@@ -421,6 +485,11 @@ export function main() {
         e.preventDefault();
         $(window).trigger("urlchange");
     };
+    //window.setInterval(() => console.log("active element", document.activeElement), 1000);
+    //$(window).focusin(e => console.log("focusin", e.target.nodeName || e.target, document.activeElement.nodeName));
+    //$(window).focusout(e => console.log("focusout", e.target.nodeName, document.activeElement.nodeName));
+    //$(document.body).focus(e=>console.log("BODY IS FOCUSED"));
+    //$(window).focus(e=>console.log("WINDOW IS FOCUSED"));
 
     $(document.body).click(e => {
         if (e.target.nodeName == "A") {

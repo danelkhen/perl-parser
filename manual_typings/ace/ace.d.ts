@@ -947,6 +947,14 @@ declare module "ace/position" {
         column: number;
     }
 }
+declare module "ace/keyboard/textinput" {
+
+    export class TextInput {
+        getElement(): HTMLTextAreaElement;
+    }
+
+}
+
 declare module "ace/keyboard/keybinding" {
     import {Editor} from "ace/editor";
 
@@ -965,6 +973,7 @@ declare module "ace/keyboard/keybinding" {
         onCommandKey(e: any, hashId: any, keyCode: any): void;
 
         onTextInput(text: any): void;
+
     }
     export var KeyBinding: {
         new (editor: Editor): KeyBinding;
@@ -1279,6 +1288,7 @@ declare module "ace/editor" {
     import {IEditSession} from "ace/edit_session";
     import {VirtualRenderer} from "ace/virtual_renderer";
     import {KeyBinding} from "ace/keyboard/keybinding";
+    import {TextInput} from "ace/keyboard/textinput";
     import {Selection} from "ace/selection";
     import {Position} from "ace/position";
     import {Range} from "ace/range";
@@ -1299,6 +1309,8 @@ declare module "ace/editor" {
      * Event sessions dealing with the mouse and keyboard are bubbled up from `Document` to the `Editor`, which decides what to do with them.
     **/
     export interface Editor extends EventEmitter {
+
+        textInput:TextInput;
 
         addEventListener(ev: 'change', callback: (ev: EditorChangeEvent) => any): void;
         addEventListener(ev: string, callback: Function): void;

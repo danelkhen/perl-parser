@@ -67,6 +67,8 @@ export class P5AceEditor {
 
     init() {
         this.editor = ace.edit("editor");
+        $(this.editor.textInput.getElement()).addClass("autofocus");
+
         this.editor.setTheme("viewer/ace/theme/vs-dark");
         this.editor.$blockScrolling = Infinity; //automatically scrolling cursor into view after selection change this will be disabled in the next version set editor.$blockScrolling = Infinity to disable this message
         this.editor.setOptions({

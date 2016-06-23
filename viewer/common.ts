@@ -179,6 +179,21 @@ export class Helper {
             replace(/>/g, '&gt;');
     }
 
+    static _isBrowserReversesAttributes: boolean;
+    static isBrowserReversesAttributes() {
+        if (this._isBrowserReversesAttributes == null) {
+            let div = document.createElement("div");
+            div.innerHTML = "<a b='c' d='e'/>";
+            this._isBrowserReversesAttributes = div.firstChild.attributes[0].name == "d";
+        }
+        return this._isBrowserReversesAttributes;
+    }
+    static getAttributes(node:Node): Attr[] {
+        let list = Array.from(node.attributes);
+        if(this.isBrowserReversesAttributes())
+            list.reverse();
+        return list;
+    }
 }
 
 export interface TreeNodeData {
@@ -231,7 +246,7 @@ export class FunctionHelper {
             let body2 = body.trim();
             if (body2.startsWith("{") && body2.endsWith("}")) {
                 type = "ArrowFunction";
-                body = body2.substring(1, body2.length-1);
+                body = body2.substring(1, body2.length - 1);
             }
             return { body: body, prms: prms, type: type, name: null };
         }
@@ -343,7 +358,7 @@ export class Point {
 export enum Key {
     CANCEL = 3,
     HELP = 6,
-    BACK_SPACE = 8,
+    BACKSPACE = 8,
     TAB = 9,
     CLEAR = 12,
     ENTER = 13,
