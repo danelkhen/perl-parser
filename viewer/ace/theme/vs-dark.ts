@@ -14,7 +14,7 @@ let theme = {
   background-color: #1e1e1e;
   color: rgb(220,220,220);
   font-size:12px;
-  font-family:Arial;
+/*  font-family:Arial;*/
 }
 
 .ace-vs-dark .ace_rightAlignedText {

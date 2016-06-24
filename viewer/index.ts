@@ -35,7 +35,8 @@ export class IndexPage {
     selection: IndexSelection;
     get file(): P5File { return this.perlFile.file; }
     cvBaseUrl = "/";
-    lastUrl: string;
+    prevPath: string;
+    //prevUrl: string;
     generatedCode: string;
     ignoreCursorEvents = false;
     renderSelectionTimeout: number;
@@ -106,12 +107,28 @@ export class IndexPage {
             this.editor.hyperlinkNode(this.perlFile.codeHyperlinks.last());
         });
         this.dataBind();
+        //this.prevUrl = document.location.href;
+
         this.update().then(() => $(document.body).removeClass("notready"));
         $(window).on("urlchange", e => this.window_urlchange(e));
     }
 
+    urlEqualWithoutHash(x: string, y: string): boolean {
+        if (x == y)
+            return true;
+        if (x == null || y == null)
+            return false;
+        let i1 = x.indexOf("#");
+        let i2 = y.indexOf("#");
+        if (i1 != i2)
+            return false;
+        if (i1 < 0)
+            return x == y;
+        let sub1 = x.substr(0, i1);
+        let sub2 = y.substr(0, i2);
+        return sub1 == sub2;
+    }
     window_urlchange(e: JQueryEventObject) {
-        this.perlFile.url = document.location.href;
         this.onPromise(this.update());
     }
 
@@ -164,7 +181,7 @@ export class IndexPage {
         if (location.hash == "#" + this.selection.toParam())
             return;
         history.replaceState(undefined, undefined, window.location.pathname + "#" + this.selection.toParam());
-        $(window).trigger("urlchange");
+        //$(window).trigger("urlchange");
     }
 
     renderSelection() {
@@ -177,7 +194,7 @@ export class IndexPage {
         this.ignoreCursorEvents = false;
     }
 
-    getUrl() {
+    getPath() {
         let path = window.location.pathname.substr(1);
         return path;
     }
@@ -187,23 +204,27 @@ export class IndexPage {
         return this.perlFile.reparse();
     }
     update(): Promise<any> {
-        let url = this.getUrl();
-        if (this.lastUrl == url)
+        let url = this.getPath();
+        if (this.prevPath == url)
             return Promise.resolve();
         console.log("rendering", url);
-        this.lastUrl = url;
+        this.prevPath = url;
         this.perlFile.url = url;
-        return this.perlFile.update().then(() => {
-            let hash = document.location.hash.substr(1);
-            if (hash.startsWith("L")) {
-                let line = parseInt(hash.substr(1));
-                this.ignoreCursorEvents = true;
-                this.editor.editor.gotoLine(line);
-                this.ignoreCursorEvents = false;
-            }
-            this.dataBindNow();
-        });
+        return this.perlFile.update()
+            .then(() => this.gotoLineFromHash())
+            .then(()=>this.dataBindNow());
     }
+
+    gotoLineFromHash() {
+        let hash = document.location.hash.substr(1);
+        if (!hash.startsWith("L"))
+            return;
+        let line = parseInt(hash.substr(1));
+        this.ignoreCursorEvents = true;
+        this.editor.editor.gotoLine(line);
+        this.ignoreCursorEvents = false;
+    }
+
 
     dataBind() {
         if (this.dataBindTimeout != null) {
@@ -275,7 +296,9 @@ export class IndexPage {
     }
 
     PerlCompleter_getDocHtml(type: string, name: string): string {
-        return this.perlFile.perlDocFromStorageOnly({ name: name });
+        let docHtml = this.perlFile.perlDocFromStorageOnly({ name: name });
+        //let html = this.perlFile.createPopupHtml({name,type, docHtml});
+        return docHtml ;
     }
 
     //taken from jquery-ui 
@@ -335,7 +358,7 @@ export class IndexPage {
         let selected = grid.children(".selected:first")[0];
         let all = grid.children(":visible").toArray();
         let index = all.indexOf(selected);
-        if (index > 0) { 
+        if (index > 0) {
             let part1 = all.slice(0, index);
             let part2 = all.slice(index);
             //start search from selected, then below, then from beginning

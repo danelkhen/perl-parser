@@ -99,6 +99,11 @@ export class EntityResolver {
         return pkg;
     }
 
+    getTokenValue(token: Token): string {
+        if (token.is(TokenTypes.comment))
+            return token.value.substr(1);
+        return token.value;
+    }
     getDocumentation(node: AstNode): string {
         let allTokens = this.unit.allTokens;
         if (allTokens == null)
@@ -116,7 +121,8 @@ export class EntityResolver {
             i--;
         }
         if (tokens.length > 0) {
-            let s = tokens.map(t => t.value).join("").trim();
+            tokens.reverse();
+            let s = tokens.map(t => this.getTokenValue(t)).join("").trim();
             if (s.length == 0)
                 return null;
             return s;

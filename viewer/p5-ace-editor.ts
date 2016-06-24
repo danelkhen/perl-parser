@@ -22,7 +22,6 @@ import "ace/ext/language_tools";
 import * as ace         from "ace/ace";
 import * as ModeList    from "ace/ext/modelist";
 import * as aceConfig   from "ace/config";
-import * as DarkTheme   from "./ace/theme/vs-dark";
 
 import {Annotation as AceAnnotation} from "ace/annotation";
 import {snippetCompleter, textCompleter, keyWordCompleter} from "ace/ext/language_tools";
@@ -43,6 +42,8 @@ import { VirtualRenderer } from "ace/virtual_renderer";
 import { Completer       } from "ace/ext/language_tools";
 import { UndoManager     } from "ace/undomanager";
 import { Autocomplete    } from "ace/autocomplete";
+
+//import * as DarkTheme   from "./ace/theme/vs-dark";
 
 
 export class P5AceEditor {

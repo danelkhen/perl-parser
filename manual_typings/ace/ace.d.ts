@@ -3262,14 +3262,15 @@ declare module "ace/ext/language_tools" {
         getDocTooltip?(item: Completion): void;
     }
     export interface Completion {
-        caption: string,
-        meta: string,
-        type: string,
-        docHTML?: string,
+        caption: string;
+        meta: string;
+        type: string;
+        docHTML?: string;
         /** snippet to be inserted in the caret location */
-        snippet?: string,
+        snippet?: string;
         /** text value to be inserted in the caret location */
-        value?: string,
+        value?: string;
+        score?:number;
     }
     /** Modifies list of default completers */
     export function setCompleters(val: Completer[]);
@@ -3440,3 +3441,53 @@ declare module "ace/undomanager" {
 }
 
 
+declare module "ace/lib/dom" {
+
+
+export function getDocumentHead(doc);
+
+export function createElement(tag, ns);
+
+export function hasCssClass(el, name);
+
+/*
+* Add a CSS class to the list of classes on the given node
+*/
+export function addCssClass(el, name);
+
+/*
+* Remove a CSS class from the list of classes on the given node
+*/
+export function removeCssClass(el, name);
+
+export function toggleCssClass(el, name);
+
+/*
+ * Add or remove a CSS class from the list of classes on the given node
+ * depending on the value of <tt>include</tt>
+ */
+export function setCssClass(node, className, include);
+
+export function hasCssString(id, doc);
+
+export function importCssString(cssText, id, doc?);
+
+export function importCssStylsheet(uri, doc);
+
+export function getInnerWidth(element);
+
+export function getInnerHeight(element);
+
+export function scrollbarWidth(document);
+
+/*
+ * Optimized set innerHTML. This is faster than plain innerHTML if the element
+ * already contains a lot of child elements.
+ *
+ * See http://blog.stevenlevithan.com/archives/faster-than-innerhtml for details
+ */
+export function setInnerHtml(el, innerHtml);
+
+export function getParentWindow(document);
+
+}

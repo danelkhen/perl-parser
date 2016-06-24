@@ -23,12 +23,13 @@ import {
     ReturnExpression, TrinaryExpression, Unit, UnlessStatement, UseOrNoStatement, UseStatement, ValueExpression, VariableDeclarationExpression, VariableDeclarationStatement, WhileStatement,
     AstQuery, PrecedenceResolver, TokenTypes, Tokenizer, TokenReader, Logger, AstNodeFixator, TextFile, TextFilePos, TextFileRange, Cursor,
     ExpressionTester, EtReport, EtItem, RefArrayToRefUtil,
-    EntityResolver, Package, Subroutine, Global
+    EntityResolver, Package, Subroutine, Global, PackageRef, Entity,
 } from "perl-parser";
 import * as util from "ace/autocomplete/util";
 import {PerlTokenizer, TokenInfoEx} from "./perl-tokenizer";
 import {Mode} from "./perl";
-
+import {Helper} from "../../common";
+import {AceHelper, EntityInfo} from "../../perl-file";
 
 export class PerlCompleter implements Completer {
     constructor(public mode: Mode) { }
@@ -47,7 +48,7 @@ export class PerlCompleter implements Completer {
             let statements = parser.parse();
             let unit = new Unit();
             unit.statements = statements;
-            unit.tokens = this.tokens;
+            unit.allTokens = this.tokens;
             this.unit = unit;
             new AstNodeFixator().process(this.unit);
             let packages = EntityResolver.process(this.unit);
@@ -73,15 +74,24 @@ export class PerlCompleter implements Completer {
             return;
         }
         console.log("getCompletions", { pos, prefix, pkgName });
-        let list = this.createCompletions(pkgName, this.unitPackage.uses.map(t => t.name).orderBy(t => t));
+        let list: EntityInfo[] = [];
+        list.addRange(this.unitPackage.uses.map(t => <EntityInfo> { name:t.name, docHtml:this.getDocHtml("package", t.name), type:"package" }));
+        list.addRange(this.unitPackage.members.map(t => <EntityInfo> { name:t.name, docText:t.documentation, type:"subroutine" }));
+
+        let list2: Completion[] = list.map(t=> <Completion>{ caption: t.name, type: null, meta: t.type, snippet: null, docHTML: AceHelper.createPopupHtml(t), value: name, score: 0 });
+        //list.addRange(this.unitPackage.uses.map(t => this.packageRefToCompletion(t.name, "package")));
+        //list.addRange(this.unitPackage.members.map(t => this.packageRefToCompletion(t.name, "subroutine", AceHelper.toDocHtml(t.documentation))));
+        list2.orderBy(t => t.caption);
         //let list: Completion[] = this.unitPackage.uses.map(t => <Completion>{ caption: t.name, type: null, meta: "package", snippet: null, docHTML: "docHTML", value: t.name });
-        callback(null, list);
+        callback(null, list2);
     }
-    createCompletions(prefix: string, options: string[]): Completion[] {
-        return options.map(t => <Completion>{ caption: t, type: null, meta: "package", snippet: null, docHTML: this.getDocHtml("package", t), value: t });
-        //if (prefix == null)
-        //    prefix = "";
-        //return options.filter(t => t.startsWith(prefix)).map(t => <Completion>{ caption: t, type: null, meta: "package", snippet: null, docHTML: "docHTML", value: t.substr(prefix.length) });
+    packageRefToCompletion(name: string, type: string, docHtml?: string): Completion {
+        if (docHtml == null)
+            docHtml = this.getDocHtml(type, name) || "";
+        //let signature = name;
+        //docHtml = `<p>(${type}) ${signature}</p>${docHtml}`;
+
+        return <Completion>{ caption: name, type: null, meta: type, snippet: null, docHTML: docHtml, value: name, score: 0 };
     }
     getDocHtml(type: string, name: string): string {
         return PerlCompleter.getDocHtml(type, name);

@@ -576,9 +576,10 @@ a.btn {
     max-width: 300px;
     font-size: 12px;
     font-family: Arial;
-    border-radius: 2px;
     background-color: #353535;
     color: rgb(220,220,220);
+    
+    border-radius: 2px;
     border: 1px solid #585858;
     padding: 6px;
     overflow: auto;
@@ -661,8 +662,11 @@ a.btn {
     max-width: 300px;
     max-height: 300px;
     overflow: auto;
-    background: #1e1e1e;
+    font-size: 12px;
+    font-family: Arial;
+    background-color: #353535;
     color: rgb(220,220,220);
+    white-space:normal;
 }
 
 /*div.ace_editor.ace_autocomplete {

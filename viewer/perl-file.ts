@@ -213,7 +213,7 @@ export class PerlFile {
 
 
     verifyChildren(file: P5File): P5File {
-        if(file.exists===undefined)
+        if (file.exists === undefined)
             file.exists = true;
         if (!file.is_dir)
             return file;
@@ -335,8 +335,8 @@ export class PerlFile {
                 target: "_blank"
             };
             if (html != null) {
-                let html3 = `<div><div class="popup-header"><a target="_blank" href="${hl.href}">(${type}) ${hl.name}</a></div>${html}</div>`;
-                hl.html = html3;
+                //let html3 = `<div><div class="popup-header"><a target="_blank" href="${hl.href}">(${type}) ${hl.name}</a></div>${html}</div>`;
+                hl.html = this.createPopupHtml({ name: hl.name, type: type, href: hl.href, docHtml: html });
             }
             this.hyperlinkNode(hl);
         });
@@ -407,9 +407,14 @@ export class PerlFile {
             href = this.cvBaseUrl + pkg.resolved.path;
         else if (pkg.resolved.url != null)
             href = pkg.resolved.url;//"https://metacpan.org/pod/" + pkg.name;
-        core = pkg.resolved.is_core ? "core " : "";
-        local = pkg.resolved.is_local ? "local " : "";
-        let html = `<div><div class="popup-header"><a target="_blank" href="${href}">(${core}${local}package) ${name}</a></div>${pkg.docHtml || ""}</div>`;
+        let info = <EntityInfo>{ attributes: [], name: name, href: href, docHtml: pkg.docHtml, type: "package" };
+        if (pkg.resolved.is_core)
+            info.attributes.push("core");
+        if (pkg.resolved.is_local)
+            info.attributes.push("local");
+        //core = pkg.resolved.is_core ? "core " : "";
+        //local = pkg.resolved.is_local ? "local " : "";
+        let html = this.createPopupHtml(info);// `<div><div class="popup-header"><a target="_blank" href="${href}">(${core}${local}package) ${name}</a></div>${pkg.docHtml || ""}</div>`;
         return {
             node: node,
             href: href,
@@ -553,7 +558,42 @@ export class PerlFile {
         });
     }
 
+    createPopupHtml(x: EntityInfo) {
+        return AceHelper.createPopupHtml(x);
+    }
 }
+
+export interface EntityInfo {
+    href?: string;
+    name: string;
+    type: string;
+    attributes?: string[];
+    docHtml?: string;
+    docText?: string;
+}
+
+export class AceHelper {
+    static createPopupHtml(x: EntityInfo) {
+        if (x.docText != null && x.docHtml == null)
+            x.docHtml = this.toDocHtml(x.docText);
+        let attsText = x.attributes != null && x.attributes.length > 0 ? `${x.attributes.join()} ` : "";
+        let hrefAtt = x.href ? ` href="${x.href}"` : "";
+        let html = `<div><div class="popup-header"><a target="_blank"${hrefAtt}>(${attsText}${x.type}) ${x.name}</a></div>${x.docHtml || ""}</div>`;
+        return html;
+    }
+
+    static toDocHtml(text: string): string {
+        if (text == null || text.length == 0)
+            return text;
+        let html = text.lines().map(t => `<p>${Helper.htmlEncode(t)}</p>`).join("");
+        return html;
+
+    }
+
+
+}
+
+
 
 
 //let enableCollapsing = false;
