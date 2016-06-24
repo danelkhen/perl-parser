@@ -34,8 +34,11 @@ export class IndexPage {
     isMouseDown = false;
     selection: IndexSelection;
     get file(): P5File { return this.perlFile.file; }
+    set file(value: P5File) { this.perlFile.file = value; }
     cvBaseUrl = "/";
-    prevPath: string;
+    path: string;
+    dir: P5File;
+    childFiles: P5File[];
     //prevUrl: string;
     generatedCode: string;
     ignoreCursorEvents = false;
@@ -83,17 +86,17 @@ export class IndexPage {
 
         this.onPropChanged(t => t.fileSearchText, () => {
             if (this.fileSearchText.length == 0) {
-                this.perlFile.childFiles = this.perlFile.file.children;
+                this.childFiles = this.perlFile.file.children;
             }
             else {
                 let s = this.fileSearchText.toLowerCase();
-                this.perlFile.childFiles = this.perlFile.file.children.where(t => t.name.toLowerCase().contains(s));
+                this.childFiles = this.perlFile.file.children.where(t => t.name.toLowerCase().contains(s));
             }
             this.dataBind();
         });
-        this.perlFile.onPropChanged(t => t.dir, () => {
-            this.dataBind();
-        });
+        //this.perlFile.onPropChanged(t => t.dir, () => {
+        //    this.dataBind();
+        //});
         this.perlFile.onPropChanged(t => t.file, () => {
             this.dataBind();
             let code = this.perlFile.file == null ? "" : this.perlFile.file.src;
@@ -203,16 +206,50 @@ export class IndexPage {
     reparse() {
         return this.perlFile.reparse();
     }
+
+
+    getDirPath(path: string) {
+        if (path.length <= 1)
+            return path;
+        if (path.endsWith("/"))
+            path = path.substr(0, path.length - 1);
+        let index = path.lastIndexOf("/");
+        if (index <= 0)
+            return path;
+        return path.substring(0, index);
+    }
+
+    /**
+    process the url, and retrieve the file
+    if url points to a dir, set the dir and childFiles properties, unset the file property
+    if url points to a file, get the src and set file property, then get the parent dir and set dir and childFiles properties
+    */
     update(): Promise<any> {
-        let url = this.getPath();
-        if (this.prevPath == url)
+        let path = this.getPath();
+        if (this.path == path)
             return Promise.resolve();
-        console.log("rendering", url);
-        this.prevPath = url;
-        this.perlFile.url = url;
-        return this.perlFile.update()
-            .then(() => this.gotoLineFromHash())
-            .then(()=>this.dataBindNow());
+        console.log("rendering", path);
+        this.path = path;
+
+        return this.perlFile.getFile(path).then(file => {
+            if (file.is_dir) {
+                this.dir = file;
+                this.childFiles = this.dir.children;
+                this.file = null;
+            }
+            else {
+                this.file = file;
+                let dirPath = this.getDirPath(path);
+                return this.perlFile.getFile(dirPath).then(dir => {
+                    this.dir = dir;
+                    this.childFiles = this.dir.children;
+                });
+            }
+        }).then(() => {
+            this.perlFile.processFile();
+            this.gotoLineFromHash();
+            this.dataBindNow();
+        })
     }
 
     gotoLineFromHash() {
@@ -298,7 +335,7 @@ export class IndexPage {
     PerlCompleter_getDocHtml(type: string, name: string): string {
         let docHtml = this.perlFile.perlDocFromStorageOnly({ name: name });
         //let html = this.perlFile.createPopupHtml({name,type, docHtml});
-        return docHtml ;
+        return docHtml;
     }
 
     //taken from jquery-ui 

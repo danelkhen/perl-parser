@@ -1,86 +1,61 @@
 ﻿"use strict";
 
 import {
-    Token, TokenType,
-    AstWriter, ParserBase, ExpressionParser, Parser,
-    AstNode, Expression, Statement, UnresolvedExpression, SimpleName, SubroutineDeclaration, SubroutineExpression, ArrayMemberAccessExpression, ArrayRefDeclaration,
-    BarewordExpression, BeginStatement, BinaryExpression, Block, BlockExpression, BlockStatement, ElseStatement, ElsifStatement, EmptyStatement, EndStatement,
-    ExpressionStatement, ForEachStatement, ForStatement, HashMemberAccessExpression, HashRefCreationExpression, IfStatement, InvocationExpression, MemberExpression,
-    NamedMemberExpression, NativeFunctionInvocation, NativeInvocation_BlockAndListOrExprCommaList, NativeInvocation_BlockOrExpr, NonParenthesizedList, NoStatement,
-    Operator, PackageDeclaration, ParenthesizedList, PostfixUnaryExpression, PrefixUnaryExpression, QwExpression, RawExpression, RawStatement, RegexExpression,
-    ReturnExpression, TrinaryExpression, Unit, UnlessStatement, UseOrNoStatement, UseStatement, ValueExpression, VariableDeclarationExpression, VariableDeclarationStatement, WhileStatement,
-    AstQuery, PrecedenceResolver, TokenTypes, Tokenizer, TokenReader, Logger, AstNodeFixator, TextFile, TextFilePos, TextFileRange, Cursor,
-    ExpressionTester, EtReport, EtItem, RefArrayToRefUtil,
-    EntityResolver, Package, Subroutine, Global
+    AstNode, TextFile, Unit, Package, Global, Token, TextFilePos, Tokenizer, EtReport, AstNodeFixator, AstWriter, 
+    TokenTypes, RefArrayToRefUtil, ExpressionTester, AstQuery, EntityResolver, Expression, InvocationExpression, 
+    NamedMemberExpression, Logger, Parser, SubroutineExpression, TokenReader
 } from "perl-parser";
-import {PackageResolution, AsyncFunc, TreeNodeData, Expander, Helper, TokenUtils, CodeHyperlink, Collapsable, IndexRange, IndexSelection} from "./common";
+import {PackageResolution, Helper, TokenUtils, CodeHyperlink } from "./common";
 import {P5Service, P5File, CritiqueResponse, CritiqueViolation, GitBlameItem, PerlDocRequest, GitLogItem, GitShow, GitShowFile, GitGrepItem, GitGrepMatch} from "./p5-service";
-import {monitor, Monitor} from "./monitor";
-import {Key, Rect, Size, Point} from "./common";
 import {PropertyChangeTracker, ObjProperty} from "./property-change-tracker";
-import {IEditSession} from "ace/edit_session";
 
 
 export class PerlFile {
     constructor() {
         this.service = new P5Service();
-        this.selection = new IndexSelection();
         this.tracker = new PropertyChangeTracker(this);
-        this.tracker.on(t => t.tokens, () => console.log("tokens property changed"));
-        this.tracker.on(t => t.url, () => console.log("url property changed"));
-        this.tracker.on(t => t.sourceFile, () => console.log("sourceFile property changed"));
-        this.tracker.on(t => t.file, () => console.log("file property changed"));
-        this.tracker.on(t => t.critiqueRes, () => console.log("critiqueRes property changed"));
-        this.tracker.on(t => t.gitBlameItems, () => console.log("gitBlameItems property changed"));
-        this.tracker.on(t => t.unitPackage, () => console.log("unitPackage property changed"));
-        this.tracker.on(t => t.global, () => console.log("global property changed"));
-        this.tracker.on(t => t.unit, () => console.log("unitproperty changed"));
-        //this.tracker.on(t => t.codeHyperlinks, () => console.log("codeHyperlinks changed"));
-        this.tracker.on(t => t.resolutions, () => console.log("resolutions changed"));
+        //this.tracker.on(t => t.tokens, () => console.log("tokens property changed"));
+        //this.tracker.on(t => t.sourceFile, () => console.log("sourceFile property changed"));
+        //this.tracker.on(t => t.file, () => console.log("file property changed"));
+        //this.tracker.on(t => t.critiqueRes, () => console.log("critiqueRes property changed"));
+        //this.tracker.on(t => t.gitBlameItems, () => console.log("gitBlameItems property changed"));
+        //this.tracker.on(t => t.unitPackage, () => console.log("unitPackage property changed"));
+        //this.tracker.on(t => t.global, () => console.log("global property changed"));
+        //this.tracker.on(t => t.unit, () => console.log("unitproperty changed"));
+        //this.tracker.on(t => t.resolutions, () => console.log("resolutions changed"));
     }
     onPropChanged(getter: (obj: this) => any, handler: Function) { return this.tracker.on(getter, handler); }
     offPropChanged(getter: (obj: this) => any, handler: Function) { return this.tracker.off(getter, handler); }
-
     tracker: PropertyChangeTracker<this>;
-    url: string;
+    
     sourceFile: TextFile;
     file: P5File;
-    dir: P5File;
-
     resolutions: PackageResolution[];
     codeHyperlinks: CodeHyperlink[] = [];
     unit: Unit;
-    selection: IndexSelection;
     service: P5Service;
-    cvBaseUrl = "/";
-    lastUrl: string;
     generatedCode: string;
     critiqueRes: CritiqueResponse;
     unitPackage: Package;
     global: Global;
     gitBlameItems: GitBlameItem[];
     gitGrepItems: GitGrepItem[];
-    childFiles: P5File[];
-
-
     gitShowResponse: GitShow;
-
-
     gitLogItems: GitLogItem[];
-
-
     tokens: Token[];
+    cvBaseUrl = "/";
+
 
     getCvUrlForIncludeAndPacakge(include: string, packageName: string) {
         let url = Helper.urlJoin([this.cvBaseUrl, include, packageName.split("::")]) + ".pm";
         return url;
     }
-
+    
     resolvePackageWithInclude(packageName: string, include: string): Promise<string> {
         let url = Helper.urlJoin([include, packageName.split("::")]) + ".pm";
         return this.service.fs(url).then(t => include);
     }
-
+    
     resolvePackages(pkgs: PackageResolution[]): Promise<any> {
         return new Promise<any>((resolve, reject) => {
             this.service.perlModuleClassify(pkgs.map(t => t.name).distinct()).then(res => {
@@ -94,6 +69,7 @@ export class PerlFile {
             });
         });
     }
+    
     perlDocPackages(pkgs: PackageResolution[]): Promise<any> {
         return Promise.all(pkgs.filter(pkg => pkg.resolved != null && pkg.resolved.is_core).map(pkg => this.perlDocHtml({ name: pkg.name }).then(html => pkg.docHtml = html)));
     }
@@ -158,48 +134,6 @@ export class PerlFile {
         });
     }
 
-    getDirPath(path: string) {
-        if (path.length <= 1)
-            return path;
-        if (path.endsWith("/"))
-            path = path.substr(0, path.length - 1);
-        let index = path.lastIndexOf("/");
-        if (index <= 0)
-            return path;
-        return path.substring(0, index);
-    }
-
-    /**
-    process the url, and retrieve the file
-    if url points to a dir, set the dir and childFiles properties, unset the file property
-    if url points to a file, get the src and set file property, then get the parent dir and set dir and childFiles properties
-    */
-    update(): Promise<any> {
-        let url = this.url;
-        if (this.lastUrl == url)
-            return Promise.resolve();
-        this.lastUrl = url;
-        let path = this.url;
-
-        return this.getFile(path).then(file => {
-            if (file.is_dir) {
-                this.dir = file;
-                this.childFiles = this.dir.children;
-                this.file = null;
-            }
-            else {
-                this.file = file;
-                let dirPath = this.getDirPath(path);
-                return this.getFile(dirPath).then(dir => {
-                    this.dir = dir;
-                    this.childFiles = this.dir.children;
-                });
-            }
-        }).then(() => {
-            this.processFile();
-        });
-    }
-
     /** 
     gets a file from the server, 
     if it's a dir, fixes the children data, 
@@ -207,7 +141,7 @@ export class PerlFile {
     */
     getFile(path: string): Promise<P5File> {
         return this.service.fs(path)
-            .catch(e => <P5File>{ name: this.url, is_dir: false, src: "", exists: false })
+            .catch(e => <P5File>{ name: path, is_dir: false, src: "", exists: false })
             .then(file => this.verifyChildren(file))
             .then(file => this.verifySrc(file));
     }

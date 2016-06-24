@@ -42,8 +42,6 @@
             <td>
                 <div class="top-bar">
                     <div class="menu">
-                        <!--<a class="btn btnUp is-folder" href=".." _if="t => this.perlFile.file==null && this.perlFile.dir!=null">Up</a>
-                        <a class="btn btnUp is-file" href="." _if="perlFile.file!=null">Up</a>-->
                         <button class="btn btnUp" _onclick="e => this.up()">Up</button>
                         <button class="btn" title="Expand/Collapse All" _onclick="e => this.editor.toggleAllFolds()">Toggle</button>
                         <button class="btn" title="Reparse Code" _onclick="e => this.reparse()" _if="false">Reparse</button>
@@ -51,14 +49,13 @@
                         <button class="btn" title="Git Blame" _onclick="e => this.gitBlame()">Blame</button>
                         <button class="btn" title="Git Log" _onclick="e => this.gitLog()">Log</button>
                         <input class="tb" title="Git Grep" type="text" _value="grepText" _oninput="e => this.grepText = e.target.value" _onkeydown="e => e.keyCode==13 ? this.gitGrep() : 0;" placeholder="Grep" />
-                        <!--<button class="btn" _onclick="e => this.gitGrep()">grep</button>-->
                     </div>
                 </div>
             </td>
         </tr>
         <tr class="main">
             <td>
-                <div class="dir-view" _if="t => this.perlFile.dir!=null && this.perlFile.file==null">
+                <div class="dir-view" _if="t => this.dir!=null && this.perlFile.file==null">
                     <div class="scroll-grid">
                         <input class="scroll-grid-input autofocus" _onkeydown="e=>this.filesGrid_keydown(e)" _oninput="e=>this.filesGrid_input(e)" autocorrect="off" autocapitalize="off" spellcheck="false"/>
                         <div class="scroll-grid-content">
@@ -68,7 +65,7 @@
                                 </thead>
                                 <tbody>
                                     <tr class="child template"
-                                        _for="perlFile.childFiles"
+                                        _for="childFiles"
                                         _ondblclick="(e, file) => this.file_dblclick(e, file)"
                                         _onmousedown="(e, file)=>this.grid_mousedown(e, '.child')">
                                         <td><a href="{{href}}">{{name}}</a></td>
