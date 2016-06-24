@@ -34,6 +34,7 @@ import {PerlCompleter} from "./perl-completer";
 export class Mode extends TextMode {
     constructor() {
         super();
+        console.log("PERL MODE CREATED");
         this.HighlightRules = PerlHighlightRules;
         this.$highlightRules = this.HighlightRules;
         this.$highlightRules.$keywordList = TokenTypes.builtinFunctions.concat(TokenTypes.pragmas);

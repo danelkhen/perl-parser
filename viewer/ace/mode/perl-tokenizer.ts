@@ -33,11 +33,7 @@ export class PerlTokenizer {
     lines: string[] = [];
     init() {
         if (this.mode != null) {
-            let handler = () => {
-                //this.mode.sessionChanged.remove(handler); //session is set immediatly after creating the tokenizer
-                this.attachToSession(this.mode.session);
-            };
-            this.mode.sessionChanged.add(handler);
+            this.mode.sessionChanged.add(() => this.attachToSession(this.mode.session));
             this.attachToSession(this.mode.session);
             return;
         }

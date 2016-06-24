@@ -18,6 +18,7 @@ import {P5Service, P5File, CritiqueResponse, CritiqueViolation, GitBlameItem, Pe
 import {monitor, Monitor} from "./monitor";
 import {Key, Rect, Size, Point} from "./common";
 import {PropertyChangeTracker, ObjProperty} from "./property-change-tracker";
+import {IEditSession} from "ace/edit_session";
 
 
 export class PerlFile {
@@ -395,32 +396,33 @@ export class PerlFile {
 
     }
 
-    pkgRefToCodeHyperlink(node: NamedMemberExpression): CodeHyperlink {
-        let name = node.toCode().trim();
-        let core = "";
-        let local = "";
-        let href = "";
+    getEntityInfo_package(name: string): EntityInfo {
+        let info = <EntityInfo>{ attributes: [], name: name, type: "package" };
         let pkg = this.resolutions.first(t => t.name == name);
-        if (pkg == null || pkg.resolved == null)
-            return null;
-        if (pkg.resolved.path != null)
-            href = this.cvBaseUrl + pkg.resolved.path;
-        else if (pkg.resolved.url != null)
-            href = pkg.resolved.url;//"https://metacpan.org/pod/" + pkg.name;
-        let info = <EntityInfo>{ attributes: [], name: name, href: href, docHtml: pkg.docHtml, type: "package" };
-        if (pkg.resolved.is_core)
-            info.attributes.push("core");
-        if (pkg.resolved.is_local)
-            info.attributes.push("local");
-        //core = pkg.resolved.is_core ? "core " : "";
-        //local = pkg.resolved.is_local ? "local " : "";
-        let html = this.createPopupHtml(info);// `<div><div class="popup-header"><a target="_blank" href="${href}">(${core}${local}package) ${name}</a></div>${pkg.docHtml || ""}</div>`;
+        if (pkg != null) {
+            info.docHtml = pkg.docHtml;
+            if (pkg.resolved != null)
+                if (pkg.resolved.path != null)
+                    info.href = this.cvBaseUrl + pkg.resolved.path;
+                else if (pkg.resolved.url != null)
+                    info.href = pkg.resolved.url;//"https://metacpan.org/pod/" + pkg.name;
+            if (pkg.resolved.is_core)
+                info.attributes.push("core");
+            if (pkg.resolved.is_local)
+                info.attributes.push("local");
+        }
+        info.popupDocHtml = this.createPopupHtml(info);// `<div><div class="popup-header"><a target="_blank" href="${href}">(${core}${local}package) ${name}</a></div>${pkg.docHtml || ""}</div>`;
+        return info;
+    }
+
+    pkgRefToCodeHyperlink(node: NamedMemberExpression): CodeHyperlink {
+        let info = this.getEntityInfo_package(node.toCode().trim());
         return {
             node: node,
-            href: href,
-            name: name,
+            href: info.href,
+            name: info.name,
             css: "package-name",
-            html: html,
+            html: info.popupDocHtml,
             target: "_blank",
         };
     }
@@ -570,6 +572,7 @@ export interface EntityInfo {
     attributes?: string[];
     docHtml?: string;
     docText?: string;
+    popupDocHtml?: string;
 }
 
 export class AceHelper {

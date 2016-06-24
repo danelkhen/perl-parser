@@ -300,7 +300,7 @@ export class P5AceEditor {
     }
     setCode(value: string) {
         let session = new EditSession(value, "viewer/ace/mode/perl");
-        //session.setUseSoftTabs(true);
+        (<PerlEditSession>session).perlFile = this.perlFile;
         session.setUndoManager(new UndoManager());
         session.gutterRenderer = new P5GutterRenderer(this);
         this.editor.setSession(session);
@@ -460,3 +460,6 @@ hackAce();
 //return width;
 
 
+export interface PerlEditSession {
+    perlFile?: PerlFile;
+}

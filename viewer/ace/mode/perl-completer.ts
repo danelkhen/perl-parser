@@ -29,7 +29,8 @@ import * as util from "ace/autocomplete/util";
 import {PerlTokenizer, TokenInfoEx} from "./perl-tokenizer";
 import {Mode} from "./perl";
 import {Helper} from "../../common";
-import {AceHelper, EntityInfo} from "../../perl-file";
+import {AceHelper, EntityInfo, PerlFile} from "../../perl-file";
+import {PerlEditSession} from "../../p5-ace-editor";
 
 export class PerlCompleter implements Completer {
     constructor(public mode: Mode) { }
@@ -66,6 +67,8 @@ export class PerlCompleter implements Completer {
     unit: Unit;
     unitPackage: Package;
     getCompletions(editor: Editor, session: IEditSession, pos: Position, prefix: string, callback: (err, res: Completion[]) => void): void {
+        let perlFile = (<PerlEditSession>session).perlFile;
+
         console.log("perl getCompletions");
         let pkgName = this.getCompletionPrefix(editor);
         this.parse();
@@ -79,21 +82,11 @@ export class PerlCompleter implements Completer {
         list.addRange(this.unitPackage.members.map(t => <EntityInfo> { name:t.name, docText:t.documentation, type:"subroutine" }));
 
         let list2: Completion[] = list.map(t=> <Completion>{ caption: t.name, type: null, meta: t.type, snippet: null, docHTML: AceHelper.createPopupHtml(t), value: name, score: 0 });
-        //list.addRange(this.unitPackage.uses.map(t => this.packageRefToCompletion(t.name, "package")));
-        //list.addRange(this.unitPackage.members.map(t => this.packageRefToCompletion(t.name, "subroutine", AceHelper.toDocHtml(t.documentation))));
         list2.orderBy(t => t.caption);
-        //let list: Completion[] = this.unitPackage.uses.map(t => <Completion>{ caption: t.name, type: null, meta: "package", snippet: null, docHTML: "docHTML", value: t.name });
         callback(null, list2);
     }
-    packageRefToCompletion(name: string, type: string, docHtml?: string): Completion {
-        if (docHtml == null)
-            docHtml = this.getDocHtml(type, name) || "";
-        //let signature = name;
-        //docHtml = `<p>(${type}) ${signature}</p>${docHtml}`;
-
-        return <Completion>{ caption: name, type: null, meta: type, snippet: null, docHTML: docHtml, value: name, score: 0 };
-    }
     getDocHtml(type: string, name: string): string {
+        
         return PerlCompleter.getDocHtml(type, name);
     }
     static getDocHtml(type: string, name: string): string {
