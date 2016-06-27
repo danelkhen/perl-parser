@@ -199,14 +199,6 @@ export class P5AceEditor {
             window.location.href = hl.href;
     }
 
-    hyperlinkNode(hl: PopupMarker) {
-        if (hl.html == null) {
-            console.log("hyperlinkNode not supported anymore");
-            return null;
-        }
-        this.addPopupMarker({ href: hl.href, html: hl.html, node: hl.node, tokens: hl.tokens, className: hl.className, target: hl.target });
-    }
-
     getTokensRange(tokens: Token[]): TextFileRange {
         return new TextFileRange(tokens[0].range.file, tokens[0].range.start, tokens.last().range.end);
     }

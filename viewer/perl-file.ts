@@ -3,7 +3,7 @@
 import {
     AstNode, TextFile, Unit, Package, Global, Token, TextFilePos, Tokenizer, EtReport, AstNodeFixator, AstWriter,
     TokenTypes, RefArrayToRefUtil, ExpressionTester, AstQuery, EntityResolver, Expression, InvocationExpression,
-    NamedMemberExpression, Logger, Parser, SubroutineExpression, TokenReader
+    NamedMemberExpression, Logger, Parser, SubroutineExpression, TokenReader, Entity, Subroutine, Member,
 } from "perl-parser";
 import {PackageResolution, Helper, TokenUtils, } from "./common";
 import {P5Service, P5File, CritiqueResponse, CritiqueViolation, GitBlameItem, PerlDocRequest, GitLogItem, GitShow, GitShowFile, GitGrepItem, GitGrepMatch} from "./p5-service";
@@ -29,11 +29,9 @@ export class PerlFile {
     onPropChanged(getter: (obj: this) => any, handler: Function) { return this.tracker.on(getter, handler); }
     offPropChanged(getter: (obj: this) => any, handler: Function) { return this.tracker.off(getter, handler); }
     tracker: PropertyChangeTracker<this>;
-
     sourceFile: TextFile;
     file: P5File;
-    //resolutions: PackageResolution[];
-    codeHyperlinks: PopupMarker[] = [];
+    codePopups: PopupMarker[] = [];
     unit: Unit;
     service: P5Service;
     generatedCode: string;
@@ -315,14 +313,21 @@ export class PerlFile {
         let names = hls.map(t => t.name).distinct();
         let p1 = Promise
             .all(hls.map(hl => this.hlVerifyPerlDoc(hl, true)))
-            .then(() => hls.forEach(hl => this.hyperlinkNode(hl)));
+            .then(() => hls.forEach(hl => this.addCodePopup(hl)));
 
         let pkgs = inUse.select(node => this.getEntityInfo_package(node.toCode().trim()));//, type: EntityType.package }));
         let p2 = this.resolvePackages(pkgs).then(() => {
             console.log({ pkgs });
             let hls = pkgRefNodes.map(node => this.pkgRefToCodeHyperlink(node));
-            hls.exceptNulls().forEach(t => this.hyperlinkNode(t));
+            hls.exceptNulls().forEach(t => this.addCodePopup(t));
         });
+        if (this.unitPackage != null) {
+            this.unitPackage.members.forEach(me => {
+                if (me instanceof Subroutine && me.node.declaration!=null) {
+                    this.addCodePopup({ node: me.node.declaration.name, name: me.node.toCode().trim(), html: AceHelper.createPopupHtmlFromEntity(me) });
+                }
+            });
+        }
         let all = Promise.allVoid([p1, p2]);
         return all;
 
@@ -366,9 +371,9 @@ export class PerlFile {
             target: "_blank",
         };
     }
-    hyperlinkNode(hl: PopupMarker) {
-        this.codeHyperlinks.push(hl);
-        this.codeHyperlinks = this.codeHyperlinks;
+    addCodePopup(hl: PopupMarker) {
+        this.codePopups.push(hl);
+        this.codePopups = this.codePopups;
     }
 
     findConsecutiveRepetitions<T>(list: T[], equals: (x: T, y: T) => boolean): Array<T[]> {
@@ -524,13 +529,16 @@ export interface EntityInfo {
     href?: string;
     /** if it's a package, the resolution response */
     resolvedPackage?: PerlModuleClassify;
-
 }
 
 export class AceHelper {
+    static createPopupHtmlFromEntity(x: Entity) {
+        let info = <EntityInfo>{ name: x.name, docText: x.documentation, type: x.constructor.name };
+        return this.createPopupHtml(info);
+    }
     static createPopupHtml(x: EntityInfo) {
         if (x.docText != null && x.docHtml == null)
-            x.docHtml = this.toDocHtml(x.docText);
+            x.docHtml = `<div class="pod">${this.toDocHtml(x.docText)}</div>`;
         let attsText = x.attributes != null && x.attributes.length > 0 ? `${x.attributes.join()} ` : "";
         let hrefAtt = x.href ? ` href="${x.href}"` : "";
         let html = `<div><div class="popup-header"><a target="_blank"${hrefAtt}>(${attsText}${x.type}) ${x.name}</a></div>${x.docHtml || ""}</div>`;

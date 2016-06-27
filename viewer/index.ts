@@ -65,7 +65,6 @@ export class IndexPage {
 
     main2() {
         this.selection = new IndexSelection();
-        PerlCompleter.getDocHtml = (type, name) => this.PerlCompleter_getDocHtml(type, name);
         this.perlFile = new PerlFile();
         Template.onPromise = p => this.onPromise(p);
         this.selection.fromParam(location.hash.substr(1));
@@ -106,9 +105,9 @@ export class IndexPage {
             this.ignoreCursorEvents = false;
         });
         this.perlFile.onPropChanged(t => t.sourceFile, () => this.dataBind());
-        this.perlFile.onPropChanged(t => t.codeHyperlinks, () => {
-            let hl = this.perlFile.codeHyperlinks.last();
-            this.editor.hyperlinkNode(hl);
+        this.perlFile.onPropChanged(t => t.codePopups, () => {
+            let hl = this.perlFile.codePopups.last();
+            this.editor.addPopupMarker(hl);
         });
         this.dataBind();
         //this.prevUrl = document.location.href;
@@ -333,11 +332,6 @@ export class IndexPage {
         return [f.critiqueRes, f.gitLogItems, f.gitShowResponse, f.gitGrepItems].exceptNulls().length > 0;
     }
 
-    PerlCompleter_getDocHtml(type: string, name: string): string {
-        let docHtml = this.perlFile.perlDocFromStorageOnly({ name: name });
-        //let html = this.perlFile.createPopupHtml({name,type, docHtml});
-        return docHtml;
-    }
 
     //taken from jquery-ui 
     findScrollParent(el: HTMLElement, includeHidden?: boolean): HTMLElement {

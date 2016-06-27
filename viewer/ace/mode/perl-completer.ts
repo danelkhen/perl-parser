@@ -36,62 +36,32 @@ export class PerlCompleter implements Completer {
     constructor(public mode: Mode) { }
     prefix: string;
     identifierRegexps: RegExp[] = [/[a-zA-Z0-9_\:]/];
-    parse() {
-        try {
-            this.tokens = this.mode.tokenizer.tokenizer.tokens;
-            let parser = new Parser();
-            parser.logger = new Logger();
-            parser.reader = new TokenReader();
-            parser.reader.logger = parser.logger;
-            parser.reader.tokens = this.tokens;
-            parser.init();
-
-            let statements = parser.parse();
-            let unit = new Unit();
-            unit.statements = statements;
-            unit.allTokens = this.tokens;
-            this.unit = unit;
-            new AstNodeFixator().process(this.unit);
-            let packages = EntityResolver.process(this.unit);
-            this.unitPackage = packages.last(); //use strict/warnings outside package scope causes the first package to be the wrong one
-            console.log({ unit, package: this.unitPackage });
-        }
-        catch (e) {
-            console.warn("parsing failed", e);
-        }
-        //console.log({ package: this.unitPackage });
-        //this.global = new Global();
-        //this.global.packages.push(this.unitPackage);
-    }
-    tokens: Token[];
-    unit: Unit;
-    unitPackage: Package;
     getCompletions(editor: Editor, session: IEditSession, pos: Position, prefix: string, callback: (err, res: Completion[]) => void): void {
         let perlFile = (<PerlEditSession>session).perlFile;
+        let unitPackage = perlFile.unitPackage;
 
         console.log("perl getCompletions");
         let pkgName = this.getCompletionPrefix(editor);
-        this.parse();
-        if (this.unitPackage == null) {
+        //this.parse();
+        if (unitPackage == null) {
             callback("error", null);
             return;
         }
+
         console.log("getCompletions", { pos, prefix, pkgName });
         let list: EntityInfo[] = [];
-        list.addRange(this.unitPackage.uses.map(t => <EntityInfo> { name:t.name, docHtml:this.getDocHtml("package", t.name), type:"package" }));
-        list.addRange(this.unitPackage.members.map(t => <EntityInfo> { name:t.name, docText:t.documentation, type:"subroutine" }));
+        list.addRange(unitPackage.uses.map(t => <EntityInfo>{ name: t.name, docHtml: perlFile.perlDocFromStorageOnly({ name: t.name }), type: "package" }));
+        list.addRange(unitPackage.members.map(t => <EntityInfo>{ name: t.name, docText: t.documentation, type: "subroutine" }));
 
-        let list2: Completion[] = list.map(t=> <Completion>{ caption: t.name, type: null, meta: t.type, snippet: null, docHTML: AceHelper.createPopupHtml(t), value: t.name, score: 0 });
+        let list2: Completion[] = list.map(t => this.entityInfoToCompletion(t));
         list2.orderBy(t => t.caption);
         callback(null, list2);
     }
-    getDocHtml(type: string, name: string): string {
-        
-        return PerlCompleter.getDocHtml(type, name);
+
+    entityInfoToCompletion(t: EntityInfo): Completion {
+        return { caption: t.name, type: null, meta: t.type, snippet: null, docHTML: AceHelper.createPopupHtml(t), value: t.name, score: 0 };
     }
-    static getDocHtml(type: string, name: string): string {
-        return null;
-    }
+    
     //original alternative method = getCompletionPrefix2
     getCompletionPrefix2(editor?: Editor, base?: Function) {
         let pos = editor.getCursorPosition();
