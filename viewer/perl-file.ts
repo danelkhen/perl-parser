@@ -1,14 +1,16 @@
 ﻿"use strict";
 
 import {
-    AstNode, TextFile, Unit, Package, Global, Token, TextFilePos, Tokenizer, EtReport, AstNodeFixator, AstWriter, 
-    TokenTypes, RefArrayToRefUtil, ExpressionTester, AstQuery, EntityResolver, Expression, InvocationExpression, 
+    AstNode, TextFile, Unit, Package, Global, Token, TextFilePos, Tokenizer, EtReport, AstNodeFixator, AstWriter,
+    TokenTypes, RefArrayToRefUtil, ExpressionTester, AstQuery, EntityResolver, Expression, InvocationExpression,
     NamedMemberExpression, Logger, Parser, SubroutineExpression, TokenReader
 } from "perl-parser";
-import {PackageResolution, Helper, TokenUtils, CodeHyperlink } from "./common";
+import {PackageResolution, Helper, TokenUtils, } from "./common";
 import {P5Service, P5File, CritiqueResponse, CritiqueViolation, GitBlameItem, PerlDocRequest, GitLogItem, GitShow, GitShowFile, GitGrepItem, GitGrepMatch} from "./p5-service";
 import {PropertyChangeTracker, ObjProperty} from "./property-change-tracker";
-
+import {PerlModuleClassify} from "./p5-service";
+import {PopupMarker} from "./p5-ace-editor";
+import "./extensions";
 
 export class PerlFile {
     constructor() {
@@ -27,11 +29,11 @@ export class PerlFile {
     onPropChanged(getter: (obj: this) => any, handler: Function) { return this.tracker.on(getter, handler); }
     offPropChanged(getter: (obj: this) => any, handler: Function) { return this.tracker.off(getter, handler); }
     tracker: PropertyChangeTracker<this>;
-    
+
     sourceFile: TextFile;
     file: P5File;
-    resolutions: PackageResolution[];
-    codeHyperlinks: CodeHyperlink[] = [];
+    //resolutions: PackageResolution[];
+    codeHyperlinks: PopupMarker[] = [];
     unit: Unit;
     service: P5Service;
     generatedCode: string;
@@ -43,6 +45,7 @@ export class PerlFile {
     gitShowResponse: GitShow;
     gitLogItems: GitLogItem[];
     tokens: Token[];
+    entities: EntityInfo[] = [];
     cvBaseUrl = "/";
 
 
@@ -50,28 +53,44 @@ export class PerlFile {
         let url = Helper.urlJoin([this.cvBaseUrl, include, packageName.split("::")]) + ".pm";
         return url;
     }
-    
+
     resolvePackageWithInclude(packageName: string, include: string): Promise<string> {
         let url = Helper.urlJoin([include, packageName.split("::")]) + ".pm";
         return this.service.fs(url).then(t => include);
     }
-    
-    resolvePackages(pkgs: PackageResolution[]): Promise<any> {
+
+    resolvePackages(pkgs: EntityInfo[]): Promise<any> {
         return new Promise<any>((resolve, reject) => {
             this.service.perlModuleClassify(pkgs.map(t => t.name).distinct()).then(res => {
                 res.forEach(mod => {
                     let pkg = pkgs.first(t => t.name == mod.name);
                     if (pkg == null)
                         return;
-                    pkg.resolved = mod;
+                    pkg.resolvedPackage = mod;
+                    this.processResolvedPackage(pkg);
                 });
                 this.perlDocPackages(pkgs).then(resolve, reject);
             });
         });
     }
-    
-    perlDocPackages(pkgs: PackageResolution[]): Promise<any> {
-        return Promise.all(pkgs.filter(pkg => pkg.resolved != null && pkg.resolved.is_core).map(pkg => this.perlDocHtml({ name: pkg.name }).then(html => pkg.docHtml = html)));
+
+    processResolvedPackage(info: EntityInfo) {
+        //info.docHtml = pkg.docHtml;
+        let pkg = info.resolvedPackage;
+        if (pkg == null)
+            return;
+        if (pkg.path != null)
+            info.href = this.cvBaseUrl + pkg.path;
+        else if (pkg.url != null)
+            info.href = pkg.url;//"https://metacpan.org/pod/" + pkg.name;
+        if (pkg.is_core)
+            info.attributes.push("core");
+        if (pkg.is_local)
+            info.attributes.push("local");
+    }
+
+    perlDocPackages(pkgs: EntityInfo[]): Promise<any> {
+        return Promise.all(pkgs.filter(pkg => pkg.resolvedPackage != null && pkg.resolvedPackage.is_core).map(pkg => this.perlDocHtml({ name: pkg.name }).then(html => pkg.docHtml = html)));
     }
 
 
@@ -236,45 +255,35 @@ export class PerlFile {
         }
     }
 
-    resolvePerldocAndAnnotate(node: AstNode): Promise<any> {
-        let name = node.toCode().trim();
-        return this._resolvePerldocAndAnnotate(name, node, null);
-    }
-    resolvePerldocAndAnnotate2(token: Token): Promise<any> {
-        let name = token.value.trim();
-        return this._resolvePerldocAndAnnotate(name, null, [token]);
+
+    verifyHref(hl: PopupMarker): void {
+        if (hl.href != null)
+            return;
+        if (this.isBuiltinFunction(hl.name))
+            hl.href = "http://perldoc.perl.org/functions/" + name + ".html";
+        else
+            hl.href = "http://perldoc.perl.org/" + name + ".html";
     }
 
-    _resolvePerldocAndAnnotate(name: string, node: AstNode, tokens: Token[]): Promise<any> {
-        let isBuiltinFunction = this.isBuiltinFunction(name);
+    hlVerifyPerlDoc(hl: PopupMarker, cacheOnly?: boolean): Promise<PopupMarker> {
+        this.verifyHref(hl);
+        if (hl.html != null)
+            return Promise.resolve(hl);
+        let isBuiltinFunction = this.isBuiltinFunction(hl.name);
         let req = { funcName: null, name: null };
         if (isBuiltinFunction)
-            req.funcName = name;
+            req.funcName = hl.name;
         else
-            req.name = name;
-
-        return this.perlDocHtml(req).then(html => {
-            let href = "";
-            if (isBuiltinFunction)
-                href = "http://perldoc.perl.org/functions/" + name + ".html";
-            else
-                href = "http://perldoc.perl.org/" + name + ".html";
+            req.name = hl.name;
+        return this.perlDocHtml(req, cacheOnly).then(html => {
             let type = isBuiltinFunction ? "builtin-function" : "pragma";
-            let hl: CodeHyperlink = {
-                node: node,
-                tokens: tokens,
-                href: href,
-                name: name,
-                //title: "(builtin function) " + name + "\nctrl+click to open documentation",
-                css: type,
-                target: "_blank"
-            };
-            if (html != null) {
-                //let html3 = `<div><div class="popup-header"><a target="_blank" href="${hl.href}">(${type}) ${hl.name}</a></div>${html}</div>`;
-                hl.html = this.createPopupHtml({ name: hl.name, type: type, href: hl.href, docHtml: html });
-            }
-            this.hyperlinkNode(hl);
+            hl.className = type;
+            hl.target = "_blank";
+            if (html != null)
+                hl.html = AceHelper.createPopupHtml({ name: hl.name, type: type, href: hl.href, docHtml: html });
+            return hl;
         });
+
     }
 
     isBuiltin(name: string): boolean { return this.isBuiltinFunction(name) || this.isPragma(name); }
@@ -301,17 +310,23 @@ export class PerlFile {
                 inUse.push(t);
         });
 
-        builtinNodes.forEach(node => this.resolvePerldocAndAnnotate(node));
-        builtinTokens.forEach(token => this.resolvePerldocAndAnnotate2(token));
+        let hls = builtinNodes.map(t => <PopupMarker>{ name: t.toCode().trim(), node: t });
+        hls.addRange(builtinTokens.map(t => <PopupMarker>{ name: t.value.trim(), tokens: [t] }));
+        let names = hls.map(t => t.name).distinct();
+        let p1 = Promise
+            .all(hls.map(hl => this.hlVerifyPerlDoc(hl, true)))
+            .then(() => hls.forEach(hl => this.hyperlinkNode(hl)));
 
-        let resolutions = inUse.select(node => (<PackageResolution>{ name: node.toCode().trim(), resolved: null }));
-        return this.resolvePackages(resolutions).then(() => {
-            this.resolutions = resolutions;
-            console.log({ resolutions });
-
+        let pkgs = inUse.select(node => this.getEntityInfo_package(node.toCode().trim()));//, type: EntityType.package }));
+        let p2 = this.resolvePackages(pkgs).then(() => {
+            console.log({ pkgs });
             let hls = pkgRefNodes.map(node => this.pkgRefToCodeHyperlink(node));
             hls.exceptNulls().forEach(t => this.hyperlinkNode(t));
         });
+        let all = Promise.allVoid([p1, p2]);
+        return all;
+
+
 
 
         //console.log("pkgRefNodes", pkgRefNodes.select(t => t.toCode().trim()).distinct().orderBy(t => t));
@@ -331,36 +346,27 @@ export class PerlFile {
     }
 
     getEntityInfo_package(name: string): EntityInfo {
-        let info = <EntityInfo>{ attributes: [], name: name, type: "package" };
-        let pkg = this.resolutions.first(t => t.name == name);
-        if (pkg != null) {
-            info.docHtml = pkg.docHtml;
-            if (pkg.resolved != null)
-                if (pkg.resolved.path != null)
-                    info.href = this.cvBaseUrl + pkg.resolved.path;
-                else if (pkg.resolved.url != null)
-                    info.href = pkg.resolved.url;//"https://metacpan.org/pod/" + pkg.name;
-            if (pkg.resolved.is_core)
-                info.attributes.push("core");
-            if (pkg.resolved.is_local)
-                info.attributes.push("local");
+        let info = this.entities.first(t => t.name == name && t.type == EntityType.package);
+        if (info == null) {
+            info = <EntityInfo>{ attributes: [], name: name, type: "package" };
+            this.entities.push(info);
+            //info.popupDocHtml = this.createPopupHtml(info);// `<div><div class="popup-header"><a target="_blank" href="${href}">(${core}${local}package) ${name}</a></div>${pkg.docHtml || ""}</div>`;
         }
-        info.popupDocHtml = this.createPopupHtml(info);// `<div><div class="popup-header"><a target="_blank" href="${href}">(${core}${local}package) ${name}</a></div>${pkg.docHtml || ""}</div>`;
         return info;
     }
 
-    pkgRefToCodeHyperlink(node: NamedMemberExpression): CodeHyperlink {
+    pkgRefToCodeHyperlink(node: NamedMemberExpression): PopupMarker {
         let info = this.getEntityInfo_package(node.toCode().trim());
         return {
             node: node,
             href: info.href,
             name: info.name,
-            css: "package-name",
-            html: info.popupDocHtml,
+            className: "package-name",
+            html: AceHelper.createPopupHtml(info),
             target: "_blank",
         };
     }
-    hyperlinkNode(hl: CodeHyperlink) {
+    hyperlinkNode(hl: PopupMarker) {
         this.codeHyperlinks.push(hl);
         this.codeHyperlinks = this.codeHyperlinks;
     }
@@ -434,21 +440,28 @@ export class PerlFile {
         let res3 = localStorage.getItem(storageKey);
         return res3;
     }
-    perlDocHtml(req: PerlDocRequest): Promise<string> {
+    perlDocHtml(req: PerlDocRequest, cacheOnly?: boolean): Promise<string> {
         let key = req.name + "_" + req.funcName;
         let storageKey = "perldoc_" + key;
         let res3 = this.perlDocFromStorageOnly(req);
-        if (res3 != null) {
+        if (res3 != null)
             return Promise.resolve(res3);
-        }
         let res = this.perlDocCache[key];
         if (res !== undefined)
-            return res;
+            return Promise.resolve(res3);
+        if (cacheOnly)
+            return Promise.resolve(res3);
         res = this.service.perlDocHtml(req)
             .then(html => `<div class="pod">` + html.substringBetween("<!-- start doc -->", "<!-- end doc -->") + "</div>")
             .then(res2 => { localStorage.setItem(storageKey, res2); return res2; });
         this.perlDocCache[key] = res;
         return res;
+    }
+
+    perlDocHtmlMultiple(names: string[]): Promise<string[]> {
+        let reqs = names.map<PerlDocRequest>(name => this.isBuiltinFunction(name) ? { funcName: name } : { name: name });
+        let promises: PromiseLike<string>[] = reqs.map(req => this.perlDocHtml(req));
+        return Promise.all(promises);
     }
 
 
@@ -494,19 +507,24 @@ export class PerlFile {
         });
     }
 
-    createPopupHtml(x: EntityInfo) {
-        return AceHelper.createPopupHtml(x);
-    }
 }
 
+export class EntityType {
+    static package = "package";
+    static builtinFunction = "builtinFunction";
+    static subroutine = "subroutine";
+}
 export interface EntityInfo {
-    href?: string;
     name: string;
+    /** package, builtinFunction, subroutine - EntityType.X */
     type: string;
     attributes?: string[];
     docHtml?: string;
     docText?: string;
-    popupDocHtml?: string;
+    href?: string;
+    /** if it's a package, the resolution response */
+    resolvedPackage?: PerlModuleClassify;
+
 }
 
 export class AceHelper {

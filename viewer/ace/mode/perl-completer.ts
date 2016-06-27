@@ -81,7 +81,7 @@ export class PerlCompleter implements Completer {
         list.addRange(this.unitPackage.uses.map(t => <EntityInfo> { name:t.name, docHtml:this.getDocHtml("package", t.name), type:"package" }));
         list.addRange(this.unitPackage.members.map(t => <EntityInfo> { name:t.name, docText:t.documentation, type:"subroutine" }));
 
-        let list2: Completion[] = list.map(t=> <Completion>{ caption: t.name, type: null, meta: t.type, snippet: null, docHTML: AceHelper.createPopupHtml(t), value: name, score: 0 });
+        let list2: Completion[] = list.map(t=> <Completion>{ caption: t.name, type: null, meta: t.type, snippet: null, docHTML: AceHelper.createPopupHtml(t), value: t.name, score: 0 });
         list2.orderBy(t => t.caption);
         callback(null, list2);
     }

@@ -223,8 +223,8 @@ export interface AsyncFunc<T> {
 export interface PackageResolution {
     //node?: AstNode;
     name?: string;
-    resolvedIncludePath?: string;
-    resolved: PerlModuleClassify;
+    //resolvedIncludePath?: string;
+    resolvedPackage: PerlModuleClassify;
     docHtml?: string;
 }
 
@@ -515,12 +515,13 @@ export interface CodeHyperlink {
     href?: string;
     name?: string;
     title?: string;
-    css?: string;
+    className?: string;
     anchorEl?: HTMLAnchorElement;
     target?: string;
     html?: string;
     //tooltip?:TooltipOptions;
 }
+
 export class IndexSelection {
     ranges: IndexRange[] = [];
     get lastRange(): IndexRange {

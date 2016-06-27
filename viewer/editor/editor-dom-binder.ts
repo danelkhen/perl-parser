@@ -386,7 +386,7 @@ export class EditorDomBinder {
             opts.tokens = this.editor.collectTokens2(opts.node);
         let tokens = opts.tokens;
         let href = opts.href;
-        let css = opts.css;
+        let css = opts.className;
         let title = opts.title;
         let name = opts.name;
         if (href == null)

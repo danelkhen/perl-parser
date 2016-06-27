@@ -13,7 +13,7 @@ import {
     ExpressionTester, EtReport, EtItem, RefArrayToRefUtil,
     EntityResolver, Package, Subroutine,
 } from "perl-parser";
-import {PackageResolution, AsyncFunc, TreeNodeData, Expander, Helper, TokenUtils, CodeHyperlink, Collapsable, IndexRange, IndexSelection} from "./common";
+import {PackageResolution, AsyncFunc, TreeNodeData, Expander, Helper, TokenUtils, Collapsable, IndexRange, IndexSelection} from "./common";
 import {P5Service, P5File, CritiqueResponse, CritiqueViolation, GitBlameItem, PerlDocRequest, GitLogItem, GitShow, GitShowFile, GitGrepItem, GitGrepMatch} from "./p5-service";
 import {monitor, Monitor} from "./monitor";
 import {Key, Rect, Size, Point} from "./common";
@@ -21,7 +21,7 @@ import * as ace from "ace/ace";
 import * as ModeList from "ace/ext/modelist";
 import {Range} from "ace/range";
 import {Editor} from "ace/editor";
-import {P5AceEditor} from "./p5-ace-editor";
+import {P5AceEditor, PopupMarker} from "./p5-ace-editor";
 import {PerlCompleter} from "./ace/mode/perl-completer";
 import {PerlFile} from "./perl-file";
 import {Template} from "./template";
@@ -107,7 +107,8 @@ export class IndexPage {
         });
         this.perlFile.onPropChanged(t => t.sourceFile, () => this.dataBind());
         this.perlFile.onPropChanged(t => t.codeHyperlinks, () => {
-            this.editor.hyperlinkNode(this.perlFile.codeHyperlinks.last());
+            let hl = this.perlFile.codeHyperlinks.last();
+            this.editor.hyperlinkNode(hl);
         });
         this.dataBind();
         //this.prevUrl = document.location.href;
@@ -145,7 +146,7 @@ export class IndexPage {
                 let tokens = this.perlFile.findTokens(pos, violation.source.code.length);
                 if (tokens == null)
                     return;
-                let hl: CodeHyperlink = { tokens, css: "hl hl-violation" };
+                let hl: PopupMarker = { tokens, className: "hl hl-violation" };
                 let text = `${violation.description}\n${violation.policy}\nseverity:${violation.severity}`;
                 let range = this.perlFile.sourceFile.getRange2(pos, violation.source.code.length);
                 this.editor.addMarker({

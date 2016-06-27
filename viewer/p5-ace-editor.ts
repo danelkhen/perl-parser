@@ -14,7 +14,7 @@ import {
 } from "perl-parser";
 import { P5Service, P5File, CritiqueResponse, CritiqueViolation, GitBlameItem} from "./p5-service";
 import { monitor, Monitor} from "./monitor";
-import { PackageResolution, AsyncFunc, TreeNodeData, Expander, Helper, Collapsable, TokenUtils, CodeHyperlink, Key, Rect, Size, Point} from "./common";
+import { PackageResolution, AsyncFunc, TreeNodeData, Expander, Helper, Collapsable, TokenUtils, Key, Rect, Size, Point} from "./common";
 import { PerlFile        } from "./perl-file";
 import "ace/ext/linking";
 import "ace/ext/language_tools";
@@ -50,10 +50,10 @@ export class P5AceEditor {
     linkEvent: LinkEvent;
     tokenUnderMouse: TokenInfo;
     linkUnderMouseMarkerId: number;
-    linkUnderMouse: CodeHyperlink;
+    linkUnderMouse: PopupMarker;
     tokens: Token[];
     //sourceFile: TextFile;
-    codeHyperlinks: CodeHyperlink[];
+    codeHyperlinks: PopupMarker[];
     lastCheckedTokenUnderMouse: TokenInfo;
     tokenUnderMouse2: TokenInfo;
     popupMarkers: PopupMarker[] = [];
@@ -199,12 +199,12 @@ export class P5AceEditor {
             window.location.href = hl.href;
     }
 
-    hyperlinkNode(hl: CodeHyperlink) {
+    hyperlinkNode(hl: PopupMarker) {
         if (hl.html == null) {
             console.log("hyperlinkNode not supported anymore");
             return null;
         }
-        this.addPopupMarker({ href: hl.href, html: hl.html, node: hl.node, tokens: hl.tokens, className: hl.css, target: hl.target });
+        this.addPopupMarker({ href: hl.href, html: hl.html, node: hl.node, tokens: hl.tokens, className: hl.className, target: hl.target });
     }
 
     getTokensRange(tokens: Token[]): TextFileRange {
@@ -347,13 +347,12 @@ export interface LinkEvent {
 
 
 export interface PopupMarker {
+    name?:string;//TODO: check if this is really needed
     node?: AstNode;
     tokens?: Token[];
-    //marker: Marker;
     range?: TextFileRange;
     href?: string;
     html?: string;
-
     className?: string;
     target?: string;
 }
