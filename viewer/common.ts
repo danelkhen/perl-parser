@@ -188,12 +188,31 @@ export class Helper {
         }
         return this._isBrowserReversesAttributes;
     }
-    static getAttributes(node:Node): Attr[] {
+    static getAttributes(node: Node): Attr[] {
         let list = Array.from(node.attributes);
-        if(this.isBrowserReversesAttributes())
+        if (this.isBrowserReversesAttributes())
             list.reverse();
         return list;
     }
+    static findConsecutiveRepetitions<T>(list: T[], equals: (x: T, y: T) => boolean): Array<T[]> {
+        let repeat: T[] = null;
+        let repeats: Array<T[]> = [];
+        list.forEach(t => {
+            if (repeat == null)
+                repeat = [t];
+            else if (equals(repeat[0], t))
+                repeat.push(t);
+            else {
+                if (repeat.length > 1)
+                    repeats.push(repeat);
+                repeat = [t];
+            }
+        });
+        if (repeat != null && repeat.length > 1)
+            repeats.push(repeat);
+        return repeats;
+    }
+
 }
 
 export interface TreeNodeData {
