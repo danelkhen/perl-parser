@@ -42,7 +42,7 @@ import { VirtualRenderer } from "ace/virtual_renderer";
 import { Completer       } from "ace/ext/language_tools";
 import { UndoManager     } from "ace/undomanager";
 import { Autocomplete    } from "ace/autocomplete";
-import {EventEmitter, SimpleEventEmitter } from "./monitor";
+import {EventEmitter, SimpleEventEmitter } from "./common";
 import {PropertyChangeTracker, ObjProperty} from "./property-change-tracker";
 
 //import * as DarkTheme   from "./ace/theme/vs-dark";
@@ -289,6 +289,9 @@ export class P5AceEditor {
                 marker.annotation.pos = marker.range.start;
             this.addAnnotation(marker.annotation);
         }
+    }
+    removePopupMarker(pm: PopupMarker): void {
+        this.popupMarkers.remove(pm);
     }
     addPopupMarker(pm: PopupMarker): void {
         if (pm.range == null) {

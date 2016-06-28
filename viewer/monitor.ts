@@ -1,4 +1,5 @@
 ﻿"use strict";
+import {EventEmitter, SimpleEventEmitter} from "./common";
 
 export class Monitor {
     private map = new WeakMap<Object, Object>();
@@ -150,24 +151,6 @@ export interface MFuncCallEvent extends MEvent {
 }
 
 
-export interface EventEmitter<T> {
-    emit(args: T);
-    attach(handler: (args: T) => any);
-    detach(handler: (args: T) => any);
-}
-
-export class SimpleEventEmitter<T> {
-    handlers: Array<(args: T) => any> = [];
-    emit(args: T) {
-        this.handlers.forEach(h => h(args));
-    }
-    attach(handler: (args: T) => any) {
-        this.handlers.add(handler);
-    }
-    detach(handler: (args: T) => any) {
-        this.handlers.remove(handler);
-    }
-}
 
 export let monitor: Monitor = new Monitor();
 

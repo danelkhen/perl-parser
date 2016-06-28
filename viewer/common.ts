@@ -686,3 +686,116 @@ export class IndexRange {
         return x >= min && x <= max;
     }
 }
+
+
+export class CancellablePromise<T> {
+
+    /**
+     * Creates a Promise that is resolved with an array of results when all of the provided Promises
+     * resolve, or rejected when any Promise is rejected.
+     * @param values An array of Promises.
+     * @returns A new Promise.
+     */
+    static all<T>(values: IterableShim<T | PromiseLike<T>>): CancellablePromise<T[]> {
+        let p = new CancellablePromise<T[]>(null);
+        p.promise = Promise.all(values);
+        return p;
+
+    }
+    static allVoid<T>(values: IterableShim<T | PromiseLike<T>>): CancellablePromise<void> {
+        let p = new CancellablePromise<any>(null);
+        p.promise = Promise.all(values);
+        return p;
+    }
+
+    /**
+     * Creates a new Promise.
+     * @param executor A callback used to initialize the promise. This callback is passed two arguments:
+     * a resolve callback used resolve the promise with a value or the result of another promise,
+     * and a reject callback used to reject the promise with a provided reason or error.
+     */
+    constructor(executor: (resolve: (value?: T | PromiseLike<T>) => void, reject: (reason?: any) => void) => void) {
+        if (executor != null)
+            this.promise = new Promise(executor);
+    }
+
+    promise: Promise<T>;
+    onCancel: EventEmitter<any> = new SimpleEventEmitter<any>();
+    _isCancelled: boolean;
+    cancel() {
+        this._isCancelled = true;
+        this.onCancel.emit(null);
+    }
+    isCancelled(): boolean {
+        return this._isCancelled;
+    }
+
+    /**
+    * Attaches callbacks for the resolution and/or rejection of the Promise.
+    * @param onfulfilled The callback to execute when the Promise is resolved.
+    * @param onrejected The callback to execute when the Promise is rejected.
+    * @returns A Promise for the completion of which ever callback is executed.
+    */
+    then<TResult>(onfulfilled?: (value: T) => TResult | PromiseLike<TResult>, onrejected?: (reason: any) => TResult | PromiseLike<TResult>): CancellablePromise<TResult> {
+        let onfulfilled2;
+        let onrejected2;
+        if (onfulfilled != null) {
+            onfulfilled2 = value => {
+                if (this.isCancelled()) {
+                    return Promise.reject<TResult>("Promise was cancelled");
+                }
+                return onfulfilled(value);
+            };
+        }
+        //if (onrejected != null) {
+        //    onrejected2 = reason => {
+        //        if (this.isCancelled())
+        //            return;
+        //        return onrejected(reason);
+        //    };
+        //}
+        let p = new CancellablePromise(null);
+        p.promise = this.promise.then(onfulfilled2, onrejected);
+        p.onCancel.attach(() => this.cancel());
+        return p;
+    }
+
+    /**
+     * Attaches a callback for only the rejection of the Promise.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of the callback.
+     */
+    catch(onrejected?: (reason: any) => T | PromiseLike<T>): CancellablePromise<T> {
+        let p = new CancellablePromise(null);
+        p.promise = this.promise.catch(onrejected);
+        p.onCancel.attach(() => this.cancel());
+        return p;
+    }
+    static resolve<T>(value?: T | PromiseLike<T>): CancellablePromise<T> {
+        let p = new CancellablePromise(null);
+        p.promise = Promise.resolve(value);
+        return p;
+    }
+
+
+}
+
+
+export interface EventEmitter<T> {
+    emit(args: T);
+    attach(handler: (args: T) => any);
+    detach(handler: (args: T) => any);
+}
+
+export class SimpleEventEmitter<T> {
+    handlers: Array<(args: T) => any> = [];
+    emit(args: T) {
+        this.handlers.forEach(h => h(args));
+    }
+    attach(handler: (args: T) => any) {
+        this.handlers.add(handler);
+    }
+    detach(handler: (args: T) => any) {
+        this.handlers.remove(handler);
+    }
+}

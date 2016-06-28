@@ -5,7 +5,7 @@ import {
     TokenTypes, RefArrayToRefUtil, ExpressionTester, AstQuery, EntityResolver, Expression, InvocationExpression,
     NamedMemberExpression, Logger, Parser, SubroutineExpression, TokenReader, Entity, Subroutine, Member,
 } from "perl-parser";
-import {PackageResolution, Helper, TokenUtils, } from "./common";
+import {PackageResolution, Helper, TokenUtils, CancellablePromise} from "./common";
 import {P5Service, P5File, CritiqueResponse, CritiqueViolation, GitBlameItem, PerlDocRequest, GitLogItem, GitShow, GitShowFile, GitGrepItem, GitGrepMatch} from "./p5-service";
 import {PropertyChangeTracker, ObjProperty} from "./property-change-tracker";
 import {PerlModuleClassify} from "./p5-service";
@@ -57,9 +57,23 @@ export class PerlFile {
         return this.service.fs(url).then(t => include);
     }
 
-    resolvePackages(pkgs: EntityInfo[]): Promise<any> {
-        return new Promise<any>((resolve, reject) => {
-            this.service.perlModuleClassify(pkgs.map(t => t.name).distinct()).then(res => {
+    perlModuleClassifyCache: Map<string, PerlModuleClassify> = new Map<string, PerlModuleClassify>();
+
+    perlModuleClassify(packageNames: string[]): Promise<PerlModuleClassify[]> {
+        let cache = this.perlModuleClassifyCache;
+        packageNames = packageNames.distinct();
+        let resolved = packageNames.where(t => cache.has(t));
+        let remaining = packageNames.where(t => !cache.has(t));
+        let resolved2 = resolved.map(t => cache.get(t));
+        return this.service.perlModuleClassify(remaining).then(list => {
+            list.forEach(t => cache.set(t.name, t));
+            list.addRange(resolved2);
+            return list;
+        });
+    }
+    resolvePackages(pkgs: EntityInfo[]): CancellablePromise<any> {
+        return new CancellablePromise<any>((resolve, reject) => {
+            this.perlModuleClassify(pkgs.map(t => t.name).distinct()).then(res => {
                 res.forEach(mod => {
                     let pkg = pkgs.first(t => t.name == mod.name);
                     if (pkg == null)
@@ -81,9 +95,9 @@ export class PerlFile {
             info.href = this.cvBaseUrl + pkg.path;
         else if (pkg.url != null)
             info.href = pkg.url;//"https://metacpan.org/pod/" + pkg.name;
-        if (pkg.is_core)
+        if (pkg.is_core && !info.attributes.contains("core"))
             info.attributes.push("core");
-        if (pkg.is_local)
+        if (pkg.is_local && !info.attributes.contains("local"))
             info.attributes.push("local");
     }
 
@@ -184,17 +198,18 @@ export class PerlFile {
         return this.service.src(file.path).catch(() => "").then(data => { file.src = data; return file; });
     }
 
-    processFile(): Promise<any> {
+    processFile(): CancellablePromise<any> {
         if (this.file == null || this.file.is_dir)
-            return Promise.resolve();
+            return CancellablePromise.resolve();
         this.sourceFile = new TextFile(this.file.name, this.file.src);
-        return Promise.resolve()
+        let p = CancellablePromise.resolve()
             .then(() => this.setTimeout(10))
-            .then(() => this.tokenizeAsync())
+            .then(() => this.tokenizeAsync(p))
             .then(() => this.setTimeout(10))
             .then(() => this.parse())
             .then(() => this.resolveAndHighlightUsedPackages())
             .then(() => console.log("finished..."));
+        return p;
     }
 
     setTimeout(delay?: number): Promise<any> {
@@ -292,7 +307,7 @@ export class PerlFile {
         return TokenTypes.pragmas.contains(name);
     }
 
-    resolveAndHighlightUsedPackages(): Promise<void> {
+    resolveAndHighlightUsedPackages(): CancellablePromise<void> {
         if (this.unit == null)
             return;
 
@@ -311,7 +326,7 @@ export class PerlFile {
         let hls = builtinNodes.map(t => <PopupMarker>{ name: t.toCode().trim(), node: t });
         hls.addRange(builtinTokens.map(t => <PopupMarker>{ name: t.value.trim(), tokens: [t] }));
         let names = hls.map(t => t.name).distinct();
-        let p1 = Promise
+        let p1 = CancellablePromise
             .all(hls.map(hl => this.hlVerifyPerlDoc(hl, true)))
             .then(() => hls.forEach(hl => this.addCodePopup(hl)));
 
@@ -323,12 +338,12 @@ export class PerlFile {
         });
         if (this.unitPackage != null) {
             this.unitPackage.members.forEach(me => {
-                if (me instanceof Subroutine && me.node.declaration!=null) {
+                if (me instanceof Subroutine && me.node.declaration != null) {
                     this.addCodePopup({ node: me.node.declaration.name, name: me.node.toCode().trim(), html: AceHelper.createPopupHtmlFromEntity(me) });
                 }
             });
         }
-        let all = Promise.allVoid([p1, p2]);
+        let all = CancellablePromise.allVoid([p1, p2]);
         return all;
 
 
@@ -478,7 +493,7 @@ export class PerlFile {
         }
     }
 
-    tokenizeAsync(): Promise<any> {
+    tokenizeAsync(cancellable?: CancellablePromise<any>): Promise<any> {
         if (this.sourceFile == null)
             return Promise.reject("sourceFile is null");
         //this.code = data;
@@ -487,6 +502,7 @@ export class PerlFile {
         let tok = new Tokenizer();
         tok.onStatus = () => console.log("Tokenizer status: ", Helper.toPct(tok.cursor.index / tok.file.text.length));
         tok.file = this.sourceFile;
+        cancellable.onCancel.attach(() => tok.cancel());
         return tok.processAsync().then(() => {
             let end = new Date();
             console.log("tokenization took " + (end.valueOf() - start.valueOf()) + "ms");

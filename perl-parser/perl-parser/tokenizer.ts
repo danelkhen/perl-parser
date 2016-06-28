@@ -49,12 +49,18 @@ export class Tokenizer {
         }
     }
     private resolve: Function;
+    private reject: Function;
     private lastStatusTime: number;
+    cancel() {
+        this.isCancelled = true;
+    }
+    private isCancelled: boolean;
     onStatus() {
     }
     processAsync(): Promise<any> {
         this.init();
         return new Promise((resolve, reject) => {
+            this.reject = reject;
             this.resolve = resolve;
             this.lastStatusTime = Date.now();
             this.continueProcessAsync();
@@ -62,10 +68,10 @@ export class Tokenizer {
     }
     private continueProcessAsync() {
         let timeout = 15;
-        let continued = Date.now(); //performance.now();
-        while (!this.isEof()) {
+        let continued = Date.now();
+        while (!this.isEof() && !this.isCancelled) {
             this.next();
-            let now = Date.now(); //performance.now();
+            let now = Date.now();
             if (now - continued > timeout)
                 break;
             if (now - this.lastStatusTime > 1000) {
@@ -78,6 +84,9 @@ export class Tokenizer {
             this.resolve = null;
             this.lastStatusTime = null;
             resolve();
+        }
+        else if (this.isCancelled) {
+            this.reject();
         }
         else {
             window.setTimeout(() => this.continueProcessAsync(), 0);

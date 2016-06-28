@@ -16,7 +16,7 @@ import {
 import {PackageResolution, AsyncFunc, TreeNodeData, Expander, Helper, TokenUtils, Collapsable, IndexRange, IndexSelection} from "./common";
 import {P5Service, P5File, CritiqueResponse, CritiqueViolation, GitBlameItem, PerlDocRequest, GitLogItem, GitShow, GitShowFile, GitGrepItem, GitGrepMatch} from "./p5-service";
 import {monitor, Monitor} from "./monitor";
-import {Key, Rect, Size, Point} from "./common";
+import {Key, Rect, Size, Point, CancellablePromise} from "./common";
 import * as ace from "ace/ace";
 import * as ModeList from "ace/ext/modelist";
 import {Range} from "ace/range";
@@ -63,6 +63,7 @@ export class IndexPage {
         return this.fileSearchText.length == 0 || file.name.contains(this.fileSearchText);
     }
 
+    lastProcessFile: CancellablePromise<any>;
     main2() {
         this.selection = new IndexSelection();
         this.perlFile = new PerlFile();
@@ -72,6 +73,20 @@ export class IndexPage {
         this.editor = new P5AceEditor();
         this.editor.perlFile = this.perlFile;
         this.editor.init();
+        this.editor.editor.on("change", e => {
+            if (this.lastProcessFile != null) {
+                this.lastProcessFile.cancel();
+                this.lastProcessFile = null;
+                console.log("cancelled lastProcessFile");
+            }
+            this.perlFile.codePopups.clear();
+            this.editor.popupMarkers.clear();
+            let code = this.editor.getCode();
+            this.perlFile.file.src = code;
+            console.log("reprocessing file start");
+            this.lastProcessFile = this.perlFile.processFile().then(e => console.log("reprocessed file end")).then(() => this.lastProcessFile = null).catch(e=>console.log("caught cancel"));
+        });
+
         //this.editor.editor.on("changeSelection", e => {
         //    if (this.ignoreCursorEvents)
         //        return;
