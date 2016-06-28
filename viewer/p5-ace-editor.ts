@@ -32,7 +32,7 @@ import { Range           } from "ace/range";
 import { TokenInfo       } from "ace/token_info";
 import { TokenIterator   } from "ace/token_iterator";
 import { Position        } from "ace/position";
-import { MouseEvent      } from "ace/mouse/mouse_event";
+import { MouseEvent as AceMouseEvent     } from "ace/mouse/mouse_event";
 import { Tooltip         } from "ace/tooltip";
 import { StatusBar       } from "ace/ext/statusbar";
 import { Config          } from "ace/config";
@@ -42,6 +42,8 @@ import { VirtualRenderer } from "ace/virtual_renderer";
 import { Completer       } from "ace/ext/language_tools";
 import { UndoManager     } from "ace/undomanager";
 import { Autocomplete    } from "ace/autocomplete";
+import {EventEmitter, SimpleEventEmitter } from "./monitor";
+import {PropertyChangeTracker, ObjProperty} from "./property-change-tracker";
 
 //import * as DarkTheme   from "./ace/theme/vs-dark";
 
@@ -79,6 +81,8 @@ export class P5AceEditor {
         });
         this.editor.focus();
         this.editor.addEventListener("linkClick", e => this.editor_linkClick(e));
+        //this.editor.addEventListener("guttermousedown", e => this.editor_guttermousedown(e));
+        //this.editor.addEventListener("guttermousemove", e => this.editor_guttermousemove(e));
         this.editor.addEventListener("mousemove", e => this.editor_mousemove(e));
         this.editor.renderer.getMouseEventTarget().addEventListener("mouseenter", e => this.editor_mouseenter(e));
         this.editor.renderer.getMouseEventTarget().addEventListener("mouseleave", e => this.editor_mouseleave(e));
@@ -166,15 +170,61 @@ export class P5AceEditor {
         //this.statusTextEl.textContent = "";
     }
 
-    editor_mousemove(e: MouseEvent) {
+    editor_mousemove(e: AceMouseEvent) {
         this.mouseDocPos = e.getDocumentPosition();
     }
-    editor_mouseenter(e: Event) {
+    editor_mouseenter(e: MouseEvent) {
         this.isMouseOnDoc = true;
     }
-    editor_mouseleave(e: Event) {
+    editor_mouseleave(e: MouseEvent) {
         this.isMouseOnDoc = false;
     }
+
+    tracker: PropertyChangeTracker<this> = new PropertyChangeTracker(this);
+    onPropChanged(getter: (obj: this) => any, handler: Function) { return this.tracker.on(getter, handler); }
+    offPropChanged(getter: (obj: this) => any, handler: Function) { return this.tracker.off(getter, handler); }
+
+    gutterDecorations: Map<number, string[]> = new Map<number, string[]>();
+    hasGutterDecoration(line: number, className: string) {
+        let list = this.gutterDecorations.get(line);
+        return list != null && list.contains(className);
+    }
+    toggleAllGutterDecorations(className: string, toggle?: boolean) {
+        this.gutterDecorations.forEach((list, line) => {
+            this.toggleGutterDecoration(line, className, toggle);
+        });
+    }
+    toggleGutterDecoration(line: number, className: string, toggle?: boolean) {
+        if (toggle == null)
+            toggle = !this.hasGutterDecoration(line, className);
+        let row = line - 1;
+        let list = this.gutterDecorations.get(line);
+        if (toggle) {
+            if (list == null) {
+                list = [];
+                this.gutterDecorations.set(line, list);
+            }
+            list.push(className);
+            this.editor.session.addGutterDecoration(row, className);
+        }
+        else {
+            if (list != null) {
+                list.remove(className);
+                if (list.length == 0)
+                    this.gutterDecorations.delete(line);
+            }
+            this.editor.session.removeGutterDecoration(row, className);
+        }
+        this.gutterDecorations = this.gutterDecorations;
+    }
+
+    //editor_guttermousedown(e: AceMouseEvent) {
+    //    if (e.getButton() == 0 && e.getAccelKey()) {
+    //        let pos = e.getDocumentPosition();
+    //        let line = pos.row + 1;
+    //        this.toggleGutterDecoration(line, "bookmark");
+    //    }
+    //}
 
     getCaretToken(): TokenInfo {
         let pos = this.editor.getCursorPosition();
@@ -339,7 +389,7 @@ export interface LinkEvent {
 
 
 export interface PopupMarker {
-    name?:string;//TODO: check if this is really needed
+    name?: string;//TODO: check if this is really needed
     node?: AstNode;
     tokens?: Token[];
     range?: TextFileRange;

@@ -72,15 +72,27 @@ export class IndexPage {
         this.editor = new P5AceEditor();
         this.editor.perlFile = this.perlFile;
         this.editor.init();
-        this.editor.editor.on("changeSelection", e => {
-            if (this.ignoreCursorEvents)
-                return;
-            if (this.file == null)
-                return;
-            let range = this.editor.editor.selection.getRange();
-            this.selection.ranges = [new IndexRange(range.start.row + 1, range.end.row + 1)];
-            this.saveSelection();
-        });
+        //this.editor.editor.on("changeSelection", e => {
+        //    if (this.ignoreCursorEvents)
+        //        return;
+        //    if (this.file == null)
+        //        return;
+        //    let range = this.editor.editor.selection.getRange();
+        //    this.selection.ranges = [new IndexRange(range.start.row + 1, range.end.row + 1)];
+        //    this.saveSelection();
+        //});
+        //this.editor.onPropChanged(t => t.gutterDecorations, () => {
+        //    if (this.ignoreCursorEvents)
+        //        return;
+        //    if (this.file == null)
+        //        return;
+        //    let indexes = Array.from(this.editor.gutterDecorations.keys());
+        //    //let range = this.editor.editor.selection.getRange();
+        //    this.selection.ranges = indexes.orderBy(t => t).map(t => new IndexRange(t, t));
+        //    //this.selection.ranges = [new IndexRange(indexes.first(), indexes.last())];
+        //    this.saveSelection();
+        //});
+
 
 
         this.onPropChanged(t => t.fileSearchText, () => {
@@ -112,7 +124,10 @@ export class IndexPage {
         this.dataBind();
         //this.prevUrl = document.location.href;
 
-        this.update().then(() => $(document.body).removeClass("notready"));
+        this.update().then(() => {
+            this.renderSelection();
+            $(document.body).removeClass("notready");
+        });
         $(window).on("urlchange", e => this.window_urlchange(e));
     }
 
@@ -180,21 +195,38 @@ export class IndexPage {
         return this.perlFile.gitGrep(this.grepText);
     }
 
+    markSelection() {
+        let sel = this.selection;
+        let sel2 = new IndexSelection();
+        let aceRanges = this.editor.editor.selection.getAllRanges();
+        let last = aceRanges.last();
+        if (last.startColumn == 0 && last.endColumn == 0)
+            aceRanges.removeLast();
+        sel2.ranges = aceRanges.map(range => new IndexRange(range.start.row + 1, range.end.row + 1));
+        if (sel.toParam() == sel2.toParam()) {
+            this.selection.ranges = [];
+        }
+        else {
+            this.selection.ranges = sel2.ranges;
+        }
+        this.renderSelection();
+        this.saveSelection();
+
+    }
+
     saveSelection() {
         if (location.hash == "#" + this.selection.toParam())
             return;
         history.replaceState(undefined, undefined, window.location.pathname + "#" + this.selection.toParam());
-        //$(window).trigger("urlchange");
     }
 
     renderSelection() {
-        let range = this.selection.lastRange;
-        if (range == null)
-            return;
-        this.ignoreCursorEvents = true;
-        this.editor.editor.gotoLine(range.from - 1);
-        this.editor.editor.selection.setRange(new Range(range.from - 1, 0, range.to - 1, 0), false);
-        this.ignoreCursorEvents = false;
+        this.editor.toggleAllGutterDecorations("bookmark", false);
+        this.selection.ranges.map(range => {
+            for (let i = range.from; i <= range.to; i++) {
+                this.editor.toggleGutterDecoration(i, "bookmark", true);
+            }
+        });
     }
 
     getPath() {

@@ -156,7 +156,7 @@ export interface EventEmitter<T> {
     detach(handler: (args: T) => any);
 }
 
-class SimpleEventEmitter<T> {
+export class SimpleEventEmitter<T> {
     handlers: Array<(args: T) => any> = [];
     emit(args: T) {
         this.handlers.forEach(h => h(args));

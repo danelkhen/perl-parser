@@ -624,7 +624,7 @@ export class IndexSelection {
         list.add(new IndexRange(anchor));
         this.ranges = list;
     }
-    generateNumbers = function (from: number, to: number) {
+    generateNumbers(from: number, to: number) {
         let min = Math.min(from, to);
         let max = Math.max(from, to);
         return Number.generate(min, max, 1);

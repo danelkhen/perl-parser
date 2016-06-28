@@ -307,6 +307,11 @@ declare module "ace/edit_session" {
     **/
     export interface IEditSession {
 
+        addEventListener(ev:"changebreakpoint", handler:Function):void;
+        addEventListener(ev:string, handler:Function):void;
+        removeEventListener(name:"changebreakpoint", handler:Function):void;
+        removeEventListener(name:string, handler:Function):void;
+
         selection: Selection;
 
         bgTokenizer: BackgroundTokenizer;
@@ -1293,6 +1298,7 @@ declare module "ace/editor" {
     import {Position} from "ace/position";
     import {Range} from "ace/range";
     import {EventEmitter} from "ace/lib/event_emitter";
+    import {MouseEvent} from "ace/mouse/mouse_event";
 
     ////////////////////////////////
     /// EditSession
@@ -1313,7 +1319,32 @@ declare module "ace/editor" {
         textInput:TextInput;
 
         addEventListener(ev: 'change', callback: (ev: EditorChangeEvent) => any): void;
+        
+        addEventListener(ev: 'guttermousedown', callback: (ev: MouseEvent) => any): void;
+        addEventListener(ev: 'gutterclick', callback: (ev: MouseEvent) => any): void;
+        addEventListener(ev: 'gutterdblclick', callback: (ev: MouseEvent) => any): void;
+        addEventListener(ev: 'guttermousemove', callback: (ev: MouseEvent) => any): void;
+        
+        addEventListener(ev: 'click', callback: (ev: MouseEvent) => any): void;
+        addEventListener(ev: 'mousemove', callback: (ev: MouseEvent) => any): void;
+        addEventListener(ev: 'mousedown', callback: (ev: MouseEvent) => any): void;
+        addEventListener(ev: 'touchmove', callback: (ev: MouseEvent) => any): void;
+        addEventListener(ev: 'mousewheel', callback: (ev: MouseEvent) => any): void;
         addEventListener(ev: string, callback: Function): void;
+
+        addEventListener(ev: 'change', callback: (ev: EditorChangeEvent) => any): void;
+        
+        removeEventListener(ev: 'guttermousedown', callback: (ev: MouseEvent) => any): void;
+        removeEventListener(ev: 'gutterclick', callback: (ev: MouseEvent) => any): void;
+        removeEventListener(ev: 'gutterdblclick', callback: (ev: MouseEvent) => any): void;
+        removeEventListener(ev: 'guttermousemove', callback: (ev: MouseEvent) => any): void;
+        
+        removeEventListener(ev: 'click', callback: (ev: MouseEvent) => any): void;
+        removeEventListener(ev: 'mousemove', callback: (ev: MouseEvent) => any): void;
+        removeEventListener(ev: 'mousedown', callback: (ev: MouseEvent) => any): void;
+        removeEventListener(ev: 'touchmove', callback: (ev: MouseEvent) => any): void;
+        removeEventListener(ev: 'mousewheel', callback: (ev: MouseEvent) => any): void;
+        removeEventListener(ev: string, callback: Function): void;
 
         inMultiSelectMode: boolean;
 

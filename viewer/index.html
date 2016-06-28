@@ -44,6 +44,7 @@
                     <div class="menu">
                         <button class="btn btnUp" _onclick="e => this.up()">Up</button>
                         <button class="btn" title="Expand/Collapse All" _onclick="e => this.editor.toggleAllFolds()">Toggle</button>
+                        <button class="btn" title="Mark Selection" _onclick="e => this.markSelection()">Mark</button>
                         <button class="btn" title="Reparse Code" _onclick="e => this.reparse()" _if="false">Reparse</button>
                         <button class="btn" title="Perl Critic" _onclick="e => this.critique()">Critique</button>
                         <button class="btn" title="Git Blame" _onclick="e => this.gitBlame()">Blame</button>
