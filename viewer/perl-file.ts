@@ -468,6 +468,7 @@ export class PerlFile {
 
 
     parse() {
+        console.log("PARSING STARTED");
         try {
             let parser = new Parser();
             parser.logger = new Logger();
@@ -491,6 +492,7 @@ export class PerlFile {
         catch (e) {
             console.warn("parsing failed", e);
         }
+        console.log("PARSING FINISHED");
     }
 
     tokenizeAsync(cancellable?: CancellablePromise<any>): Promise<any> {

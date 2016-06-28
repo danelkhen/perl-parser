@@ -178,7 +178,7 @@ export class PrecedenceResolver {
                 //node.resolvedFrom = this.mbe;
                 return node;
             }
-            this.logger.warn(["mbe not completely resolved", this.mbe.toCode(), this.mbe, this.nodes]);
+            this.logger.warn(["mbe not completely resolved", this.mbe, this.nodes]);
             return this.mbe;
 
         }

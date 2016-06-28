@@ -719,6 +719,24 @@ export class CancellablePromise<T> {
             this.promise = new Promise(executor);
     }
 
+    static wrap<T>(value: Promise<T> | T): CancellablePromise<T> {
+        if (value instanceof CancellablePromise)
+            return value;
+        if (value instanceof Promise) {
+            let p = new CancellablePromise<T>(null);
+            p.promise = value;
+            return p;
+        }
+        let p = new CancellablePromise<T>(null);
+        p.promise = Promise.resolve(value);
+        return p;
+    }
+
+    //wrap<T>(value: Promise<T> | T): CancellablePromise<T> {
+    //    let p = CancellablePromise.wrap(value);
+    //    this.onCancel.attach(() => p.cancel());
+    //}
+
     promise: Promise<T>;
     onCancel: EventEmitter<any> = new SimpleEventEmitter<any>();
     _isCancelled: boolean;
@@ -744,7 +762,11 @@ export class CancellablePromise<T> {
                 if (this.isCancelled()) {
                     return Promise.reject<TResult>("Promise was cancelled");
                 }
-                return onfulfilled(value);
+                let res = onfulfilled(value);
+                if (res instanceof CancellablePromise) {
+                    this.onCancel.attach(() => res.cancel());
+                }
+                return res;
             };
         }
         //if (onrejected != null) {
@@ -754,8 +776,7 @@ export class CancellablePromise<T> {
         //        return onrejected(reason);
         //    };
         //}
-        let p = new CancellablePromise(null);
-        p.promise = this.promise.then(onfulfilled2, onrejected);
+        let p = CancellablePromise.wrap(this.promise.then(onfulfilled2, onrejected));
         p.onCancel.attach(() => this.cancel());
         return p;
     }

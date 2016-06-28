@@ -136,6 +136,7 @@ export class Template {
             console.warn("can't find template", el);
             return;
         }
+        let el3 = <HTMLElementEx>el2[0];
 
         let els2: HTMLElementEx[] = el2.siblings(".template-instance").toArray();
         if (list != null) {

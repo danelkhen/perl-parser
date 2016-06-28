@@ -69,7 +69,7 @@ export class TokenTypes {
         return res;
     });
     static qq = _rs([/qq\s*?\|[^|]*\|/, /qq\s*?\{[^\}]*\}/]);
-    static qw = _rs([/qw\s*\/[^\/]*\//, /qw\s*<[^>]*>/, /qw\s*\([^\)]*\)/, /qw\s*\[[^\]]*\]/, /qw\s*\{[^\{]*\}/]);
+    static qw = _rs([/qw\s*\/[^\/]*\//, /qw\s*<[^>]*>/, /qw\s*\([^\)]*\)/, /qw\s*\[[^\]]*\]/, /qw\s*\{[^\}]*\}/]);
     static qr = _rs([/qr\/[^\/]*?\/[a-z]*/, /qr\([^\)]*?\)[a-z]*/, /qr\{[^\}]*?\}[a-z]*/]);//Regexp-like quote
     static qx = _rs([/qx\/.*\//, /`.*`/]);
     static tr = _rs([/tr\/.*\/.*\/[cdsr]*/, /tr\{.*\}\{.*\}/]); //token replace

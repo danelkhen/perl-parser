@@ -64,6 +64,13 @@ export class IndexPage {
     }
 
     lastProcessFile: CancellablePromise<any>;
+
+    setTimeout(delay?: number): CancellablePromise<any> {
+        return new CancellablePromise((resolve, reject) => {
+            window.setTimeout(resolve, delay || 0);
+        });
+    }
+
     main2() {
         this.selection = new IndexSelection();
         this.perlFile = new PerlFile();
@@ -75,16 +82,22 @@ export class IndexPage {
         this.editor.init();
         this.editor.editor.on("change", e => {
             if (this.lastProcessFile != null) {
+                console.log("CANCELLING PROCESSFILE");
                 this.lastProcessFile.cancel();
                 this.lastProcessFile = null;
-                console.log("cancelled lastProcessFile");
             }
-            this.perlFile.codePopups.clear();
-            this.editor.popupMarkers.clear();
-            let code = this.editor.getCode();
-            this.perlFile.file.src = code;
-            console.log("reprocessing file start");
-            this.lastProcessFile = this.perlFile.processFile().then(e => console.log("reprocessed file end")).then(() => this.lastProcessFile = null).catch(e=>console.log("caught cancel"));
+            this.lastProcessFile = this.setTimeout(100)
+                .then(() => {
+                    console.log("REPROCESS 1");
+                    this.perlFile.codePopups.clear();
+                    this.editor.popupMarkers.clear();
+                    let code = this.editor.getCode();
+                    this.perlFile.file.src = code;
+                })
+                .then(() => { console.log("REPROCESS 2"); return this.perlFile.processFile(); })
+                .then(e => console.log("reprocessed file end"))
+                .then(() => this.lastProcessFile = null)
+                .catch(e => console.log("caught cancel"));
         });
 
         //this.editor.editor.on("changeSelection", e => {
