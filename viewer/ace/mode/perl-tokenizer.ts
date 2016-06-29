@@ -188,7 +188,7 @@ export class PerlTokenizer {
 
         let tokens: TokenInfo[] = relevantTokens.map(t => this.toTokenInfo(t));//.filter(t => t != null)
         let res: TokenizerResult = { tokens, state: newState };//
-        console.log("tokenizer result", res, res.tokens.map(t=>t.value).join(""));
+        //console.log("tokenizer result", res, res.tokens.map(t=>t.value).join(""));
         //console.log({ line_num: row + 1, line, fromState: state, toState: newState, stateChanged: state != newState });
         //console.log("getLineTokens", { line_num: row + 1, line, stateName, state, tokens });
         return res;
