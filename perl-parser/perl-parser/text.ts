@@ -9,10 +9,16 @@ export class TextFileRange {
     get index(): number { return this.start.index; }
     get length(): number { return this.end.index - this.start.index; }
     get text(): string { return this.file.text.substr(this.index, this.length); }
+    isMultiline() {
+        return this.end.line > this.start.line;
+    }
+    containsLine(line: number): boolean {
+        return line >= this.start.line && line <= this.end.line;
+    }
     containsPos(pos: TextFilePos): boolean {
         let start = this.start;
         let end = this.end;
-        var contains = this.start.compareWith(pos) >= 0 && this.end.compareWith(pos) <= 0;
+        var contains = this.start.compareTo(pos) >= 0 && this.end.compareTo(pos) <= 0;
         return contains;
     }
 
@@ -59,7 +65,7 @@ export class TextFile {
     getPos3(line: number, column: number): TextFilePos {
         let lineStartIndex = this.getLineStartIndex(line);
         let lineStartPos = this.getPos(lineStartIndex);
-        let pos = this.getPos2(lineStartPos, column-1);
+        let pos = this.getPos2(lineStartPos, column - 1);
         return pos;
     }
     getPos(index: number): TextFilePos {
@@ -113,6 +119,7 @@ export class TextFile {
     scanNewLines() {
         this.lines = this.text.split(/\n/g);
         let regex = /\n/g;
+        this.newLineIndexes.clear();
         while (true) {
             let match = regex.exec(this.text);
             if (match == null)
@@ -156,13 +163,26 @@ export class TextFilePos {
         return this.next(s.length) == s;
     }
 
-    equalsTo(pos: TextFilePos): boolean {
-        return this.compareWith(pos) == 0;
+    isAfter(pos: TextFilePos): boolean {
+        return this.compareTo(pos) > 0;
     }
-    compareWith(pos: TextFilePos): number {
-        if (pos.line == this.line) 
+    isBefore(pos: TextFilePos): boolean {
+        return this.compareTo(pos) < 0;
+    }
+    equalsTo(pos: TextFilePos): boolean {
+        return this.compareTo(pos) == 0;
+    }
+    compareTo(pos: TextFilePos): number {
+        if (pos.line == this.line)
             return pos.column - this.column;
         return pos.line - this.line;
+    }
+    static compare(x: TextFilePos, y: TextFilePos): number {
+        if (x == null || y == null)
+            return null;
+        if (x == y)
+            return 0;
+        return x.compareTo(y);
     }
 
 }

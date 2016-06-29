@@ -476,7 +476,7 @@ export class TokenTypes {
 
     //, "defined", "ref", "exists"
     static end = _r(/__END__/);
-    static whitespace = _r(/[ \t\r\n]+/);
+    static whitespace = _rs([/[ \t]+/,/[\r?\n]/]); //line breaks (\r?\n) will always be separate tokens per line break
     static packageSeparator = _r(/\:\:/);
     static semicolon = _r(/;/);
     static sigiledIdentifier = _r(new RegExp("[\\$@%&*]" + TokenTypes.identifierRegex.source));

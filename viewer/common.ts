@@ -820,3 +820,4 @@ export class SimpleEventEmitter<T> {
         this.handlers.remove(handler);
     }
 }
+

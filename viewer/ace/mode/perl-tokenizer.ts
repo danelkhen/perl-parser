@@ -25,6 +25,7 @@ import {
 } from "perl-parser";
 import * as util from "ace/autocomplete/util";
 import {Mode} from "./perl";
+import {P5AceHelper} from "../../p5-ace-helper";
 
 export class PerlTokenizer {
     constructor(public mode: Mode) { }
@@ -37,34 +38,104 @@ export class PerlTokenizer {
             this.attachToSession(this.mode.session);
             return;
         }
-        this.reset();
+        this.reset(true);
     }
 
-    topChangePos:TextFilePos;
-    attachToSession(session:IEditSession) {
+    topChangePos: TextFilePos;
+    attachToSession(session: IEditSession) {
         this.session = session;
         if (this.session != null) {
             this.session.on("change", e => {
                 console.log(e);
-                e.start
+                let pos = P5AceHelper.toTextFilePos(e.start);
+                if (this.topChangePos == null || pos.isBefore(this.topChangePos))
+                    this.topChangePos = pos;
                 this.lines = this.session.getDocument().getAllLines().toArray();
                 this.reset();
             });
             this.lines = this.session.getDocument().getAllLines().toArray();
         }
-        this.reset();
+        this.reset(true);
     }
 
-    reset() {
+    reset(complete?: boolean) {
+        if (this.topChangePos != null && !complete) {
+            this.tokenizer.file.text = this.lines.join("\n");
+            this.tokenizer.file.scanNewLines();
+            let tokens = this.tokenizer.tokens;
+            let tokenIndex = tokens.findIndex(t => t.range.containsPos(this.topChangePos));
+            if (tokenIndex >= 0) {
+                let token = tokens[tokenIndex];
+                tokens.splice(tokenIndex, tokens.length - tokenIndex);
+                this.tokenizer.cursor.pos = token.range.start;
+                this.topChangePos = null;
+            }
+            return;
+        }
+        if (!complete)
+            return;
         console.log("resetting tokenizer");
         this.tokenizer = new Tokenizer();
         this.tokenizer.file = new TextFile("unknown.pm", this.lines.join("\n"));
         this.tokenizer.init();
     }
 
+    tokenizeUntilLineNumber(lineNumber: number) {
+        let tok = this.tokenizer;
+        while (!tok.isEof() && tok.cursor.pos.line <= lineNumber) {
+            //console.log("MyTok", "tokenizer.next", tok.cursor.pos.line, tok.cursor.pos.column);
+            tok.next();
+        }
+    }
+
+    getTokensContainingLineNumber(lineNumber: number, startFromTokenIndex: number = 0): Token[] {
+        let allTokens = this.tokenizer.tokens;
+        let tokens: Token[] = [];
+        for (let i = startFromTokenIndex; i < allTokens.length; i++) {
+            let token = this.tokenizer.tokens[i];
+            if (token.range.start.line > lineNumber)
+                break;
+            if (token.range.containsLine(lineNumber))
+                tokens.push(token);
+        }
+        return tokens;
+    }
+
+    splitMultilineToken(token: Token): TokenEx[] {
+        let tokens = token.value.lines().map(t => <TokenEx>token.type.create2(t));
+        tokens.forEach(t => t.isPartialToken = true);
+        return tokens;
+    }
+    extractLineFromToken(token: Token, lineNumber: number): TokenEx {
+        if (token.range.start.line == lineNumber && token.range.end.line == lineNumber)
+            return token;
+        let lines = token.value.lines();
+        let line = lines[lineNumber - token.range.start.line];
+        let token2 = <TokenEx>token.type.create2(line);
+        token2.isPartialToken = true;
+        return token2;
+    }
+
+    isMultilineToken(token: Token): boolean {
+        return token.value.contains("\n");
+    }
+
     getLineTokens(line: string, state: any, row?: number): TokenizerResult {
+        if (row == null) {
+            console.log("parsing unknown line", { state, line });
+            let tokenizer = new Tokenizer();
+            tokenizer.file = new TextFile("unknown.pm", line);
+            tokenizer.init();
+            tokenizer.process();
+            let tokens2 = tokenizer.tokens.map(t => this.toTokenInfo(t));
+            let res = { state: state, tokens: tokens2 };
+            //console.log("tokenizer result", res);
+            return res;
+
+        }
         let lineNumber = row + 1;
         if (this.lines[row] != line) {
+            console.error("this shouldn't happen?");
             console.log({ lineNumber, prev: this.lines[row], now: line });
             this.lines[row] = line;
             this.reset(); //TODO: optimize - clear only the tokens from this line forward, rewind to the proper pos, and continue from there.
@@ -76,36 +147,35 @@ export class PerlTokenizer {
         if (tok.cursor.pos.line < lineNumber)
             startFromTokenIndex = tok.tokens.length;
         try {
-            while (!tok.isEof() && tok.cursor.pos.line <= lineNumber) {
-                //console.log("MyTok", "tokenizer.next", tok.cursor.pos.line, tok.cursor.pos.column);
-                tok.next();
-            }
+            this.tokenizeUntilLineNumber(lineNumber);
         }
         catch (e) {
             if (tok.cursor.pos.line <= lineNumber)
                 return { state: "error", tokens: [] };
         }
-        let relevantTokens: TokenEx[] = [];
-        for (let i = startFromTokenIndex; i < tok.tokens.length; i++) {
-            let token = tok.tokens[i];
-            let startRow = token.range.start.line - 1;
-            let endRow = token.range.end.line - 1;
-            if (startRow > row)
-                break;
-            if (endRow < row)
-                continue;
-            if (startRow == row && endRow == row) {
-                relevantTokens.push(token);
-                continue;
-            }
-            let lines = token.value.lines();
-            let newValue = lines[row - startRow];
-            if (newValue != "") {
-                let token2: TokenEx = token.type.create2(newValue);
-                token2.isPartialToken = true;
-                relevantTokens.push(token2);
-            }
-        }
+        let tokens2 = this.getTokensContainingLineNumber(lineNumber, startFromTokenIndex);
+        let relevantTokens = tokens2.map(t => this.extractLineFromToken(t, lineNumber));
+        //let relevantTokens: TokenEx[] = [];
+        //for (let i = startFromTokenIndex; i < tok.tokens.length; i++) {
+        //    let token = tok.tokens[i];
+        //    let startRow = token.range.start.line - 1;
+        //    let endRow = token.range.end.line - 1;
+        //    if (startRow > row)
+        //        break;
+        //    if (endRow < row)
+        //        continue;
+        //    if (startRow == row && endRow == row) {
+        //        relevantTokens.push(token);
+        //        continue;
+        //    }
+        //    let lines = token.value.lines();
+        //    let newValue = lines[row - startRow];
+        //    if (newValue != "") {
+        //        let token2: TokenEx = token.type.create2(newValue);
+        //        token2.isPartialToken = true;
+        //        relevantTokens.push(token2);
+        //    }
+        //}
         let newState = "no_tokens";
         if (relevantTokens.length > 0) {
             let lastToken = relevantTokens.last();
@@ -118,6 +188,7 @@ export class PerlTokenizer {
 
         let tokens: TokenInfo[] = relevantTokens.map(t => this.toTokenInfo(t));//.filter(t => t != null)
         let res: TokenizerResult = { tokens, state: newState };//
+        console.log("tokenizer result", res, res.tokens.map(t=>t.value).join(""));
         //console.log({ line_num: row + 1, line, fromState: state, toState: newState, stateChanged: state != newState });
         //console.log("getLineTokens", { line_num: row + 1, line, stateName, state, tokens });
         return res;
