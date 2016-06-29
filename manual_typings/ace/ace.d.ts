@@ -299,6 +299,7 @@ declare module "ace/edit_session" {
     import {Position} from "ace/position";
     import {GutterRenderer} from "ace/layer/gutter";
     import {IFold} from "ace/edit_session/fold";
+    import {EditorChangeEvent} from "ace/editor_change_event";
 
 
     /**
@@ -307,10 +308,12 @@ declare module "ace/edit_session" {
     **/
     export interface IEditSession {
 
-        addEventListener(ev:"changebreakpoint", handler:Function):void;
-        addEventListener(ev:string, handler:Function):void;
-        removeEventListener(name:"changebreakpoint", handler:Function):void;
-        removeEventListener(name:string, handler:Function):void;
+        on(eventName: "changebreakpoint", handler: Function): void;
+        on(eventName: string, handler: Function): void;
+        off(eventName: "changebreakpoint", handler: Function): void;
+        off(eventName: string, handler: Function): void;
+        on(eventName: 'change', callback: (e: EditorChangeEvent) => any): void;
+        off(eventName: 'change', callback: (e: EditorChangeEvent) => any): void;
 
         selection: Selection;
 
@@ -1316,35 +1319,31 @@ declare module "ace/editor" {
     **/
     export interface Editor extends EventEmitter {
 
-        textInput:TextInput;
+        textInput: TextInput;
 
-        addEventListener(ev: 'change', callback: (ev: EditorChangeEvent) => any): void;
+        on(eventName: 'change', callback: (e: EditorChangeEvent) => any): void;
+        on(eventName: 'guttermousedown', callback: (e: MouseEvent) => any): void;
+        on(eventName: 'gutterclick', callback: (e: MouseEvent) => any): void;
+        on(eventName: 'gutterdblclick', callback: (e: MouseEvent) => any): void;
+        on(eventName: 'guttermousemove', callback: (e: MouseEvent) => any): void;
+        on(eventName: 'click', callback: (e: MouseEvent) => any): void;
+        on(eventName: 'mousemove', callback: (e: MouseEvent) => any): void;
+        on(eventName: 'mousedown', callback: (e: MouseEvent) => any): void;
+        on(eventName: 'touchmove', callback: (e: MouseEvent) => any): void;
+        on(eventName: 'mousewheel', callback: (e: MouseEvent) => any): void;
+        on(eventName: string, callback: Function): void;
         
-        addEventListener(ev: 'guttermousedown', callback: (ev: MouseEvent) => any): void;
-        addEventListener(ev: 'gutterclick', callback: (ev: MouseEvent) => any): void;
-        addEventListener(ev: 'gutterdblclick', callback: (ev: MouseEvent) => any): void;
-        addEventListener(ev: 'guttermousemove', callback: (ev: MouseEvent) => any): void;
-        
-        addEventListener(ev: 'click', callback: (ev: MouseEvent) => any): void;
-        addEventListener(ev: 'mousemove', callback: (ev: MouseEvent) => any): void;
-        addEventListener(ev: 'mousedown', callback: (ev: MouseEvent) => any): void;
-        addEventListener(ev: 'touchmove', callback: (ev: MouseEvent) => any): void;
-        addEventListener(ev: 'mousewheel', callback: (ev: MouseEvent) => any): void;
-        addEventListener(ev: string, callback: Function): void;
-
-        addEventListener(ev: 'change', callback: (ev: EditorChangeEvent) => any): void;
-        
-        removeEventListener(ev: 'guttermousedown', callback: (ev: MouseEvent) => any): void;
-        removeEventListener(ev: 'gutterclick', callback: (ev: MouseEvent) => any): void;
-        removeEventListener(ev: 'gutterdblclick', callback: (ev: MouseEvent) => any): void;
-        removeEventListener(ev: 'guttermousemove', callback: (ev: MouseEvent) => any): void;
-        
-        removeEventListener(ev: 'click', callback: (ev: MouseEvent) => any): void;
-        removeEventListener(ev: 'mousemove', callback: (ev: MouseEvent) => any): void;
-        removeEventListener(ev: 'mousedown', callback: (ev: MouseEvent) => any): void;
-        removeEventListener(ev: 'touchmove', callback: (ev: MouseEvent) => any): void;
-        removeEventListener(ev: 'mousewheel', callback: (ev: MouseEvent) => any): void;
-        removeEventListener(ev: string, callback: Function): void;
+        off(eventName: 'change', callback: (e: EditorChangeEvent) => any): void;
+        off(eventName: 'guttermousedown', callback: (e: MouseEvent) => any): void;
+        off(eventName: 'gutterclick', callback: (e: MouseEvent) => any): void;
+        off(eventName: 'gutterdblclick', callback: (e: MouseEvent) => any): void;
+        off(eventName: 'guttermousemove', callback: (e: MouseEvent) => any): void;
+        off(eventName: 'click', callback: (e: MouseEvent) => any): void;
+        off(eventName: 'mousemove', callback: (e: MouseEvent) => any): void;
+        off(eventName: 'mousedown', callback: (e: MouseEvent) => any): void;
+        off(eventName: 'touchmove', callback: (e: MouseEvent) => any): void;
+        off(eventName: 'mousewheel', callback: (e: MouseEvent) => any): void;
+        off(eventName: string, callback: Function): void;
 
         inMultiSelectMode: boolean;
 
@@ -2049,6 +2048,7 @@ declare module "ace/editor" {
 
 }
 declare module "ace/editor_change_event" {
+    import {Position} from "ace/position";
     interface EditorChangeEvent {
         start: Position;
         end: Position;
@@ -2062,6 +2062,7 @@ declare module "ace/editor_change_event" {
 }
 declare module "ace/place_holder" {
     import {IEditSession} from "ace/edit_session";
+    import {Position} from "ace/position";
 
     export interface PlaceHolder {
 
@@ -2283,6 +2284,7 @@ declare module "ace/search" {
 declare module "ace/selection" {
     import {IEditSession} from "ace/edit_session";
     import {Range} from "ace/range";
+    import {Position} from "ace/position";
     ////////////////
     /// Search
     ////////////////
@@ -2294,7 +2296,7 @@ declare module "ace/selection" {
     **/
     export interface Selection {
 
-        addEventListener(ev: string, callback: Function): void;
+        on(ev: string, callback: Function): void;
 
         moveCursorWordLeft(): void;
 
@@ -3169,10 +3171,10 @@ declare module "ace/lib/event_emitter" {
         setDefaultHandler(eventName: string, callback: Function);
         removeDefaultHandler(eventName: string, callback: Function);
         on(eventName: string, callback: Function, capturing?: boolean);
-        addEventListener(eventName: string, callback: Function, capturing?: boolean);
+        on(eventName: string, callback: Function, capturing?: boolean);
         off(eventName: string, callback: Function);
         removeListener(eventName: string, callback: Function);
-        removeEventListener(eventName: string, callback: Function);
+        off(eventName: string, callback: Function);
         removeAllListeners(eventName: string);
     }
 }
@@ -3301,7 +3303,7 @@ declare module "ace/ext/language_tools" {
         snippet?: string;
         /** text value to be inserted in the caret location */
         value?: string;
-        score?:number;
+        score?: number;
     }
     /** Modifies list of default completers */
     export function setCompleters(val: Completer[]);
@@ -3475,50 +3477,50 @@ declare module "ace/undomanager" {
 declare module "ace/lib/dom" {
 
 
-export function getDocumentHead(doc);
+    export function getDocumentHead(doc);
 
-export function createElement(tag, ns);
+    export function createElement(tag, ns);
 
-export function hasCssClass(el, name);
+    export function hasCssClass(el, name);
 
-/*
-* Add a CSS class to the list of classes on the given node
-*/
-export function addCssClass(el, name);
+    /*
+    * Add a CSS class to the list of classes on the given node
+    */
+    export function addCssClass(el, name);
 
-/*
-* Remove a CSS class from the list of classes on the given node
-*/
-export function removeCssClass(el, name);
+    /*
+    * Remove a CSS class from the list of classes on the given node
+    */
+    export function removeCssClass(el, name);
 
-export function toggleCssClass(el, name);
+    export function toggleCssClass(el, name);
 
-/*
- * Add or remove a CSS class from the list of classes on the given node
- * depending on the value of <tt>include</tt>
- */
-export function setCssClass(node, className, include);
+    /*
+     * Add or remove a CSS class from the list of classes on the given node
+     * depending on the value of <tt>include</tt>
+     */
+    export function setCssClass(node, className, include);
 
-export function hasCssString(id, doc);
+    export function hasCssString(id, doc);
 
-export function importCssString(cssText, id, doc?);
+    export function importCssString(cssText, id, doc?);
 
-export function importCssStylsheet(uri, doc);
+    export function importCssStylsheet(uri, doc);
 
-export function getInnerWidth(element);
+    export function getInnerWidth(element);
 
-export function getInnerHeight(element);
+    export function getInnerHeight(element);
 
-export function scrollbarWidth(document);
+    export function scrollbarWidth(document);
 
-/*
- * Optimized set innerHTML. This is faster than plain innerHTML if the element
- * already contains a lot of child elements.
- *
- * See http://blog.stevenlevithan.com/archives/faster-than-innerhtml for details
- */
-export function setInnerHtml(el, innerHtml);
+    /*
+     * Optimized set innerHTML. This is faster than plain innerHTML if the element
+     * already contains a lot of child elements.
+     *
+     * See http://blog.stevenlevithan.com/archives/faster-than-innerhtml for details
+     */
+    export function setInnerHtml(el, innerHtml);
 
-export function getParentWindow(document);
+    export function getParentWindow(document);
 
 }

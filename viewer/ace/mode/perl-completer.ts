@@ -29,7 +29,8 @@ import * as util from "ace/autocomplete/util";
 import {PerlTokenizer, TokenInfoEx} from "./perl-tokenizer";
 import {Mode} from "./perl";
 import {Helper} from "../../common";
-import {AceHelper, EntityInfo, PerlFile} from "../../perl-file";
+import {P5AceHelper, EntityInfo} from "../../p5-ace-helper";
+import {PerlFile} from "../../perl-file";
 import {PerlEditSession} from "../../p5-ace-editor";
 
 export class PerlCompleter implements Completer {
@@ -59,7 +60,7 @@ export class PerlCompleter implements Completer {
     }
 
     entityInfoToCompletion(t: EntityInfo): Completion {
-        return { caption: t.name, type: null, meta: t.type, snippet: null, docHTML: AceHelper.createPopupHtml(t), value: t.name, score: 0 };
+        return { caption: t.name, type: null, meta: t.type, snippet: null, docHTML: P5AceHelper.createPopupHtml(t), value: t.name, score: 0 };
     }
     
     //original alternative method = getCompletionPrefix2

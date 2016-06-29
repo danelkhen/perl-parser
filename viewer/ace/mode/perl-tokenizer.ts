@@ -39,10 +39,14 @@ export class PerlTokenizer {
         }
         this.reset();
     }
-    attachToSession(session) {
+
+    topChangePos:TextFilePos;
+    attachToSession(session:IEditSession) {
         this.session = session;
         if (this.session != null) {
             this.session.on("change", e => {
+                console.log(e);
+                e.start
                 this.lines = this.session.getDocument().getAllLines().toArray();
                 this.reset();
             });
@@ -58,7 +62,7 @@ export class PerlTokenizer {
         this.tokenizer.init();
     }
 
-    getLineTokens(line: string, state: string, row?: number): TokenizerResult {
+    getLineTokens(line: string, state: any, row?: number): TokenizerResult {
         let lineNumber = row + 1;
         if (this.lines[row] != line) {
             console.log({ lineNumber, prev: this.lines[row], now: line });

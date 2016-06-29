@@ -44,6 +44,7 @@ import { UndoManager     } from "ace/undomanager";
 import { Autocomplete    } from "ace/autocomplete";
 import {EventEmitter, SimpleEventEmitter } from "./common";
 import {PropertyChangeTracker, ObjProperty} from "./property-change-tracker";
+import {P5AceHelper} from "./p5-ace-helper";
 
 //import * as DarkTheme   from "./ace/theme/vs-dark";
 
@@ -80,10 +81,10 @@ export class P5AceEditor {
             enableBasicAutocompletion: [snippetCompleter, /*textCompleter, */keyWordCompleter],
         });
         this.editor.focus();
-        this.editor.addEventListener("linkClick", e => this.editor_linkClick(e));
+        this.editor.on("linkClick", e => this.editor_linkClick(e));
         //this.editor.addEventListener("guttermousedown", e => this.editor_guttermousedown(e));
         //this.editor.addEventListener("guttermousemove", e => this.editor_guttermousemove(e));
-        this.editor.addEventListener("mousemove", e => this.editor_mousemove(e));
+        this.editor.on("mousemove", e => this.editor_mousemove(e));
         this.editor.renderer.getMouseEventTarget().addEventListener("mouseenter", e => this.editor_mouseenter(e));
         this.editor.renderer.getMouseEventTarget().addEventListener("mouseleave", e => this.editor_mouseleave(e));
         this.enableHover();
@@ -155,12 +156,6 @@ export class P5AceEditor {
         this.tooltipMarker = marker;
         this.addMarker(marker);
         //this.statusTextEl.textContent = text;
-    }
-    toTextFilePos(pos: Position): TextFilePos {
-        let pos2 = new TextFilePos();
-        pos2.line = pos.row + 1;
-        pos2.column = pos.column + 1;
-        return pos2;
     }
     hideTooltip() {
         if (this.tooltipMarker == null)
@@ -283,7 +278,7 @@ export class P5AceEditor {
             };
         }
 
-        marker.id = this.editor.session.addMarker(marker.aceRange || this.toRange(marker.range), marker.className, <string>(marker.aceRenderer || marker.aceType), marker.inFront);
+        marker.id = this.editor.session.addMarker(marker.aceRange || P5AceHelper.toAceRange(marker.range), marker.className, <string>(marker.aceRenderer || marker.aceType), marker.inFront);
         if (marker.annotation != null) {
             if (marker.annotation.pos == null)
                 marker.annotation.pos = marker.range.start;
@@ -329,12 +324,6 @@ export class P5AceEditor {
         let atts = this.editor.session.getAnnotations();
         atts.push(this.toAceAnnotation(ann));
         this.editor.session.setAnnotations(atts);
-    }
-    toPosition(pos: TextFilePos): Position {
-        return { row: pos.line - 1, column: pos.column - 1 };
-    }
-    toRange(range: TextFileRange): Range {
-        return new Range(range.start.line - 1, range.start.column - 1, range.end.line - 1, range.end.column - 1);
     }
     scrollToLine(line: number) {
         this.editor.scrollToLine(line - 1, null, false, null);

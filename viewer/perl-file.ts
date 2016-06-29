@@ -10,6 +10,7 @@ import {P5Service, P5File, CritiqueResponse, CritiqueViolation, GitBlameItem, Pe
 import {PropertyChangeTracker, ObjProperty} from "./property-change-tracker";
 import {PerlModuleClassify} from "./p5-service";
 import {PopupMarker} from "./p5-ace-editor";
+import {P5AceHelper, EntityInfo, EntityType} from "./p5-ace-helper";
 import "./extensions";
 
 export class PerlFile {
@@ -293,7 +294,7 @@ export class PerlFile {
             hl.className = type;
             hl.target = "_blank";
             if (html != null)
-                hl.html = AceHelper.createPopupHtml({ name: hl.name, type: type, href: hl.href, docHtml: html });
+                hl.html = P5AceHelper.createPopupHtml({ name: hl.name, type: type, href: hl.href, docHtml: html });
             return hl;
         });
 
@@ -339,7 +340,7 @@ export class PerlFile {
         if (this.unitPackage != null) {
             this.unitPackage.members.forEach(me => {
                 if (me instanceof Subroutine && me.node.declaration != null) {
-                    this.addCodePopup({ node: me.node.declaration.name, name: me.node.toCode().trim(), html: AceHelper.createPopupHtmlFromEntity(me) });
+                    this.addCodePopup({ node: me.node.declaration.name, name: me.node.toCode().trim(), html: P5AceHelper.createPopupHtmlFromEntity(me) });
                 }
             });
         }
@@ -382,7 +383,7 @@ export class PerlFile {
             href: info.href,
             name: info.name,
             className: "package-name",
-            html: AceHelper.createPopupHtml(info),
+            html: P5AceHelper.createPopupHtml(info),
             target: "_blank",
         };
     }
@@ -514,47 +515,7 @@ export class PerlFile {
 
 }
 
-export class EntityType {
-    static package = "package";
-    static builtinFunction = "builtinFunction";
-    static subroutine = "subroutine";
-}
-export interface EntityInfo {
-    name: string;
-    /** package, builtinFunction, subroutine - EntityType.X */
-    type: string;
-    attributes?: string[];
-    docHtml?: string;
-    docText?: string;
-    href?: string;
-    /** if it's a package, the resolution response */
-    resolvedPackage?: PerlModuleClassify;
-}
 
-export class AceHelper {
-    static createPopupHtmlFromEntity(x: Entity) {
-        let info = <EntityInfo>{ name: x.name, docText: x.documentation, type: x.constructor.name };
-        return this.createPopupHtml(info);
-    }
-    static createPopupHtml(x: EntityInfo) {
-        if (x.docText != null && x.docHtml == null)
-            x.docHtml = `<div class="pod">${this.toDocHtml(x.docText)}</div>`;
-        let attsText = x.attributes != null && x.attributes.length > 0 ? `${x.attributes.join()} ` : "";
-        let hrefAtt = x.href ? ` href="${x.href}"` : "";
-        let html = `<div><div class="popup-header"><a target="_blank"${hrefAtt}>(${attsText}${x.type}) ${x.name}</a></div>${x.docHtml || ""}</div>`;
-        return html;
-    }
-
-    static toDocHtml(text: string): string {
-        if (text == null || text.length == 0)
-            return text;
-        let html = text.lines().map(t => `<p>${Helper.htmlEncode(t)}</p>`).join("");
-        return html;
-
-    }
-
-
-}
 
 
 
