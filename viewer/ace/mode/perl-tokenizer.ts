@@ -101,11 +101,6 @@ export class PerlTokenizer {
         return tokens;
     }
 
-    splitMultilineToken(token: Token): TokenEx[] {
-        let tokens = token.value.lines().map(t => <TokenEx>token.type.create2(t));
-        tokens.forEach(t => t.isPartialToken = true);
-        return tokens;
-    }
     extractLineFromToken(token: Token, lineNumber: number): TokenEx {
         if (token.range.start.line == lineNumber && token.range.end.line == lineNumber)
             return token;
@@ -114,10 +109,6 @@ export class PerlTokenizer {
         let token2 = <TokenEx>token.type.create2(line);
         token2.isPartialToken = true;
         return token2;
-    }
-
-    isMultilineToken(token: Token): boolean {
-        return token.value.contains("\n");
     }
 
     getLineTokens(line: string, state: any, row?: number): TokenizerResult {
@@ -135,7 +126,7 @@ export class PerlTokenizer {
         }
         let lineNumber = row + 1;
         if (this.lines[row] != line) {
-            console.error("this shouldn't happen?");
+            console.warn("this shouldn't happen?");
             console.log({ lineNumber, prev: this.lines[row], now: line });
             this.lines[row] = line;
             this.reset(); //TODO: optimize - clear only the tokens from this line forward, rewind to the proper pos, and continue from there.
