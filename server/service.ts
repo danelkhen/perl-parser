@@ -3,6 +3,7 @@ import * as fs from "fs";
 import { GitFile, FsFile, PerlPackage, PerlCriticResult } from "./service-spec";
 import * as fs2 from "./fs3";
 import * as ChildProcess from "child_process"
+import {isNullOrEmpty, isNotNullOrEmpty} from "./utils";
 
 export class P5Service {
     constructor() {
@@ -20,7 +21,7 @@ export class P5Service {
             return null;
         let x = Path.relative(this.rootDir, path);
         let y = this.normalize(x);
-        console.log("mapPathBack", {path, x, y});
+        console.log("mapPathBack", { path, x, y });
         return y;
     }
     normalize(path: string): string {
@@ -50,15 +51,22 @@ export class P5Service {
     }
 
     perldoc(req: PerlDocRequest): Promise<string> {
-        let cmd = "perldoc ";
-        if (req.name != null)
-            cmd += req.name;
-        else if (req.funcName != null)
-            cmd += "-f " + req.funcName;
+        console.log("perldoc", { req });
+        let cmd = "perldoc";
+        if (isNotNullOrEmpty(req.name))
+            cmd += " "+req.name;
+        else if (isNotNullOrEmpty(req.funcName))
+            cmd += " -f " + req.funcName;
         if (req.format != null)
-            cmd += "-o" + req.format;
-        let res = ChildProcess.execSync(cmd);
-        return Promise.resolve(res);
+            cmd += " -o" + req.format;
+        try {
+            console.log("execSync", cmd);
+            let res = ChildProcess.execSync(cmd, { encoding: "utf8" });
+            return Promise.resolve(res);
+        }
+        catch (e) {
+            return Promise.reject("perldoc failed");
+        }
     }
 
     git_list_files(req: { treeId: string, path: string }): Promise<GitFile> {
@@ -143,11 +151,11 @@ export class P5Service {
     }
     pathJoin(list: any[]): string {
         let list2: string[] = this.flatten(list);
-        console.log("pathJoin", {list, list2});
+        console.log("pathJoin", { list, list2 });
         return Path.join.apply(Path, list2);
     }
     resolvePerlModuleFilename(rootDir: string, name: string): string {
-        let filename = this.pathJoin([rootDir, name.split("::")])+".pm";
+        let filename = this.pathJoin([rootDir, name.split("::")]) + ".pm";
         console.log("resolvePerlModuleFilename", { rootDir, name, filename });
         if (!fs.existsSync(filename))
             return null;

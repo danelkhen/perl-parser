@@ -284,7 +284,7 @@ export class PerlFile {
         if (hl.html != null)
             return Promise.resolve(hl);
         let isBuiltinFunction = this.isBuiltinFunction(hl.name);
-        let req = { funcName: null, name: null };
+        let req: PerlDocRequest = { };
         if (isBuiltinFunction)
             req.funcName = hl.name;
         else
@@ -328,7 +328,7 @@ export class PerlFile {
         hls.addRange(builtinTokens.map(t => <PopupMarker>{ name: t.value.trim(), tokens: [t] }));
         let names = hls.map(t => t.name).distinct();
         let p1 = CancellablePromise
-            .all(hls.map(hl => this.hlVerifyPerlDoc(hl, true)))
+            .all(hls.map(hl => this.hlVerifyPerlDoc(hl))) //, true
             .then(() => hls.forEach(hl => this.addCodePopup(hl)));
 
         let pkgs = inUse.select(node => this.getEntityInfo_package(node.toCode().trim()));//, type: EntityType.package }));
@@ -444,16 +444,17 @@ export class PerlFile {
         return res3;
     }
     perlDocHtml(req: PerlDocRequest, cacheOnly?: boolean): Promise<string> {
+        req.format = "html";
         let key = req.name + "_" + req.funcName;
         let storageKey = "perldoc_" + key;
-        let res3 = this.perlDocFromStorageOnly(req);
-        if (res3 != null)
-            return Promise.resolve(res3);
+        //let res3 = this.perlDocFromStorageOnly(req);
+        //if (res3 != null)
+        //    return Promise.resolve(res3);
         let res = this.perlDocCache[key];
         if (res !== undefined)
-            return Promise.resolve(res3);
+            return Promise.resolve(res);
         if (cacheOnly)
-            return Promise.resolve(res3);
+            return Promise.resolve(res);
         res = this.service.perldoc(req)
             .then(html => `<div class="pod">` + html.substringBetween("<!-- start doc -->", "<!-- end doc -->") + "</div>")
             .then(res2 => { localStorage.setItem(storageKey, res2); return res2; });
