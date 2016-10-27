@@ -5,6 +5,7 @@ import * as fs3 from "./fs3";
 import { P5Service } from "./service";
 import { GitFile, FsFile, PerlPackage, PerlCriticResult } from "./service-spec";
 import "../../libs/corex.js"
+import * as bodyParser from 'body-parser';
 
 var app = express();
 
@@ -22,41 +23,81 @@ app.use((req, res, next) => {
 app.use("/res/ace", express.static(aceDir), (req, res) => res.sendStatus(404));
 app.use("/res", express.static(rootDir), express.static(path.join(rootDir, "built")), (req, res) => res.sendStatus(404));
 
+let service = new P5Service();
 
-async function handleServiceRequest(req: express.Request, res: express.Response): Promise<any> {
-    console.log(req.params);
+app.use(bodyParser.json());
+app.all('/_api_/:action', (req: express.Request, res: express.Response) => {
+    console.log(req.method, req.url, (<any>req).body);
+    if (req.method == "OPTIONS") {
+        res.status(200);
+        return;
+    }
+    res.contentType("application/json");
     let action = req.params["action"];
-    let path2 = req.params[0];
-    let service = new P5Service();
-    if (action == "fs") {
-        return service.fs_list_files({ path: path2 })
-            .then(res2 => {
-                res.contentType("application/json").json(res2);
-                return res2;
-            }, reason => {
-                res.status(500).contentType("application/json").json(reason);
-                console.warn(reason);
-            });
+    let prm: any;
+    if (req.method == "POST") {
+        prm = (<any>req).body;
     }
-    else if (action == "src") {
-        let filename = service.mapPath(path2);
-        console.log(path2);
-        //let filename = path.join(rootDir, path2);
-        try {
-            let buffer = await fs3.readFile(filename);
-            res.status(200).contentType("text/plain").send(buffer);
-        }
-        catch (e) {
-            res.status(500).send(e);
-        }
+    else
+        prm = req.query;
+    if (service[action] == null) {
+        res.json("not found");
+        return;
     }
-    else {
-        let reason = (`action ${action} doesn't exist`);
-        res.status(404).contentType("application/json").json(reason);
-    }
-}
+    Promise.resolve()
+        .then(() => service[action](prm))
+        .then(t => {
+            if (t instanceof Buffer) {
+                res.contentType("text/plain").send(t);
+            }
+            else {
+                res.json(t);
+            }
+        }, e => {
+            let e2: ErrorEvent = e;
+            //if (e2.err != null) {
+            //    (<any>e2).errMessage = e2.err.message;
+            //    delete e.err;
+            //}
+            console.log("ERROR", e);
+            res.status(400).json(String(e));
+        });
 
-app.use("//:action/*", handleServiceRequest);
+});
+
+//async function handleServiceRequest(req: express.Request, res: express.Response): Promise<any> {
+//    console.log(req.params);
+//    let action = req.params["action"];
+//    let path2 = req.params[0];
+//    if (action == "fs") {
+//        return service.ls({ path: path2 })
+//            .then(res2 => {
+//                res.contentType("application/json").json(res2);
+//                return res2;
+//            }, reason => {
+//                res.status(500).contentType("application/json").json(reason);
+//                console.warn(reason);
+//            });
+//    }
+//    else if (action == "src") {
+//        let filename = service.mapPath(path2);
+//        console.log(path2);
+//        //let filename = path.join(rootDir, path2);
+//        try {
+//            let buffer = await fs3.readFile(filename);
+//            res.status(200).contentType("text/plain").send(buffer);
+//        }
+//        catch (e) {
+//            res.status(500).send(e);
+//        }
+//    }
+//    else {
+//        let reason = (`action ${action} doesn't exist`);
+//        res.status(404).contentType("application/json").json(reason);
+//    }
+//}
+
+//app.use("//:action/*", handleServiceRequest);
 
 
 app.get("*", (req, res) => {

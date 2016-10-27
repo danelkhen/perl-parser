@@ -5,12 +5,12 @@ import {
     TokenTypes, RefArrayToRefUtil, ExpressionTester, AstQuery, EntityResolver, Expression, InvocationExpression,
     NamedMemberExpression, Logger, Parser, SubroutineExpression, TokenReader, Entity, Subroutine, Member,
 } from "perl-parser";
-import {PackageResolution, Helper, TokenUtils, CancellablePromise} from "./common";
-import {P5Service, P5File, CritiqueResponse, CritiqueViolation, GitBlameItem, PerlDocRequest, GitLogItem, GitShow, GitShowFile, GitGrepItem, GitGrepMatch} from "./p5-service";
-import {PropertyChangeTracker, ObjProperty} from "./property-change-tracker";
-import {PerlModuleClassify} from "./p5-service";
-import {PopupMarker} from "./p5-ace-editor";
-import {P5AceHelper, EntityInfo, EntityType} from "./p5-ace-helper";
+import { PackageResolution, Helper, TokenUtils, CancellablePromise } from "./common";
+import { P5Service, P5File, CritiqueResponse, CritiqueViolation, GitBlameItem, PerlDocRequest, GitLogItem, GitShow, GitShowFile, GitGrepItem, GitGrepMatch } from "./p5-service";
+import { PropertyChangeTracker, ObjProperty } from "./property-change-tracker";
+import { PerlModuleClassify } from "./p5-service";
+import { PopupMarker } from "./p5-ace-editor";
+import { P5AceHelper, EntityInfo, EntityType } from "./p5-ace-helper";
 import "./extensions";
 
 export class PerlFile {
@@ -54,8 +54,8 @@ export class PerlFile {
     }
 
     resolvePackageWithInclude(packageName: string, include: string): Promise<string> {
-        let url = Helper.urlJoin([include, packageName.split("::")]) + ".pm";
-        return this.service.fs(url).then(t => include);
+        let path = Helper.urlJoin([include, packageName.split("::")]) + ".pm";
+        return this.service.ls({ path }).then(t => include);
     }
 
     perlModuleClassifyCache: Map<string, PerlModuleClassify> = new Map<string, PerlModuleClassify>();
@@ -66,7 +66,7 @@ export class PerlFile {
         let resolved = packageNames.where(t => cache.has(t));
         let remaining = packageNames.where(t => !cache.has(t));
         let resolved2 = resolved.map(t => cache.get(t));
-        return this.service.perlModuleClassify(remaining).then(list => {
+        return this.service.perlres({ path: this.file.path, packageNames: remaining }).then(list => {
             list.forEach(t => cache.set(t.name, t));
             list.addRange(resolved2);
             return list;
@@ -172,7 +172,7 @@ export class PerlFile {
     if it's a file, gets the contents fo the file (TODO: only do this with a limit of file size, and check file extension is supported) 
     */
     getFile(path: string): Promise<P5File> {
-        return this.service.fs(path)
+        return this.service.ls({ path })
             .catch(e => <P5File>{ name: path, is_dir: false, src: "", exists: false })
             .then(file => this.verifyChildren(file))
             .then(file => this.verifySrc(file));
@@ -196,7 +196,7 @@ export class PerlFile {
             return Promise.resolve(file);
         if (!file.exists)
             return Promise.resolve(file);
-        return this.service.src(file.path).catch(() => "").then(data => { file.src = data; return file; });
+        return this.service.cat({ path: file.path }).catch(() => "").then(data => { file.src = data; return file; });
     }
 
     processFile(): CancellablePromise<any> {
@@ -454,7 +454,7 @@ export class PerlFile {
             return Promise.resolve(res3);
         if (cacheOnly)
             return Promise.resolve(res3);
-        res = this.service.perlDocHtml(req)
+        res = this.service.perldoc(req)
             .then(html => `<div class="pod">` + html.substringBetween("<!-- start doc -->", "<!-- end doc -->") + "</div>")
             .then(res2 => { localStorage.setItem(storageKey, res2); return res2; });
         this.perlDocCache[key] = res;
