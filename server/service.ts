@@ -1,18 +1,35 @@
 ﻿import * as Path from "path";
 import * as fs from "fs";
-import {GitFile, FsFile, PerlPackage, PerlCriticResult} from "./service-spec";
-let rootDir = Path.join(__dirname, "../..")
+import { GitFile, FsFile, PerlPackage, PerlCriticResult } from "./service-spec";
 import * as fs2 from "./fs3";
 
-export class P5Service {
 
-    async  fs_list_files(req: { path: string }): Promise<FsFile> {
-        let path = req.path || ".";
+export class P5Service {
+    constructor() {
+        this.rootDir = process.cwd();// Path.join(__dirname, "../..")
+        console.log(this.rootDir);
+    }
+
+    rootDir: string;
+
+    mapPath(path: string): string {
+        return Path.join(this.rootDir, path);
+    }
+    normalize(path: string): string {
+        if([null, "", "."].contains(path))
+            return "/";
+        return path;
+    }
+
+    async fs_list_files(req: { path: string }): Promise<FsFile> {
+        let userPath = this.normalize(req.path);
+        let path = this.mapPath(userPath || ".");
+        console.log("ls", userPath, path);
         let stat = await fs2.stat(path);
-        let file: FsFile = { path: path, is_dir: stat.isDirectory() };
+        let file: FsFile = { path: userPath, is_dir: stat.isDirectory() };
         if (stat.isFile())
             return file;
-        let childNames = await fs2.readdir(file.path);
+        let childNames = await fs2.readdir(path);
         let childPaths = childNames.map(t => Path.join(path, t));
         let childStats = await fs2.stats(childPaths);
         file.children = childNames.map((name, i) => <FsFile>{

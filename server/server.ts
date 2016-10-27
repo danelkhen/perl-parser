@@ -4,6 +4,7 @@ import * as fs from "fs";
 import * as fs3 from "./fs3";
 import { P5Service } from "./service";
 import { GitFile, FsFile, PerlPackage, PerlCriticResult } from "./service-spec";
+import "../../libs/corex.js"
 
 var app = express();
 
@@ -29,50 +30,30 @@ async function handleServiceRequest(req: express.Request, res: express.Response)
     let service = new P5Service();
     if (action == "fs") {
         return service.fs_list_files({ path: path2 })
-            //.catch(err => {
-            //    console.warn(err);
-            //    res.status(500).send(err);
-            //})
             .then(res2 => {
-                res.status(200).send(JSON.stringify(res2));
+                res.contentType("application/json").json(res2);
                 return res2;
             }, reason => {
+                res.status(500).contentType("application/json").json(reason);
                 console.warn(reason);
-                res.status(500).send(JSON.stringify(reason));
             });
     }
     else if (action == "src") {
         let filename = path.join(rootDir, path2);
         try {
             let buffer = await fs3.readFile(path2);
-            //let text = buffer.toString();
             res.status(200).contentType("text/plain").send(buffer);
         }
         catch (e) {
             res.status(500).send(e);
         }
-        //return service.fs_list_files({ path: path2 })
-        //    .catch(err => {
-        //        console.warn(err);
-        //        res.status(500).send(err);
-        //    })
-        //    .then(res2 => {
-        //        res.status(200).send(res2);
-        //        return res2;
-        //    });
     }
 }
 
 app.use("//:action/*", handleServiceRequest);
-//(req, res) => {
-//    req.param
-//});
 
 
 app.get("*", (req, res) => {
-    //if (req.params.base == "res")
-    //    throw new Error();
-
     let file = path.join(path.join(rootDir, "viewer/index.html"));
     console.log({ base: req.params.base, url: req.url });
     console.log("sending", file);

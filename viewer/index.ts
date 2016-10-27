@@ -13,19 +13,19 @@ import {
     ExpressionTester, EtReport, EtItem, RefArrayToRefUtil,
     EntityResolver, Package, Subroutine,
 } from "perl-parser";
-import {PackageResolution, AsyncFunc, TreeNodeData, Expander, Helper, TokenUtils, Collapsable, IndexRange, IndexSelection} from "./common";
-import {P5Service, P5File, CritiqueResponse, CritiqueViolation, GitBlameItem, PerlDocRequest, GitLogItem, GitShow, GitShowFile, GitGrepItem, GitGrepMatch} from "./p5-service";
-import {monitor, Monitor} from "./monitor";
-import {Key, Rect, Size, Point, CancellablePromise} from "./common";
+import { PackageResolution, AsyncFunc, TreeNodeData, Expander, Helper, TokenUtils, Collapsable, IndexRange, IndexSelection } from "./common";
+import { P5Service, P5File, CritiqueResponse, CritiqueViolation, GitBlameItem, PerlDocRequest, GitLogItem, GitShow, GitShowFile, GitGrepItem, GitGrepMatch } from "./p5-service";
+import { monitor, Monitor } from "./monitor";
+import { Key, Rect, Size, Point, CancellablePromise } from "./common";
 import * as ace from "ace/ace";
 import * as ModeList from "ace/ext/modelist";
-import {Range} from "ace/range";
-import {Editor} from "ace/editor";
-import {P5AceEditor, PopupMarker} from "./p5-ace-editor";
-import {PerlCompleter} from "./ace/mode/perl-completer";
-import {PerlFile} from "./perl-file";
-import {Template} from "./template";
-import {PropertyChangeTracker, ObjProperty} from "./property-change-tracker";
+import { Range } from "ace/range";
+import { Editor } from "ace/editor";
+import { P5AceEditor, PopupMarker } from "./p5-ace-editor";
+import { PerlCompleter } from "./ace/mode/perl-completer";
+import { PerlFile } from "./perl-file";
+import { Template } from "./template";
+import { PropertyChangeTracker, ObjProperty } from "./property-change-tracker";
 
 export class IndexPage {
 
@@ -52,11 +52,12 @@ export class IndexPage {
     offPropChanged(getter: (obj: this) => any, handler: Function) { return this.tracker.off(getter, handler); }
 
     main() {
+        this.main2();
         //$.get("/res/viewer/hello.html").then(t =>          Template.registerTag("hello", t)       );
-        $.getJSON("/res/local/config.json").then(t => {
-            console.log("local/config.json found", t);
-            localStorage.setItem("p5-service-url", t.p5ServiceUrl);
-        }).always(() => this.main2());
+        //$.getJSON("/res/local/config.json").then(t => {
+        //    console.log("local/config.json found", t);
+        //    localStorage.setItem("p5-service-url", t.p5ServiceUrl);
+        //}).always(() => this.main2());
     }
 
     matchesFilter(file: P5File): boolean {
@@ -591,7 +592,14 @@ export class IndexPage {
 }
 
 
-export function navigate(url) {
+export function navigate(url: string) {
+    console.log("navigate", {url});
+    //if (!url.startsWith("/"))
+    //    url = "/" + url;
+    if (url.startsWith("//"))
+        url = url.substr(1);
+    console.log("navigate - fixed", {url});
+
     window.history.pushState("", "", url);
     $(window).trigger("urlchange");
 }
