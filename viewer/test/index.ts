@@ -235,7 +235,7 @@ export class IndexPage {
         }
     }
 
-    createInstanceNode(obj: Object) {
+    createInstanceNode(obj: any) {
         if (typeof (obj) != "object") {
             let anp2: TreeNodeData = { text: obj.constructor.name, value: obj, children: [] };
             return anp2;
@@ -289,7 +289,7 @@ export class IndexPage {
         }
         else if (obj instanceof Array) {
             if (deep)
-                return obj.select(t => this.getTokens(t, false));
+                return obj.selectMany(t => this.getTokens(t, false));
             return obj.where(t => t instanceof Token);
         }
         else { // if (obj instanceof AstNode)

@@ -56,7 +56,7 @@ export class IndexPage {
         $.getJSON("/res/local/config.json").then(t => {
             console.log("local/config.json found", t);
             localStorage.setItem("p5-service-url", t.p5ServiceUrl);
-        }).then(() => this.main2());
+        }).always(() => this.main2());
     }
 
     matchesFilter(file: P5File): boolean {

@@ -1,5 +1,6 @@
 {
     "dependencies": {
+        "express": "registry:npm/express#4.14.0+20160925001530",
         "requirejs": "registry:npm/requirejs#2.2.0+20160319062357"
     },
     "devDependencies": {},
@@ -10,7 +11,7 @@
         "express-serve-static-core": "registry:dt/express-serve-static-core#0.0.0+20160625155614",
         "jquery": "registry:dt/jquery#1.10.0+20160620094458",
         "mime": "registry:dt/mime#0.0.0+20160316155526",
-        "node": "github:DefinitelyTyped/DefinitelyTyped/node/node.d.ts#aee0039a2d6686ec78352125010ebb38a7a7d743",
+        "node": "registry:dt/node#6.0.0+20161019125345",
         "require": "registry:dt/require#2.1.20+20160316155526",
         "serve-static": "registry:dt/serve-static#0.0.0+20160606155157"
     }

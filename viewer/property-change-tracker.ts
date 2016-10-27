@@ -61,6 +61,6 @@ export class ObjProperty<T> {
         return this.getter(this.obj);
     }
     set value(value: any) {
-        this.obj[name] = value;
+        (this.obj as any)[this.name] = value;
     }
 }

@@ -208,7 +208,7 @@ export class LogItem {
         return final;
     }
 
-    stringify(obj: Object) {
+    stringify(obj: any) {
         if (obj == null)
             return "";
         if (typeof (obj) != "object")

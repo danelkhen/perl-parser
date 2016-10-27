@@ -31,14 +31,14 @@ export class Template {
                 let body = parsed.body;
                 let prmsAndBody = parsed.prms.toArray();
                 prmsAndBody.push("return " + body);
-                let func = Function.apply(null, prmsAndBody);
+                let func = Function.applyNew(prmsAndBody);
                 return func;
             }
             else if (parsed.type == "ArrowFunction") {
                 let body = parsed.body;
                 let prmsAndBody = parsed.prms.toArray();
                 prmsAndBody.push(body);
-                let func = Function.apply(null, prmsAndBody);
+                let func = Function.applyNew(prmsAndBody);
                 return func;
             }
         }

@@ -764,7 +764,7 @@ export class CancellablePromise<T> {
                 }
                 let res = onfulfilled(value);
                 if (res instanceof CancellablePromise) {
-                    this.onCancel.attach(() => res.cancel());
+                    this.onCancel.attach(() => (res as CancellablePromise<TResult>).cancel());
                 }
                 return res;
             };

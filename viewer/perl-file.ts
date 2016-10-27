@@ -259,7 +259,7 @@ export class PerlFile {
         }
         else if (obj instanceof Array) {
             if (deep)
-                return obj.select(t => this.getTokens(t, false));
+                return obj.selectMany(t => this.getTokens(t, false));
             return obj.where(t => t instanceof Token);
         }
         else { // if (obj instanceof AstNode)

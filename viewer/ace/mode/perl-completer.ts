@@ -111,7 +111,8 @@ export class PerlCompleter implements Completer {
 hackAutoCompletePrefix();
 function hackAutoCompletePrefix() {
     let getCompletionPrefix_base = util.getCompletionPrefix;
-    util.getCompletionPrefix = function (editor: Editor) {
+    let util2:any = util;
+    util2.getCompletionPrefix = function (editor: Editor) {
         let mode: any = editor.session.getMode();
         if (mode.getCompletionPrefix)
             return mode.getCompletionPrefix(editor, getCompletionPrefix_base);

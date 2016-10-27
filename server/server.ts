@@ -2,8 +2,8 @@
 import * as path from "path";
 import * as fs from "fs";
 import * as fs3 from "./fs3";
-import {P5Service} from "./service";
-import {GitFile, FsFile, PerlPackage, PerlCriticResult} from "./service-spec";
+import { P5Service } from "./service";
+import { GitFile, FsFile, PerlPackage, PerlCriticResult } from "./service-spec";
 
 var app = express();
 
@@ -24,18 +24,21 @@ app.use("/res", express.static(rootDir), express.static(path.join(rootDir, "buil
 
 async function handleServiceRequest(req: express.Request, res: express.Response): Promise<any> {
     console.log(req.params);
-    let action = req.params.action;
+    let action = req.params["action"];
     let path2 = req.params[0];
     let service = new P5Service();
     if (action == "fs") {
         return service.fs_list_files({ path: path2 })
-            .catch(err => {
-                console.warn(err);
-                res.status(500).send(err);
-            })
+            //.catch(err => {
+            //    console.warn(err);
+            //    res.status(500).send(err);
+            //})
             .then(res2 => {
-                res.status(200).send(res2);
+                res.status(200).send(JSON.stringify(res2));
                 return res2;
+            }, reason => {
+                console.warn(reason);
+                res.status(500).send(JSON.stringify(reason));
             });
     }
     else if (action == "src") {
