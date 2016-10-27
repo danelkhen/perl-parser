@@ -102,7 +102,7 @@ export class PerlFile {
     }
 
     perlDocPackages(pkgs: EntityInfo[]): Promise<any> {
-        return Promise.all(pkgs.filter(pkg => pkg.resolvedPackage != null/*  && pkg.resolvedPackage.is_core */).map(pkg => this.perlDocHtml({ name: pkg.name, filename:pkg.resolvedPackage.path }).then(html => pkg.docHtml = html)));
+        return Promise.all(pkgs.filter(pkg => pkg.resolvedPackage != null/*  && pkg.resolvedPackage.is_core */).map(pkg => this.perlDocHtml({ moduleName: pkg.name, filename: pkg.resolvedPackage.path }).then(html => pkg.docHtml = html)));
     }
 
 
@@ -278,25 +278,42 @@ export class PerlFile {
             hl.href = "http://perldoc.perl.org/" + name + ".html";
     }
 
-    hlVerifyPerlDoc(hl: PopupMarker, cacheOnly?: boolean): Promise<PopupMarker> {
-        this.verifyHref(hl);
-        if (hl.html != null)
-            return Promise.resolve(hl);
-        let isBuiltinFunction = this.isBuiltinFunction(hl.name);
-        let req: PerlDocRequest = { };
-        if (isBuiltinFunction)
-            req.funcName = hl.name;
-        else
-            req.name = hl.name;
-        return this.perlDocHtml(req, cacheOnly).then(html => {
-            let type = isBuiltinFunction ? "builtin-function" : "pragma";
-            hl.className = type;
-            hl.target = "_blank";
-            if (html != null)
-                hl.html = P5AceHelper.createPopupHtml({ name: hl.name, type: type, href: hl.href, docHtml: html });
-            return hl;
-        });
+    //hlVerifyPerlDoc(hl: PopupMarker, cacheOnly?: boolean): Promise<PopupMarker> {
+    //    this.verifyHref(hl);
+    //    if (hl.html != null)
+    //        return Promise.resolve(hl);
+    //    let req: PerlDocRequest = { name: hl.name };
+    //    return this.perlDocHtml(req, cacheOnly).then(html => {
+    //        let type = this.isBuiltinFunction(hl.name) ? "builtin-function" : "pragma";
+    //        hl.className = type;
+    //        hl.target = "_blank";
+    //        if (html != null)
+    //            hl.html = P5AceHelper.createPopupHtml({ name: hl.name, type: type, href: hl.href, docHtml: html });
+    //        return hl;
+    //    });
+    //}
 
+    hlVerifyPerlDocs(hls: PopupMarker[], cacheOnly?: boolean): Promise<void> {
+        hls.forEach(t => this.verifyHref(t));
+        let missing = hls.where(t => t.html == null);
+        if (missing.length == 0)
+            return Promise.resolve();
+        let htmlByName = new Map<string, string>();
+        let names = missing.select(t => t.name).distinct();
+        return this.perlDocsHtml(names.map(t => <PerlDocRequest>{ name: t })).then(htmls => {
+            htmls.forEach((html, i) => {
+                let name = names[i];
+                htmlByName.set(name, html);
+            });
+            missing.forEach((hl, i) => {
+                let html = htmlByName.get(hl.name);
+                let type = this.isBuiltinFunction(hl.name) ? "builtin-function" : "pragma";
+                hl.className = type;
+                hl.target = "_blank";
+                if (html != null)
+                    hl.html = P5AceHelper.createPopupHtml({ name: hl.name, type: type, href: hl.href, docHtml: html });
+            });
+        });
     }
 
     isBuiltin(name: string): boolean { return this.isBuiltinFunction(name) || this.isPragma(name); }
@@ -326,9 +343,10 @@ export class PerlFile {
         let hls = builtinNodes.map(t => <PopupMarker>{ name: t.toCode().trim(), node: t });
         hls.addRange(builtinTokens.map(t => <PopupMarker>{ name: t.value.trim(), tokens: [t] }));
         let names = hls.map(t => t.name).distinct();
-        let p1 = CancellablePromise
-            .all(hls.map(hl => this.hlVerifyPerlDoc(hl))) //, true
-            .then(() => hls.forEach(hl => this.addCodePopup(hl)));
+        let p1 = this.hlVerifyPerlDocs(hls).then(() => hls.forEach(hl => this.addCodePopup(hl)));
+        //let p1 = CancellablePromise
+        //    .all(hls.map(hl => this.hlVerifyPerlDoc(hl))) //, true
+        //    .then(() => hls.forEach(hl => this.addCodePopup(hl)));
 
         let pkgs = inUse.select(node => this.getEntityInfo_package(node.toCode().trim()));//, type: EntityType.package }));
         let p2 = this.resolvePackages(pkgs).then(() => {
@@ -437,14 +455,18 @@ export class PerlFile {
 
     perlDocCache: ObjectMap<Promise<string>> = {};
     perlDocFromStorageOnly(req: PerlDocRequest): string {
-        let key = req.name + "_" + req.funcName;
+        let key = req.moduleName + "_" + req.funcName;
         let storageKey = "perldoc_" + key;
         let res3 = localStorage.getItem(storageKey);
         return res3;
     }
+    perlDocsHtml(reqs: PerlDocRequest[], cacheOnly?: boolean): Promise<string[]> {
+        reqs.forEach(t => t.format = "html");
+        return this.service.perldocs(reqs);
+    }
     perlDocHtml(req: PerlDocRequest, cacheOnly?: boolean): Promise<string> {
         req.format = "html";
-        let key = req.name + "_" + req.funcName;
+        let key = req.moduleName + "_" + req.funcName;
         let storageKey = "perldoc_" + key;
         //let res3 = this.perlDocFromStorageOnly(req);
         //if (res3 != null)
@@ -462,7 +484,7 @@ export class PerlFile {
     }
 
     perlDocHtmlMultiple(names: string[]): Promise<string[]> {
-        let reqs = names.map<PerlDocRequest>(name => this.isBuiltinFunction(name) ? { funcName: name } : { name: name });
+        let reqs = names.map<PerlDocRequest>(name => this.isBuiltinFunction(name) ? { funcName: name } : { moduleName: name });
         let promises: PromiseLike<string>[] = reqs.map(req => this.perlDocHtml(req));
         return Promise.all(promises);
     }

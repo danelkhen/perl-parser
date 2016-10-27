@@ -51,7 +51,7 @@ export class PerlCompleter implements Completer {
 
         console.log("getCompletions", { pos, prefix, pkgName });
         let list: EntityInfo[] = [];
-        list.addRange(unitPackage.uses.map(t => <EntityInfo>{ name: t.name, docHtml: perlFile.perlDocFromStorageOnly({ name: t.name }), type: "package" }));
+        list.addRange(unitPackage.uses.map(t => <EntityInfo>{ name: t.name, docHtml: perlFile.perlDocFromStorageOnly({ moduleName: t.name }), type: "package" }));
         list.addRange(unitPackage.members.map(t => <EntityInfo>{ name: t.name, docText: t.documentation, type: "subroutine" }));
 
         let list2: Completion[] = list.map(t => this.entityInfoToCompletion(t));

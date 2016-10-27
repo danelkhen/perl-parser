@@ -50,6 +50,10 @@ export class P5Service {
         return Promise.resolve(contents);
     }
 
+    perldocs(reqs: PerlDocRequest[]): Promise<string[]> {
+        return Promise.resolve(Promise.all(reqs.map(t => this.perldoc(t).catch(err => { } ))));
+    }
+
     perldoc(req: PerlDocRequest): Promise<string> {
         console.log("perldoc", { req });
         let cmd = "perldoc";
@@ -57,8 +61,8 @@ export class P5Service {
             cmd += " -o" + req.format;
         if (isNotNullOrEmpty(req.filename))
             cmd += " " + req.filename;
-        else if (isNotNullOrEmpty(req.name))
-            cmd += " " + req.name;
+        else if (isNotNullOrEmpty(req.moduleName))
+            cmd += " " + req.moduleName;
         else if (isNotNullOrEmpty(req.funcName))
             cmd += " -f " + req.funcName;
         try {
@@ -189,7 +193,7 @@ export interface PerlModuleClassify {
     url: string;
 }
 export interface PerlDocRequest {
-    name?: string;
+    moduleName?: string;
     funcName?: string;
     filename?: string;
     format?: string;

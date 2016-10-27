@@ -1,7 +1,12 @@
 ﻿"use strict";
+import { TokenTypes } from "perl-parser"
 
 export class P5Service {
     url = "/_api_/";
+    isBuiltinFunction(name: string): boolean {
+        return TokenTypes.builtinFunctions.contains(name);
+    }
+
     ls(req: PathRequest): Promise<P5File> {
         return this.ajax({ action: "ls", req });
     }
@@ -13,8 +18,27 @@ export class P5Service {
     perlCritique(path: string): Promise<CritiqueResponse> {
         return this.ajax({ action: "perl/critique/:path", req: { path } });
     }
+    perldocs(reqs: PerlDocRequest[]): Promise<string[]> {
+        let reqs2 = reqs.map(t => this.fixPerlDocRequest(t));
+        return this.ajax({ action: "perldocs", req: reqs2 });
+    }
+    fixPerlDocRequest(req: PerlDocRequest): PerlDocRequest {
+        if (req.name == null)
+            return req;
+        let req2: PerlDocRequest = {
+            format: req.format,
+        };
+        if (req.name.endsWith(".pm") || req.name.endsWith(".pl"))
+            req2.filename = req.name;
+        else if (this.isBuiltinFunction(req.name))
+            req2.funcName = req.name;
+        else
+            req2.moduleName = req.name;
+        return req2;
+    }
     perldoc(req: PerlDocRequest): Promise<string> {
-        return this.ajax({ action: "perldoc", req });
+        let req2 = this.fixPerlDocRequest(req);
+        return this.ajax({ action: "perldoc", req: req2 });
     }
     perlres(req: PerlResRequest): Promise<PerlModuleClassify[]> {
         if (req.packageNames == null || req.packageNames.length == 0)
@@ -143,7 +167,9 @@ export interface CritiqueResponse {
 }
 
 export interface PerlDocRequest {
+    /** autodetects builtin function / module name / filename */
     name?: string;
+    moduleName?: string;
     funcName?: string;
     filename?: string;
     format?: string;
