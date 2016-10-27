@@ -39,14 +39,20 @@ async function handleServiceRequest(req: express.Request, res: express.Response)
             });
     }
     else if (action == "src") {
-        let filename = path.join(rootDir, path2);
+        let filename = service.mapPath(path2);
+        console.log(path2);
+        //let filename = path.join(rootDir, path2);
         try {
-            let buffer = await fs3.readFile(path2);
+            let buffer = await fs3.readFile(filename);
             res.status(200).contentType("text/plain").send(buffer);
         }
         catch (e) {
             res.status(500).send(e);
         }
+    }
+    else {
+        let reason = (`action ${action} doesn't exist`);
+        res.status(404).contentType("application/json").json(reason);
     }
 }
 
