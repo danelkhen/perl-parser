@@ -3,7 +3,7 @@ import * as fs from "fs";
 import { GitFile, FsFile, PerlPackage, PerlCriticResult } from "./service-spec";
 import * as fs2 from "./fs3";
 import * as ChildProcess from "child_process"
-import {isNullOrEmpty, isNotNullOrEmpty} from "./utils";
+import { isNullOrEmpty, isNotNullOrEmpty } from "./utils";
 
 export class P5Service {
     constructor() {
@@ -53,12 +53,14 @@ export class P5Service {
     perldoc(req: PerlDocRequest): Promise<string> {
         console.log("perldoc", { req });
         let cmd = "perldoc";
-        if (isNotNullOrEmpty(req.name))
-            cmd += " "+req.name;
-        else if (isNotNullOrEmpty(req.funcName))
-            cmd += " -f " + req.funcName;
         if (req.format != null)
             cmd += " -o" + req.format;
+        if (isNotNullOrEmpty(req.filename))
+            cmd += " " + req.filename;
+        else if (isNotNullOrEmpty(req.name))
+            cmd += " " + req.name;
+        else if (isNotNullOrEmpty(req.funcName))
+            cmd += " -f " + req.funcName;
         try {
             console.log("execSync", cmd);
             let res = ChildProcess.execSync(cmd, { encoding: "utf8" });
@@ -189,6 +191,7 @@ export interface PerlModuleClassify {
 export interface PerlDocRequest {
     name?: string;
     funcName?: string;
+    filename?: string;
     format?: string;
 }
 

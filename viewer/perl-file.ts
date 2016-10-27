@@ -6,9 +6,8 @@ import {
     NamedMemberExpression, Logger, Parser, SubroutineExpression, TokenReader, Entity, Subroutine, Member,
 } from "perl-parser";
 import { PackageResolution, Helper, TokenUtils, CancellablePromise } from "./common";
-import { P5Service, P5File, CritiqueResponse, CritiqueViolation, GitBlameItem, PerlDocRequest, GitLogItem, GitShow, GitShowFile, GitGrepItem, GitGrepMatch } from "./p5-service";
+import { P5Service, P5File, CritiqueResponse, CritiqueViolation, GitBlameItem, PerlDocRequest, GitLogItem, GitShow, GitShowFile, GitGrepItem, GitGrepMatch, PerlModuleClassify } from "./p5-service";
 import { PropertyChangeTracker, ObjProperty } from "./property-change-tracker";
-import { PerlModuleClassify } from "./p5-service";
 import { PopupMarker } from "./p5-ace-editor";
 import { P5AceHelper, EntityInfo, EntityType } from "./p5-ace-helper";
 import "./extensions";
@@ -58,10 +57,10 @@ export class PerlFile {
         return this.service.ls({ path }).then(t => include);
     }
 
-    perlModuleClassifyCache: Map<string, PerlModuleClassify> = new Map<string, PerlModuleClassify>();
+    perlresCache: Map<string, PerlModuleClassify> = new Map<string, PerlModuleClassify>();
 
-    perlModuleClassify(packageNames: string[]): Promise<PerlModuleClassify[]> {
-        let cache = this.perlModuleClassifyCache;
+    perlres(packageNames: string[]): Promise<PerlModuleClassify[]> {
+        let cache = this.perlresCache;
         packageNames = packageNames.distinct();
         let resolved = packageNames.where(t => cache.has(t));
         let remaining = packageNames.where(t => !cache.has(t));
@@ -74,7 +73,7 @@ export class PerlFile {
     }
     resolvePackages(pkgs: EntityInfo[]): CancellablePromise<any> {
         return new CancellablePromise<any>((resolve, reject) => {
-            this.perlModuleClassify(pkgs.map(t => t.name).distinct()).then(res => {
+            this.perlres(pkgs.map(t => t.name).distinct()).then(res => {
                 res.forEach(mod => {
                     let pkg = pkgs.first(t => t.name == mod.name);
                     if (pkg == null)
@@ -103,7 +102,7 @@ export class PerlFile {
     }
 
     perlDocPackages(pkgs: EntityInfo[]): Promise<any> {
-        return Promise.all(pkgs.filter(pkg => pkg.resolvedPackage != null && pkg.resolvedPackage.is_core).map(pkg => this.perlDocHtml({ name: pkg.name }).then(html => pkg.docHtml = html)));
+        return Promise.all(pkgs.filter(pkg => pkg.resolvedPackage != null/*  && pkg.resolvedPackage.is_core */).map(pkg => this.perlDocHtml({ name: pkg.name, filename:pkg.resolvedPackage.path }).then(html => pkg.docHtml = html)));
     }
 
 

@@ -145,6 +145,7 @@ export interface CritiqueResponse {
 export interface PerlDocRequest {
     name?: string;
     funcName?: string;
+    filename?: string;
     format?: string;
 }
 
