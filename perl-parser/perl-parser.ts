@@ -1,5 +1,5 @@
 ﻿/// <reference path="../libs/corex.d.ts" />
-/// <reference path="../typings/globals/es6-shim/index.d.ts" />
+/// <reference path="../typings/globals/core-js/index.d.ts" />
 export * from "./perl-parser/utils";
 export * from "./perl-parser/text";
 export * from "./perl-parser/token-types";

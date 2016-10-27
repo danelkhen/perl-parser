@@ -38,11 +38,10 @@ declare interface ProxyHandler<T> {
     enumerate?(oTarget: T, sKey: string);
 }
 
+//interface PromiseConstructor {
+//    all2<TAll>(values: Iterable<TAll | PromiseLike<TAll>>): Promise<TAll[]>;
+//    all2Void<TAll>(values: Iterable<TAll | PromiseLike<TAll>>): Promise<void>;
+//}
 
-interface PromiseConstructor {
-    all2<T>(values: IterableShim<PromiseLike<T> | Promise<T> | T>): Promise<T[]>;
-    allVoid<T>(values: IterableShim<PromiseLike<void> | Promise<void> | void>): Promise<void>;
-}
-
-Promise.all2 = Promise.all;
-Promise.allVoid = <any>Promise.all;
+//Promise.all2 = Promise.all;
+//Promise.allVoid = <any>Promise.all;

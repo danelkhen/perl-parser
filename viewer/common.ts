@@ -9,9 +9,17 @@
     ReturnExpression, TrinaryExpression, Unit, UnlessStatement, UseOrNoStatement, UseStatement, ValueExpression, VariableDeclarationExpression, VariableDeclarationStatement, WhileStatement,
     AstQuery, PrecedenceResolver, TokenTypes, Tokenizer, TokenReader, Logger, AstNodeFixator,
 } from "perl-parser";
-import {ChangeTracker} from "./monitor";
-import {PerlModuleClassify} from "./p5-service";
+import { ChangeTracker } from "./monitor";
+import { PerlModuleClassify } from "./p5-service";
 
+export interface PopoverOptions {
+    html?:boolean;
+    trigger?:string;
+    delay?:number;
+    placement?:string;
+    animation?:boolean;
+    template?:string;
+}
 export class Helper {
     static tooltip(el: HTMLElement, opts: PopoverOptions) {
         if (opts.html == null)
@@ -24,7 +32,8 @@ export class Helper {
             opts.placement = "bottom";
         if (opts.animation == null)
             opts.animation = false;
-        $(el).popover(opts);
+        let q:any = $(el);
+        q.popover(opts); //TODO:
         //TODO:
         //$('.selector').popover({
         //    html: true,
@@ -189,7 +198,7 @@ export class Helper {
         return this._isBrowserReversesAttributes;
     }
     static getAttributes(node: Node): Attr[] {
-        let list = Array.from(node.attributes);
+        let list = Array.from<Attr>(node.attributes);
         if (this.isBrowserReversesAttributes())
             list.reverse();
         return list;
@@ -687,8 +696,9 @@ export class IndexRange {
     }
 }
 
-
 export class CancellablePromise<T> {
+
+
 
     /**
      * Creates a Promise that is resolved with an array of results when all of the provided Promises
@@ -696,13 +706,15 @@ export class CancellablePromise<T> {
      * @param values An array of Promises.
      * @returns A new Promise.
      */
-    static all<T>(values: IterableShim<T | PromiseLike<T>>): CancellablePromise<T[]> {
+    static all<T>(values: Iterable<T | PromiseLike<T>>): CancellablePromise<T[]> {
+        //static all<T>(values: IterableShim<T | PromiseLike<T>>): CancellablePromise<T[]> {
         let p = new CancellablePromise<T[]>(null);
         p.promise = Promise.all(values);
         return p;
 
     }
-    static allVoid<T>(values: IterableShim<T | PromiseLike<T>>): CancellablePromise<void> {
+    static allVoid<T>(values: Iterable<T | PromiseLike<T>>): CancellablePromise<void> {
+        //static allVoid<T>(values: IterableShim<T | PromiseLike<T>>): CancellablePromise<void> {
         let p = new CancellablePromise<any>(null);
         p.promise = Promise.all(values);
         return p;

@@ -118,7 +118,7 @@ export class Template {
             });
             if (stop)
                 return;
-            Array.from(node.childNodes).forEach((t, i) => {
+            Array.from<Node>(node.childNodes).forEach((t, i) => {
                 if ($(t).is(".template-instance"))
                     return; //these should be hanlded by forAtt
                 this.dataBind(t, obj, thisContext);
