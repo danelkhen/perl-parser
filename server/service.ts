@@ -55,36 +55,38 @@ export class P5Service {
     }
 
     perldoc(req: PerlDocRequest): Promise<string> {
-        console.log("perldoc", { req });
-        let cmd = "perldoc";
-        if (req.format != null)
-            cmd += " -o" + req.format;
-        if (isNotNullOrEmpty(req.filename))
-            cmd += " " + req.filename;
-        else if (isNotNullOrEmpty(req.moduleName))
-            cmd += " " + req.moduleName;
-        else if (isNotNullOrEmpty(req.funcName))
-            cmd += " -f " + req.funcName;
+        return new Promise<string>((resolve, reject) => {
+            console.log("perldoc", { req });
+            let cmd = "perldoc";
+            if (req.format != null)
+                cmd += " -o" + req.format;
+            if (isNotNullOrEmpty(req.filename))
+                cmd += " " + req.filename;
+            else if (isNotNullOrEmpty(req.moduleName))
+                cmd += " " + req.moduleName;
+            else if (isNotNullOrEmpty(req.funcName))
+                cmd += " -f " + req.funcName;
 
-        //TODO:
-        //let output:string[] = [];
+            let output: string[] = [];
 
-        //let process = ChildProcess.exec(cmd, (err, stdout, stderr) => {
-        //    console.log("exec", {err,stdout, stderr});
-        //    output.push(stdout);
-        //    output.push(stderr);
-            
-        //});
-        
+            let process = ChildProcess.exec(cmd, (err, stdout, stderr) => {
+                output.push(stdout);
+                output.push(stderr);
+            });
+            process.on("close", e => {
+                resolve(output.join(""));
+            });
+        });
 
-        try {
-            console.log("execSync", cmd);
-            let res = ChildProcess.execSync(cmd, { encoding: "utf8" });
-            return Promise.resolve(res);
-        }
-        catch (e) {
-            return Promise.reject("perldoc failed");
-        }
+
+        //try {
+        //    console.log("execSync", cmd);
+        //    let res = ChildProcess.execSync(cmd, { encoding: "utf8" });
+        //    return Promise.resolve(res);
+        //}
+        //catch (e) {
+        //    return Promise.reject("perldoc failed");
+        //}
     }
 
     git_list_files(req: { treeId: string, path: string }): Promise<GitFile> {
