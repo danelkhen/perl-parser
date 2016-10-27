@@ -51,7 +51,7 @@ export class P5Service {
     }
 
     perldocs(reqs: PerlDocRequest[]): Promise<string[]> {
-        return Promise.resolve(Promise.all(reqs.map(t => this.perldoc(t).catch(err => { } ))));
+        return Promise.resolve(Promise.all(reqs.map(t => this.perldoc(t).catch(err => { }))));
     }
 
     perldoc(req: PerlDocRequest): Promise<string> {
@@ -65,6 +65,18 @@ export class P5Service {
             cmd += " " + req.moduleName;
         else if (isNotNullOrEmpty(req.funcName))
             cmd += " -f " + req.funcName;
+
+        //TODO:
+        //let output:string[] = [];
+
+        //let process = ChildProcess.exec(cmd, (err, stdout, stderr) => {
+        //    console.log("exec", {err,stdout, stderr});
+        //    output.push(stdout);
+        //    output.push(stderr);
+            
+        //});
+        
+
         try {
             console.log("execSync", cmd);
             let res = ChildProcess.execSync(cmd, { encoding: "utf8" });
