@@ -156,8 +156,6 @@
                                     <thead>
                                         <tr>
                                             <th><span>Action</span></th>
-                                            <th><span>Added</span></th>
-                                            <th><span>Removed</span></th>
                                             <th><span>Path</span></th>
                                         </tr>
                                     </thead>
@@ -167,8 +165,6 @@
                                             _ondblclick="(e, file) => this.gitShowFile_click(e, file)"
                                             _onmousedown="(e, file)=>this.grid_mousedown(e, '.git-show-row')">
                                             <td class="nowrap">{{action}}</td>
-                                            <td class="nowrap">{{added}}</td>
-                                            <td class="nowrap">{{removed}}</td>
                                             <td class="pre">{{path}}</td>
                                         </tr>
                                     </tbody>

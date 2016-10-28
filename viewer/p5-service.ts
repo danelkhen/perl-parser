@@ -50,18 +50,19 @@ export class P5Service {
         return this.ajax({ action: "git_blame", req });
     }
 
-    gitLog(path: string): Promise<GitLogItem[]> {
-        return this.ajax({ action: "git/log/:path", req: { path } });
+    git_log(req: GitLogRequest): Promise<GitLogItem[]> {
+        return this.ajax({ action: "git_log", req });
     }
-    gitShow(sha: string): Promise<GitShow> {
-        return this.ajax<GitShow>({ action: "git/show/:sha", req: { sha } }).then(res => {
-            //TODO: numify numbers on the backend
-            res.files.forEach(t => {
-                t.added = Number(t.added);
-                t.removed = Number(t.removed);
-            });
-            return res;
-        });
+    git_show(req: GitShowRequest): Promise<GitShow> {
+        return this.ajax<GitShow>({ action: "git_show", req });
+        //.then(res => {
+        //    //TODO: numify numbers on the backend
+        //    res.files.forEach(t => {
+        //        t.added = Number(t.added);
+        //        t.removed = Number(t.removed);
+        //    });
+        //    return res;
+        //});
     }
     gitGrep(search: string): Promise<GitGrepItem[]> {
         return this.ajax<GitGrepItem[]>({ action: "git/grep/:search", req: { search } }).then(res => {
@@ -204,6 +205,9 @@ export interface GitAuthor {
     name: string;
 }
 
+export interface GitShowRequest extends PathRequest {
+    sha:string;
+}
 export interface GitShow {
     author: GitAuthor;
     date: string;
@@ -236,6 +240,9 @@ export interface PerlResRequest {
     path: string;
     packageNames: string[];
 }
+export interface GitLogRequest extends PathRequest {
+}
+
 /*
 {matches: [{line: "use Bookings::Loader::DateTime; # load and fixup DateTime", line_num: "153"},…],…}
 matches

@@ -115,11 +115,11 @@ export class PerlFile {
     }
 
     gitLog(): Promise<any> {
-        return this.service.gitLog(this.file.path).then(e => this.gitLogItems = e);
+        return this.service.git_log({ path: this.file.path }).then(e => this.gitLogItems = e);
     }
 
     gitShow(sha: string): Promise<any> {
-        return this.service.gitShow(sha).then(res => this.gitShowResponse = res);
+        return this.service.git_show({ sha, path: this.file.path }).then(res => this.gitShowResponse = res);
     }
 
     gitGrep(grepText: string) {

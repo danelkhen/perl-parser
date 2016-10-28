@@ -257,6 +257,122 @@ export class P5Service {
         //});
     }
 
+
+
+    git_show(req: GitShowRequest): Promise<GitShow> {
+        //>git show --date=iso --raw 0789bd3eddbd7531fa3e4b3f43083cdf636519c8
+        //:100644 100644 19c843c... f3d4b91... M  typings.json
+        let path = this.mapPath(req.path);
+        let cmd = `git show --date=iso --raw ${req.sha}`;
+        let cwd = Path.dirname(path);
+        console.log(cwd, cmd);
+        let gitRoot = this.determineGitRoot(path);
+        return this.exec({ cmd, cwd }).then(res => {
+            let item: GitShow = null;
+            let msg: string[] = [];
+            res.lines().forEach(line => {
+                if (line.startsWith("commit ")) {
+                    item = {
+                        sha: line.split(' ')[1],
+                        files: [],
+                        date: '',
+                        author: { name: '', email: '' },
+                        message: '',
+                    };
+                }
+                else if (line.startsWith("Author: ")) {
+                    item.author.name = line.split(' ')[1];
+                    item.author.email = line.substringBetween("<", ">");
+                }
+                else if (line.startsWith("Date: ")) {
+                    item.date = line.split(' ').skip(1).join(" ");
+                    item.author.email = line.substringBetween("<", ">");
+                }
+                else if (line.startsWith("    ")) {
+                    if (item.message == null)
+                        item.message = line.trim();
+                    else
+                        item.message += "\n" + line.trim();
+                }
+                else if (line.startsWith(":")) {
+                    let tokens = line.split(" ");
+                    let actionAndFilename = tokens[4].split('\t');
+                    let filename = actionAndFilename[1];
+                    let filename2 = Path.join(gitRoot, filename);
+                    let filename3 = this.normalize(Path.relative(this.rootDir, filename2));
+                    item.files.push({ path: filename3, action: actionAndFilename[0] });
+                }
+            });
+            if (item != null)
+                item.message = msg.join("\n");
+            return item;
+        });
+    }
+
+    git_log(req: GitLogRequest): Promise<GitLogItem[]> {
+        let path = this.mapPath(req.path);
+        let cmd = `git log --date=iso ${Path.basename(path)}`;
+        let cwd = Path.dirname(path);
+        console.log(cwd, cmd);
+        return this.exec({ cmd, cwd }).then(res => {
+            let item: GitLogItem = null;
+            let list: GitLogItem[] = [];
+            let msg: string[] = [];
+            res.lines().forEach(line => {
+                if (line.startsWith("commit ")) {
+                    if (item != null) {
+                        item.message = msg.join("\n");
+                        msg = [];
+                    }
+                    item = {
+                        sha: line.split(' ')[1],
+                        author: { email: '', name: '' },
+                        date: '',
+                        message: '',
+                    };
+                    list.add(item);
+                }
+                else if (line.startsWith("Author: ")) {
+                    item.author.name = line.split(' ')[1];
+                    item.author.email = line.substringBetween("<", ">");
+                }
+                else if (line.startsWith("Date: ")) {
+                    item.date = line.split(' ').skip(1).join(" ");
+                    item.author.email = line.substringBetween("<", ">");
+                }
+                else {
+                    msg.push(line.trim());
+                }
+            });
+            if (item != null)
+                item.message = msg.join("\n");
+            return list;
+        });
+    }
+
+}
+
+export interface GitShow {
+    author: GitAuthor;
+    date: string;
+    files: GitShowFile[];
+    message: string;
+    sha: string;
+}
+
+export interface GitShowFile {
+    action: string;
+    path: string;
+    added?: number;
+    removed?: number;
+}
+
+
+export interface GitShowRequest extends PathRequest {
+    sha: string;
+}
+
+export interface GitLogRequest extends PathRequest {
 }
 
 export interface GitBlameRequest extends PathRequest {
@@ -296,4 +412,15 @@ export interface PerlResRequest {
 export interface ExecRequest {
     cmd: string;
     cwd?: string;
+}
+
+export interface GitLogItem {
+    author: GitAuthor;
+    date: string;
+    message: string;
+    sha: string;
+}
+export interface GitAuthor {
+    email: string;
+    name: string;
 }
