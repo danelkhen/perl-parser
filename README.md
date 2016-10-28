@@ -25,7 +25,7 @@ tsc -p viewer
 
 ## Running the server
 ```
-node built/server/server.js
+node built/server/server
 ```
 
 
