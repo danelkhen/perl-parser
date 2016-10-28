@@ -39,7 +39,7 @@ export class Editor  {
     topVisualLine = 1;
     setGitBlameItems(items: GitBlameItem[]) {
         items.forEach(item => {
-            let line = this.binder.getLineEl(parseInt(item.line_num));
+            let line = this.binder.getLineEl(item.line_num);
             $(line).find(".git-blame").remove();
             let el = $.create(".git-blame");
             el.getAppend("span.sha").text(item.sha);
