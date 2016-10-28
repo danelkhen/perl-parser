@@ -1,3 +1,4 @@
+/// <reference path="../corex-js/corex.d.ts" />
 interface JQueryStatic {
     create(selector: string): JQuery;
 }
@@ -95,16 +96,16 @@ declare class jQueryHelper {
 }
 declare function jQueryHelper2(): void;
 interface JQueryStatic {
-    create(selector: string): JQuery;
-    fromArray$(list: JQuery[]): JQuery;
+    create(selector: string): any;
+    fromArray$(list: JQuery[]): any;
     whenAll(list: any): any;
 }
 interface JQuery {
-    bindChildrenToList<T>(selector: string, list: Array<T>, action: (el: JQuery, obj: T) => void): JQuery;
-    getAppend(selector: string): JQuery;
-    isotope(opts: any): any;
-    toArray$(): Array<JQuery>;
+    bindChildrenToList<T>(selector: string, list: Array<T>, action: (el: JQuery, obj: T, index: number) => void): JQuery;
     getAppendRemoveForEach<T>(selector: string, list: Array<T>, action: (el: JQuery, obj: T) => void): JQuery;
+    getAppendRemove<T>(selector: string, total: number): JQuery;
+    getAppend(selector: string): JQuery;
+    toArray$(): Array<JQuery>;
     val2(value?: any): any;
     generator<T>(func: (obj: T) => JQuery): JQuery;
     generator<T>(): (obj: T) => JQuery;

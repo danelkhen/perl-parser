@@ -125,6 +125,16 @@ Function.addTo = function (target, funcs) {
 };
 ///<reference path="function.ts" />
 "use strict";
+Array.prototype.takeWhile = function (pred) {
+    var took = [];
+    this.first(function (t) {
+        var take = pred(t);
+        if (take)
+            took.push(t);
+        return !take;
+    });
+    return took;
+};
 Array.prototype.forEachJoin = function (action, actionBetweenItems) {
     var first = true;
     for (var i = 0; i < this.length; i++) {
@@ -215,7 +225,7 @@ Array.prototype.remove = function (item) {
     return false;
 };
 Array.prototype.removeRange = function (items) {
-    return this.removeAll(function (t) { return items.contains(t); });
+    items.forEach(function (t) { this.remove(t); });
 };
 Array.prototype.contains = function (s) {
     return this.indexOf(s) >= 0;
@@ -284,8 +294,8 @@ Array.prototype.addRange = function (items) {
 Array.prototype.diff = function (target) {
     var source = this;
     var res = {
-        added: source.where(function (t) { return !target.contains(t); }),
-        removed: target.where(function (t) { return !source.contains(t); }),
+        added: target.where(function (t) { return !source.contains(t); }),
+        removed: source.where(function (t) { return !target.contains(t); }),
     };
     return res;
 };
@@ -540,16 +550,6 @@ Array.prototype.skip = function (count) {
 };
 Array.prototype.take = function (count) {
     return this.slice(0, count);
-};
-Array.prototype.takeWhile = function (pred) {
-    var took = [];
-    this.first(t=> {
-        var take = pred(t);
-        if (take)
-            took.push(t);
-        return !take;
-    });
-    return took;
 };
 Array.prototype.toSelector = function () {
     return Q.createSelectorFunction(this);
@@ -1815,6 +1815,40 @@ String.prototype.lines = function () {
     return this.split(/\r?\n/);
 };
 "use strict";
+//interface QConstructor {
+//    copy(src, target, options, depth);
+//    objectToNameValueArray();
+//    objectValuesToArray(obj);
+//    cloneJson(obj);
+//    forEachValueInObject(obj, func, thisArg);
+//    mapKeyValueInArrayOrObject(objOrList, func, thisArg);
+//    jMap(objOrList, func, thisArg);
+//    isEmptyObject(obj);
+//    min(list);
+//    max(list);
+//    stringifyFormatted(obj);
+//    _canInlineObject(obj);
+//    _canInlineArray(list);
+//    stringifyFormatted2(obj, sb);
+//    bindFunctions(obj);
+//    parseInt(s);
+//    parseFloat(s);
+//    createSelectorFunction(selector);
+//    isNullOrEmpty(stringOrArray);
+//    isNotNullOrEmpty(stringOrArray);
+//    isNullEmptyOrZero(v);
+//    isAny(v, vals);
+//}
+//declare class ComparerHelper {
+//    static combine(comparers);
+//    static create(selector, desc, comparer);
+//    static createCombined(list);
+//}
+//declare class ArrayEnumerator<T> {
+//    constructor(source: Array<T>);
+//    moveNext();
+//    getCurrent();
+//}
 "use strict";
 //******** JSON
 JSON.iterateRecursively = function (obj, action) {
@@ -2027,7 +2061,8 @@ function createCompareFuncFromSelector(selector, desc) {
 function toStringOrEmpty(val) {
     return val == null ? "" : val.toString();
 }
-//Function.addTo(window, [toStringOrEmpty, createCompareFuncFromSelector, combineCompareFuncs]);
+if (typeof (window) != "undefined")
+    Function.addTo(window, [toStringOrEmpty, createCompareFuncFromSelector, combineCompareFuncs]);
 var Dictionary = (function () {
     function Dictionary() {
         this._obj = new Object();

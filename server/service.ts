@@ -21,7 +21,7 @@ export class P5Service {
             return null;
         let x = Path.relative(this.rootDir, path);
         let y = this.normalize(x);
-        console.log("mapPathBack", { path, x, y });
+        //console.log("mapPathBack", { path, x, y });
         return y;
     }
     normalize(path: string): string {
@@ -54,22 +54,11 @@ export class P5Service {
         return Promise.resolve(Promise.all(reqs.map(t => this.perldoc(t).catch(err => { }))));
     }
 
-    perldoc(req: PerlDocRequest): Promise<string> {
+    exec(req: ExecRequest): Promise<string> {
         return new Promise<string>((resolve, reject) => {
-            console.log("perldoc", { req });
-            let cmd = "perldoc";
-            if (req.format != null)
-                cmd += " -o" + req.format;
-            if (isNotNullOrEmpty(req.filename))
-                cmd += " " + req.filename;
-            else if (isNotNullOrEmpty(req.moduleName))
-                cmd += " " + req.moduleName;
-            else if (isNotNullOrEmpty(req.funcName))
-                cmd += " -f " + req.funcName;
-
+            let cmd = req.cmd;
             let output: string[] = [];
-
-            let process = ChildProcess.exec(cmd, (err, stdout, stderr) => {
+            let process = ChildProcess.exec(cmd, { cwd: req.cwd }, (err, stdout, stderr) => {
                 output.push(stdout);
                 output.push(stderr);
             });
@@ -77,6 +66,31 @@ export class P5Service {
                 resolve(output.join(""));
             });
         });
+    }
+    perldoc(req: PerlDocRequest): Promise<string> {
+        console.log("perldoc", { req });
+        let cmd = "perldoc";
+        if (req.format != null)
+            cmd += " -o" + req.format;
+        if (isNotNullOrEmpty(req.filename))
+            cmd += " " + req.filename;
+        else if (isNotNullOrEmpty(req.moduleName))
+            cmd += " " + req.moduleName;
+        else if (isNotNullOrEmpty(req.funcName))
+            cmd += " -f " + req.funcName;
+        return this.exec({ cmd });
+        //return new Promise<string>((resolve, reject) => {
+
+        //    let output: string[] = [];
+
+        //    let process = ChildProcess.exec(cmd, (err, stdout, stderr) => {
+        //        output.push(stdout);
+        //        output.push(stderr);
+        //    });
+        //    process.on("close", e => {
+        //        resolve(output.join(""));
+        //    });
+        //});
 
 
         //try {
@@ -188,10 +202,54 @@ export class P5Service {
     perl_critic(req: { path: string, critic_config_filename?: string }): Promise<PerlCriticResult> {
         return null;
     }
-    perl_doc(req: { name: string, type?: string }): Promise<PerlCriticResult> {
-        return null;
+    git_blame(req: GitBlameRequest): Promise<GitBlameItem[]> {
+        let path = this.mapPath(req.path);
+        let cmd = `git blame --incremental ${Path.basename(path)}`;
+        let cwd = Path.dirname(path);
+        console.log(cwd, cmd);
+        return this.exec({ cmd, cwd }).then(res => {
+            let list: GitBlameItem[] = [];
+            let item: GitBlameItem = null;
+            res.lines().forEach(line => {
+                if (item == null) {
+                    //<40-byte hex sha1> <sourceline> <resultline> <num_lines>
+                    let tokens = line.split(' ');
+                    let num_lines = parseInt(tokens[3]);
+                    item = {
+                        sha: tokens[0],
+                        line_num: parseInt(tokens[1]),
+                        author: null,
+                        date: null,
+                    };
+                    return;
+                }
+                let index = line.indexOf(" ");
+                let tokens = line.splitAt(index);
+                let name = tokens[0];
+                let value = tokens[1];
+                if (name == "committer-time")
+                    item.date = Date.fromUnix(value);
+                else if (name == "author")
+                    item.author = value;
+                else if (name == "filename") {
+                    list.push(item);
+                    item = null;
+                }
+            });
+            return list.orderBy(t=>t.line_num);
+        });
     }
 
+}
+
+export interface GitBlameRequest extends PathRequest {
+}
+
+export interface GitBlameItem {
+    author: string;
+    date: string;
+    line_num: number;
+    sha: string;
 }
 
 export interface PathRequest {
@@ -217,4 +275,8 @@ export interface PerlDocRequest {
 export interface PerlResRequest {
     path: string;
     packageNames: string[];
+}
+export interface ExecRequest {
+    cmd: string;
+    cwd?: string;
 }

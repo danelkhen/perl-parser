@@ -14,18 +14,21 @@ declare class Q {
     static _canInlineArray(list: any): boolean;
     static stringifyFormatted2(obj: any, sb: any): void;
     static bindFunctions(obj: Object): void;
-    static parseInt(s: any): any;
-    static parseFloat(s: any): any;
-    static createSelectorFunction(selector: any): any;
+    static parseInt(s: any): number;
+    static parseFloat(s: any): number;
+    static createSelectorFunction<T, R>(selector: any): any;
     static isNullOrEmpty(stringOrArray: any): boolean;
     static isNotNullOrEmpty(stringOrArray: any): boolean;
     static isNullEmptyOrZero(v: any): boolean;
     static isAny(v: any, vals: any): any;
 }
 interface ObjectConstructor {
-    toArray(obj: any): any;
-    allKeys(obj: any): any;
-    keysValues(obj: any): any;
+    toArray(obj: Object): any[];
+    allKeys(obj: Object): string[];
+    keysValues(obj: any): Array<{
+        key: string;
+        value: any;
+    }>;
     pairs(obj: any): any;
     fromPairs(keysValues: any): any;
     fromKeysValues(keysValues: any): any;
@@ -53,14 +56,14 @@ interface ArrayConstructor {
     selectTwice(list1: any, list2: any, func: any): any;
     generate(length: any, generator: any): any;
     wrapIfNeeded(obj: any): any;
-    toArray(arrayLike: any): any;
-    generateNumbers(from: any, until: any): number[];
+    toArray<T>(arrayLike: any): T[];
+    generateNumbers(from: number, until: number): number[];
     slice(): any;
     concat(): any;
     fromIterator(iterator: any): any;
-    from<T>(arrayLike: any): Array<T>;
 }
 interface Array<T> {
+    takeWhile(pred: any): T[];
     isArrayOfPairs?: boolean;
     contains(obj: T): boolean;
     remove(obj: T): boolean;
@@ -68,23 +71,27 @@ interface Array<T> {
     take(count: number): T[];
     skip(count: number): T[];
     first(predicate?: (item: T, index?: number) => boolean): T;
+    last(predicate?: (item: T, index?: number) => boolean): T;
     exceptNulls(): Array<T>;
     insert(index: number, item: T): any;
     toArray(): Array<T>;
-    where(callbackfn: (value: T, index: number, array: T[]) => boolean, thisArg?: any): T[];
-    removeAll<R>(callbackfn: (value: T, index: number, array: T[]) => boolean, thisArg?: any): void;
-    select<R>(selector: (value: T, index: number, array: T[]) => R, thisArg?: any): R[];
+    where(callbackfn: (value: T, index?: number, array?: T[]) => boolean, thisArg?: any): T[];
+    removeAll<R>(callbackfn: (value: T, index?: number, array?: T[]) => boolean, thisArg?: any): void;
+    select<R>(selector: (value: T, index?: number, array?: T[]) => R, thisArg?: any): R[];
     select<R>(selector: string, thisArg?: any): R[];
     selectMany<R>(callbackfn: (value: T, index: number, array: T[]) => R[], thisArg?: any): R[];
-    groupBy<K>(callbackfn: (value: T, index: number, array: T[]) => K, thisArg?: any): Grouping<K, T>[];
+    orderBy<R>(selector: (value: T, index?: number, array?: T[]) => R, desc?: boolean, comparer?: Comparer): T[];
+    orderBy<R>(selectors: Array<(value: T, index?: number, array?: T[]) => any>): T[];
+    orderByDescending<R>(selector: (value: T, index?: number, array?: T[]) => R, desc?: boolean): T[];
+    sortBy<R>(selector: (value: T, index?: number, array?: T[]) => R, desc?: boolean, comparer?: Comparer): T[];
+    sortByDescending<R>(selector: (value: T, index?: number, array?: T[]) => R): any;
+    groupBy<K>(callbackfn: (value: T, index?: number, array?: T[]) => K, thisArg?: any): Grouping<K, T>[];
     addRange(items: T[]): any;
     distinct(): T[];
     forEachJoin(action: any, actionBetweenItems: any): any;
     toArray(): any;
     insert(index: any, item: any): any;
     insertRange(index: any, items: any): any;
-    last(): T;
-    last(predicate: any): any;
     toObject(selector: any): any;
     toObjectKeys(defaultValue: any): any;
     keysToObject(defaultValue: any): any;
@@ -93,7 +100,7 @@ interface Array<T> {
     removeFirst(): any;
     removeRange(items: any): any;
     containsAny(items: any): any;
-    any(predicate?: (item: T, index?: number) => boolean): boolean;
+    any(predicate: any): any;
     forEachAsyncProgressive(actionWithCallback: any, finalCallback: any): any;
     whereEq(selector: any, value: any): any;
     whereNotEq(selector: any, value: any): any;
@@ -109,10 +116,6 @@ interface Array<T> {
     min(): any;
     max(): any;
     getEnumerator(): any;
-    orderBy(selector: any, desc?: any, comparer?: any): T[];
-    orderByDescending(selector: any, desc: any): any;
-    sortBy(selector: any, desc: any, comparer: any): any;
-    sortByDescending(selector: any): any;
     mapAsyncParallel(asyncFunc: any, finalCallback: any): any;
     forEachAsyncParallel(asyncFunc: any, finalCallback: any): any;
     clear(): any;
@@ -124,33 +127,30 @@ interface Array<T> {
     flatten(): any;
     selectToObject(keySelector: any, valueSelector: any): any;
     groupByToObject(keySelector: any, itemSelector: any): any;
-    groupBy(keySelector: any, itemSelector: any): any;
     splitIntoChunksOf(countInEachChunk: any): any;
     avg(): any;
-    selectMany(selector: any): any;
     sum(): any;
     skip(count: any): any;
     take(count: any): any;
-    takeWhile(predicate?: (item: T, index?: number) => boolean): T[];
     toSelector(): any;
     removeNulls(): any;
-    exceptNulls(): any;
-    truncate(totalItems: any): any;
-    random(): any;
+    exceptNulls(): T[];
+    truncate(totalItems: number): any;
+    random(): T;
     selectRecursive(selector: any, recursiveFunc: any): any;
     selectManyRecursive(selector: any, recursiveFunc: any): any;
     peek(predicate: any): any;
     removeLast(): any;
-    add(item:T): any;
-    forEachWith(list: any, action: any): any;
-    selectWith(list: any, func: any): any;
-    crossJoin(list2: any, selector: any): any;
+    add(item: T): any;
+    forEachWith(list: T[], action: any): any;
+    selectWith(list: T[], func: any): any;
+    crossJoin(list2: T[], selector: any): any;
 }
 interface DateConstructor {
     fromUnix(value: any): any;
     today(): any;
     current(): any;
-    create(y: any, m: any, d: any, h: any, mm: any, s: any, ms: any): any;
+    create(y?: any, m?: any, d?: any, h?: any, mm?: any, s?: any, ms?: any): any;
     _parsePart(ctx: any, part: any, setter?: any): any;
     tryParseExact(s: any, formats: any): any;
     _tryParseExact(s: any, format: any): any;
@@ -229,69 +229,45 @@ interface Function {
     addTo(target: any): any;
     comparers: Comparer[];
 }
-interface QConstructor {
-    copy(src: any, target: any, options: any, depth: any): any;
-    objectToNameValueArray(): any;
-    objectValuesToArray(obj: any): any;
-    cloneJson(obj: any): any;
-    forEachValueInObject(obj: any, func: any, thisArg: any): any;
-    mapKeyValueInArrayOrObject(objOrList: any, func: any, thisArg: any): any;
-    jMap(objOrList: any, func: any, thisArg: any): any;
-    isEmptyObject(obj: any): any;
-    min(list: any): any;
-    max(list: any): any;
-    stringifyFormatted(obj: any): any;
-    _canInlineObject(obj: any): any;
-    _canInlineArray(list: any): any;
-    stringifyFormatted2(obj: any, sb: any): any;
-    bindFunctions(obj: any): any;
-    parseInt(s: any): any;
-    parseFloat(s: any): any;
-    createSelectorFunction(selector: any): any;
-    isNullOrEmpty(stringOrArray: any): any;
-    isNotNullOrEmpty(stringOrArray: any): any;
-    isNullEmptyOrZero(v: any): any;
-    isAny(v: any, vals: any): any;
-}
 interface StringConstructor {
     isInt(s: any): any;
     isFloat(s: any): any;
 }
 interface String {
     every(callbackfn: (value: string, index: number, array: string) => boolean, thisArg?: any): boolean;
-    endsWith(s: any): any;
-    startsWith(s: any): any;
-    forEach(action: any): any;
-    contains(s: any): any;
-    replaceAll(token: any, newToken: any, ignoreCase?: any): string;
-    replaceMany(finds: any, replacer: any): any;
-    truncateEnd(finalLength: any): any;
-    truncateStart(finalLength: any): any;
-    remove(index: any, length: any): any;
-    insert(index: any, text: any): any;
-    replaceAt(index: any, length: any, text: any): any;
-    padRight(totalWidth: any, paddingChar?: any): any;
-    padLeft(totalWidth: any, paddingChar?: any): any;
+    endsWith(s: string): boolean;
+    startsWith(s: string): boolean;
+    forEach(action: (item: string, index?: number) => void): any;
+    contains(s: string): boolean;
+    replaceAll(token: string, newToken: string, ignoreCase?: boolean): string;
+    replaceMany(finds: string, replacer: Function): any;
+    truncateEnd(finalLength: number): any;
+    truncateStart(finalLength: number): any;
+    remove(index: number, length: number): any;
+    insert(index: number, text: string): any;
+    replaceAt(index: number, length: number, text: string): any;
+    padRight(totalWidth: number, paddingChar?: string): any;
+    padLeft(totalWidth: number, paddingChar?: string): any;
     toLambda(): any;
     toSelector(): any;
-    substringBetween(start: string, end: string): string;
-    all(predicate: any): any;
+    substringBetween(start: string, end: string, fromIndex?: number): string;
+    all(predicate: (item: string, index?: number) => boolean): boolean;
     every(): any;
-    isInt(): any;
-    isFloat(): any;
-    last(predicate: any): any;
-    splitAt(index: any): any;
+    isInt(): boolean;
+    isFloat(): boolean;
+    last(predicate?: (item: string, index?: number) => boolean): string;
+    splitAt(index: number): string[];
     lines(): string[];
 }
 interface NumberConstructor {
-    generate(min: any, max: any, step?: any): any;
+    generate(min: any, max: any, step: any): any;
     roundUsing(mathOp: any, x: any, precision: any): any;
 }
 interface Number {
-    format(format: any): any;
-    round(precision: any): any;
-    ceil(precision: any): any;
-    floor(precision: any): any;
+    format(format: string): any;
+    round(precision?: number): any;
+    ceil(precision?: number): any;
+    floor(precision?: number): any;
     isInt(): any;
     isFloat(): any;
     inRangeInclusive(min: any, max: any): any;
@@ -371,7 +347,7 @@ declare class Dictionary<K, T> {
     add(key: any, value: any): void;
     get(key: any): any;
     set(key: any, value: any): void;
-    values(): any;
+    values(): any[];
 }
 declare class ComparerHelper {
     static combine(comparers: any[]): (x: any, y: any) => any;

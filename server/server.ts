@@ -4,19 +4,15 @@ import * as fs from "fs";
 import * as fs3 from "./fs3";
 import { P5Service } from "./service";
 import { GitFile, FsFile, PerlPackage, PerlCriticResult } from "./service-spec";
-import "../../libs/corex.js"
+import "../../libs/corex-js/corex.js"
 import * as bodyParser from 'body-parser';
 import * as ChildProcess from 'child_process';
 import auth = require("basic-auth")
 
 
 let rootDir: string;
-let config: {
-    auth?: string,
-    username?: string,
-    password?: string,
-} = {};
-
+let config: Config = {};
+let app: express.Application;
 
 main();
 
@@ -27,8 +23,7 @@ function loadConfig() {
     config = JSON.parse(fs.readFileSync(configFile, "utf8"));
 }
 function main() {
-    var app = express();
-
+    app = express();
     rootDir = path.join(__dirname, "../..")
     console.log(rootDir);
     loadConfig();
@@ -79,10 +74,6 @@ function main() {
                 }
             }, e => {
                 let e2: ErrorEvent = e;
-                //if (e2.err != null) {
-                //    (<any>e2).errMessage = e2.err.message;
-                //    delete e.err;
-                //}
                 console.log("ERROR", e);
                 res.status(400).json(String(e));
             });
@@ -115,4 +106,10 @@ function authenticate(req: express.Request, res: express.Response): boolean {
     res.setHeader('WWW-Authenticate', 'Basic realm="codeviewer"')
     res.end('Access denied')
     return false;
+}
+
+export interface Config {
+    auth?: string;
+    username?: string;
+    password?: string;
 }

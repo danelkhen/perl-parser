@@ -111,7 +111,7 @@ export class PerlFile {
     }
 
     gitBlame(): Promise<any> {
-        return this.service.gitBlame(this.file.path).then(items => this.gitBlameItems = items);
+        return this.service.git_blame({ path: this.file.path }).then(items => { console.log(items); this.gitBlameItems = items; });
     }
 
     gitLog(): Promise<any> {

@@ -449,7 +449,7 @@ export class IndexPage {
         let s = $(e.target).val();
         let grid = $(e.target).closest(".scroll-grid").find(".grid > tbody");
         let selected = grid.children(".selected:first")[0];
-        let all = grid.children(":visible").toArray();
+        let all = grid.children(":visible").toArray<HTMLElement>();
         let index = all.indexOf(selected);
         if (index > 0) {
             let part1 = all.slice(0, index);

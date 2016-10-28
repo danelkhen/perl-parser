@@ -71,7 +71,7 @@ export class Helper {
         return (x * 100).toFixed(0) + "%";
     }
 
-    static flattenArray<T>(list: Array<T | Array<T>>): T[] {
+    static flattenArray<T>(list: Array<any>): T[] {
         let list2: T[] = [];
         list.forEach(t => {
             if (t instanceof Array)
@@ -81,8 +81,8 @@ export class Helper {
         });
         return list2;
     }
-    static urlJoin(parts: Array<string | string[]>): string {
-        let parts2 = this.flattenArray(parts);
+    static urlJoin(parts: Array<any>): string {
+        let parts2 = this.flattenArray<string>(parts);
         let final = parts2[0];
         let prev = parts2[0];
         parts2.skip(1).forEach(part => {
@@ -633,7 +633,7 @@ export class IndexSelection {
         list.add(new IndexRange(anchor));
         this.ranges = list;
     }
-    generateNumbers(from: number, to: number) {
+    generateNumbers(from: number, to: number):number[] {
         let min = Math.min(from, to);
         let max = Math.max(from, to);
         return Number.generate(min, max, 1);

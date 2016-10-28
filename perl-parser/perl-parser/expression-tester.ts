@@ -347,7 +347,8 @@ export class EtReport {
         });
     }
     sort() {
-        this.items = this.items.orderBy([t=> t.code.contains("\n"), t=> t.code.length, t=> t.code]);
+        let items:any = this.items;
+        this.items = items.orderBy([t=> t.code.contains("\n"), t=> t.code.length, t=> t.code]);
     }
     cleanup() {
         this.removeDoubles();

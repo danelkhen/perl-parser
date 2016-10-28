@@ -1,4 +1,4 @@
-﻿/// <reference path="../libs/corex.d.ts" />
+﻿/// <reference path="../libs/corex-js/corex.d.ts" />
 /// <reference path="../typings/globals/core-js/index.d.ts" />
 export * from "./perl-parser/utils";
 export * from "./perl-parser/text";

@@ -46,8 +46,8 @@ export class P5Service {
         return this.ajax({ action: "perlres", req });
     }
 
-    gitBlame(path: string): Promise<GitBlameItem[]> {
-        return this.ajax({ action: "git/blame/:path", req: { path } });
+    git_blame(req: GitBlameRequest): Promise<GitBlameItem[]> {
+        return this.ajax({ action: "git_blame", req });
     }
 
     gitLog(path: string): Promise<GitLogItem[]> {
@@ -179,7 +179,7 @@ export interface PerlDocRequest {
 export interface GitBlameItem {
     author: string,
     date: string,
-    line_num: string,
+    line_num: number,
     sha: string,
 }
 
@@ -229,6 +229,8 @@ export interface GitGrepMatch {
 }
 export interface PathRequest {
     path: string;
+}
+export interface GitBlameRequest extends PathRequest {
 }
 export interface PerlResRequest {
     path: string;

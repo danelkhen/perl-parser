@@ -342,7 +342,7 @@ export class P5AceEditor {
 
     setGitBlameItems(items: GitBlameItem[]) {
         let anns = items.map(item => {
-            let pos = this.perlFile.sourceFile.getPos3(parseInt(item.line_num), 1);
+            let pos = this.perlFile.sourceFile.getPos3(item.line_num, 1);
             this.metaText.set(pos.line, item.author);
             //let range = this.sourceFile.getRange2(pos, 10);
             //let marker = <Marker>{ html: "<span>" + item.author, range: range, className:"marker-git-blame", inFront:true };

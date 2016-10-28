@@ -274,8 +274,8 @@ function jQueryHelper2() {
     function generator(funcOrSelector) {
         if (arguments.length > 0) {
             if (typeof (funcOrSelector) == "string") {
-                var selector = funcOrSelector;
-                this._generator = function () { return $.create(selector); };
+                var selector_1 = funcOrSelector;
+                this._generator = function () { return $.create(selector_1); };
             }
             else {
                 this._generator = funcOrSelector;
@@ -283,10 +283,10 @@ function jQueryHelper2() {
             return this;
         }
         if (this._generator === undefined) {
-            var selector = this._originalSelector;
-            if (selector == null)
+            var selector_2 = this._originalSelector;
+            if (selector_2 == null)
                 throw new Error("Can't resolve selector for this jQuery object");
-            this._generator = function () { return $.create(selector); };
+            this._generator = function () { return $.create(selector_2); };
         }
         return this._generator;
     }
