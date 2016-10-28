@@ -54,10 +54,9 @@ function main() {
         res.contentType("application/json");
         let action = req.params["action"];
         let prm: any;
-        if (req.method == "POST") {
+        if (req.method == "POST") 
             prm = (<any>req).body;
-        }
-        else
+        else 
             prm = req.query;
         if (service[action] == null) {
             res.json("not found");

@@ -75,6 +75,7 @@ export class IndexPage {
     main2() {
         this.selection = new IndexSelection();
         this.perlFile = new PerlFile();
+        this.perlFile.page = this;
         Template.onPromise = p => this.onPromise(p);
         this.selection.fromParam(location.hash.substr(1));
         $("body").addClass("ace-mode");
@@ -593,12 +594,12 @@ export class IndexPage {
 
 
 export function navigate(url: string) {
-    console.log("navigate", {url});
+    console.log("navigate", { url });
     //if (!url.startsWith("/"))
     //    url = "/" + url;
     if (url.startsWith("//"))
         url = url.substr(1);
-    console.log("navigate - fixed", {url});
+    console.log("navigate - fixed", { url });
 
     window.history.pushState("", "", url);
     $(window).trigger("urlchange");

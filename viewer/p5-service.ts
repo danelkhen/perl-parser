@@ -64,15 +64,8 @@ export class P5Service {
         //    return res;
         //});
     }
-    gitGrep(search: string): Promise<GitGrepItem[]> {
-        return this.ajax<GitGrepItem[]>({ action: "git/grep/:search", req: { search } }).then(res => {
-            res.forEach(item => {
-                item.matches.forEach(match => {
-                    match.line_num = Number(match.line_num);
-                });
-            });
-            return res;
-        });
+    git_grep(req: GitGrepRequest): Promise<GitGrepItem[]> {
+        return this.ajax<GitGrepItem[]>({ action: "git_grep", req });
     }
 
 
@@ -206,7 +199,7 @@ export interface GitAuthor {
 }
 
 export interface GitShowRequest extends PathRequest {
-    sha:string;
+    sha: string;
 }
 export interface GitShow {
     author: GitAuthor;
@@ -222,7 +215,6 @@ export interface GitShowFile {
     added: number;
     removed: number;
 }
-
 export interface GitGrepItem {
     matches: GitGrepMatch[];
     path: string;
@@ -234,6 +226,11 @@ export interface GitGrepMatch {
 export interface PathRequest {
     path: string;
 }
+export interface GitGrepRequest extends PathRequest {
+    search: string;
+}
+
+
 export interface GitBlameRequest extends PathRequest {
 }
 export interface PerlResRequest {

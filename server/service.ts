@@ -80,28 +80,6 @@ export class P5Service {
         else if (isNotNullOrEmpty(req.funcName))
             cmd += " -f " + req.funcName;
         return this.exec({ cmd });
-        //return new Promise<string>((resolve, reject) => {
-
-        //    let output: string[] = [];
-
-        //    let process = ChildProcess.exec(cmd, (err, stdout, stderr) => {
-        //        output.push(stdout);
-        //        output.push(stderr);
-        //    });
-        //    process.on("close", e => {
-        //        resolve(output.join(""));
-        //    });
-        //});
-
-
-        //try {
-        //    console.log("execSync", cmd);
-        //    let res = ChildProcess.execSync(cmd, { encoding: "utf8" });
-        //    return Promise.resolve(res);
-        //}
-        //catch (e) {
-        //    return Promise.reject("perldoc failed");
-        //}
     }
 
     git_list_files(req: { treeId: string, path: string }): Promise<GitFile> {
@@ -197,12 +175,6 @@ export class P5Service {
         return filename;
     }
 
-    perl_get_dependencies(req: { name: string, depth?: number }): Promise<PerlPackage> {
-        return null;
-    }
-    perl_critic(req: { path: string, critic_config_filename?: string }): Promise<PerlCriticResult> {
-        return null;
-    }
     git_blame(req: GitBlameRequest): Promise<GitBlameItem[]> {
         let path = this.mapPath(req.path);
         let cmd = `git blame --porcelain ${Path.basename(path)}`;
@@ -224,40 +196,7 @@ export class P5Service {
                 return item;
             });
         });
-        //return this.exec({ cmd, cwd }).then(res => {
-        //    let list: GitBlameItem[] = [];
-        //    let item: GitBlameItem = null;
-        //    res.lines().forEach(line => {
-        //        if (item == null) {
-        //            //<40-byte hex sha1> <sourceline> <resultline> <num_lines>
-        //            let tokens = line.split(' ');
-        //            let num_lines = parseInt(tokens[3]);
-        //            item = {
-        //                sha: tokens[0],
-        //                line_num: parseInt(tokens[1]),
-        //                author: null,
-        //                date: null,
-        //            };
-        //            return;
-        //        }
-        //        let index = line.indexOf(" ");
-        //        let tokens = line.splitAt(index);
-        //        let name = tokens[0];
-        //        let value = tokens[1];
-        //        if (name == "committer-time")
-        //            item.date = Date.fromUnix(value);
-        //        else if (name == "author")
-        //            item.author = value;
-        //        else if (name == "filename") {
-        //            list.push(item);
-        //            item = null;
-        //        }
-        //    });
-        //    return list.orderBy(t => t.line_num);
-        //});
     }
-
-
 
     git_show(req: GitShowRequest): Promise<GitShow> {
         //>git show --date=iso --raw 0789bd3eddbd7531fa3e4b3f43083cdf636519c8
@@ -266,7 +205,6 @@ export class P5Service {
         let cmd = `git show --date=iso --raw ${req.sha}`;
         let cwd = Path.dirname(path);
         console.log(cwd, cmd);
-        let gitRoot = this.determineGitRoot(path);
         return this.exec({ cmd, cwd }).then(res => {
             let item: GitShow = null;
             let msg: string[] = [];
@@ -298,15 +236,23 @@ export class P5Service {
                     let tokens = line.split(" ");
                     let actionAndFilename = tokens[4].split('\t');
                     let filename = actionAndFilename[1];
-                    let filename2 = Path.join(gitRoot, filename);
-                    let filename3 = this.normalize(Path.relative(this.rootDir, filename2));
-                    item.files.push({ path: filename3, action: actionAndFilename[0] });
+                    item.files.push({ path: filename, action: actionAndFilename[0] });
                 }
             });
             if (item != null)
                 item.message = msg.join("\n");
             return item;
+        }).then(res => {
+            let gitRoot = this.determineGitRoot(path);
+            res.files.forEach(t => t.path = this.gitPathToUserPath(gitRoot, t.path));
+            return res;
         });
+    }
+
+    gitPathToUserPath(gitRoot: string, gitPath: string): string {
+        let filename2 = Path.join(gitRoot, gitPath);
+        let filename3 = this.normalize(Path.relative(this.rootDir, filename2));
+        return filename3;
     }
 
     git_log(req: GitLogRequest): Promise<GitLogItem[]> {
@@ -350,7 +296,51 @@ export class P5Service {
         });
     }
 
+    git_grep(req: GitGrepRequest): Promise<GitGrepItem[]> {
+        let path = this.mapPath(req.path);
+        let cmd = `git grep ${quote(req.search)}`;
+        let cwd = path.endsWith("/") ? path : Path.dirname(path);
+        console.log(cwd, cmd);
+        return this.exec({ cmd, cwd }).then(res => {
+            let item: GitGrepItem = null;
+            let list: GitGrepItem[] = [];
+            res.lines().forEach(line => {
+                if (line.length == 0)
+                    return;
+                let parts = line.splitAt(line.indexOf(":"));
+                let filename = parts[0];
+                if (item == null || item.path != filename) {
+                    item = { path: filename, matches: [], }
+                    list.add(item);
+                }
+                item.matches.add({
+                    line: parts[1].substr(1),
+                    line_num: null, //TODO:
+                });
+            });
+            return list;
+        }).then(list => {
+            let gitRoot = this.determineGitRoot(path);
+            list.forEach(t => t.path = this.gitPathToUserPath(gitRoot, t.path));
+            return list;
+        });
+    }
+
+
 }
+
+export interface GitGrepRequest extends PathRequest {
+    search: string;
+}
+export interface GitGrepItem {
+    matches: GitGrepMatch[];
+    path: string;
+}
+export interface GitGrepMatch {
+    line: string;
+    line_num: number;
+}
+
 
 export interface GitShow {
     author: GitAuthor;
@@ -423,4 +413,10 @@ export interface GitLogItem {
 export interface GitAuthor {
     email: string;
     name: string;
+}
+
+function quote(s: string): string {
+    if (s == null)
+        return "";
+    return "\"" + s + "\"";
 }

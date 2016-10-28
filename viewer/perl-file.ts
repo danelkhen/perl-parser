@@ -11,6 +11,7 @@ import { PropertyChangeTracker, ObjProperty } from "./property-change-tracker";
 import { PopupMarker } from "./p5-ace-editor";
 import { P5AceHelper, EntityInfo, EntityType } from "./p5-ace-helper";
 import "./extensions";
+import {IndexPage} from "./index"
 
 export class PerlFile {
     constructor() {
@@ -26,6 +27,7 @@ export class PerlFile {
         //this.tracker.on(t => t.unit, () => console.log("unitproperty changed"));
         //this.tracker.on(t => t.resolutions, () => console.log("resolutions changed"));
     }
+    page: IndexPage;
     onPropChanged(getter: (obj: this) => any, handler: Function) { return this.tracker.on(getter, handler); }
     offPropChanged(getter: (obj: this) => any, handler: Function) { return this.tracker.off(getter, handler); }
     tracker: PropertyChangeTracker<this>;
@@ -123,7 +125,7 @@ export class PerlFile {
     }
 
     gitGrep(grepText: string) {
-        return this.service.gitGrep(grepText).then(res => this.gitGrepItems = res);
+        return this.service.git_grep({ search: grepText, path: this.page.path }).then(res => this.gitGrepItems = res);
     }
 
     findTokens(pos: TextFilePos, length: number): Token[] {
