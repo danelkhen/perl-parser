@@ -7,14 +7,32 @@ import { GitFile, FsFile, PerlPackage, PerlCriticResult } from "./service-spec";
 import "../../libs/corex.js"
 import * as bodyParser from 'body-parser';
 import * as ChildProcess from 'child_process';
+import auth = require("basic-auth")
+
+
+let rootDir: string;
+let config: {
+    auth?: string,
+    username?: string,
+    password?: string,
+} = {};
+
 
 main();
 
+function loadConfig() {
+    let configFile = path.join(rootDir, "config.json");
+    if (!fs.existsSync(configFile))
+        return;
+    config = JSON.parse(fs.readFileSync(configFile, "utf8"));
+}
 function main() {
     var app = express();
 
-    let rootDir = path.join(__dirname, "../..")
+    rootDir = path.join(__dirname, "../..")
     console.log(rootDir);
+    loadConfig();
+
     let aceDir = path.join(rootDir, "../ace/lib/ace")
 
 
@@ -31,6 +49,8 @@ function main() {
 
     app.use(bodyParser.json());
     app.all('/_api_/:action', (req: express.Request, res: express.Response) => {
+        if (!authenticate(req, res))
+            return;
         console.log(req.method, req.url, (<any>req).body);
         if (req.method == "OPTIONS") {
             res.status(200);
@@ -69,44 +89,11 @@ function main() {
 
     });
 
-    //async function handleServiceRequest(req: express.Request, res: express.Response): Promise<any> {
-    //    console.log(req.params);
-    //    let action = req.params["action"];
-    //    let path2 = req.params[0];
-    //    if (action == "fs") {
-    //        return service.ls({ path: path2 })
-    //            .then(res2 => {
-    //                res.contentType("application/json").json(res2);
-    //                return res2;
-    //            }, reason => {
-    //                res.status(500).contentType("application/json").json(reason);
-    //                console.warn(reason);
-    //            });
-    //    }
-    //    else if (action == "src") {
-    //        let filename = service.mapPath(path2);
-    //        console.log(path2);
-    //        //let filename = path.join(rootDir, path2);
-    //        try {
-    //            let buffer = await fs3.readFile(filename);
-    //            res.status(200).contentType("text/plain").send(buffer);
-    //        }
-    //        catch (e) {
-    //            res.status(500).send(e);
-    //        }
-    //    }
-    //    else {
-    //        let reason = (`action ${action} doesn't exist`);
-    //        res.status(404).contentType("application/json").json(reason);
-    //    }
-    //}
-
-    //app.use("//:action/*", handleServiceRequest);
-
-
-    app.get("*", (req, res) => {
+    app.get("*", (req: express.Request, res: express.Response) => {
+        if (!authenticate(req, res))
+            return;
         let file = path.join(path.join(rootDir, "viewer/index.html"));
-        console.log({ base: req.params.base, url: req.url });
+        //console.log({ base: req.params.base, url: req.url });
         console.log("sending", file);
         res.sendFile(file);
     });
@@ -115,4 +102,17 @@ function main() {
     app.listen(3000, () => {
         console.log('Server listening on port 3000!');
     });
+}
+
+
+function authenticate(req: express.Request, res: express.Response): boolean {
+    if (config.auth != "basic")
+        return true;
+    var credentials = auth(req)
+    if (credentials != null && credentials.name == config.username && credentials.pass == config.password)
+        return true;
+    res.statusCode = 401
+    res.setHeader('WWW-Authenticate', 'Basic realm="codeviewer"')
+    res.end('Access denied')
+    return false;
 }
