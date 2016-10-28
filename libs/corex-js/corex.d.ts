@@ -147,14 +147,14 @@ interface Array<T> {
     crossJoin(list2: T[], selector: any): any;
 }
 interface DateConstructor {
-    fromUnix(value: any): any;
-    today(): any;
-    current(): any;
-    create(y?: any, m?: any, d?: any, h?: any, mm?: any, s?: any, ms?: any): any;
+    fromUnix(value: number): Date;
+    today(): Date;
+    current(): Date;
+    create(y?: any, m?: any, d?: any, h?: any, mm?: any, s?: any, ms?: any): Date;
     _parsePart(ctx: any, part: any, setter?: any): any;
-    tryParseExact(s: any, formats: any): any;
-    _tryParseExact(s: any, format: any): any;
-    tryParseJsonDate(s: any): any;
+    tryParseExact(s: string, formats: string[] | string): Date;
+    _tryParseExact(s: string, format: string): Date;
+    tryParseJsonDate(s: string): Date;
     roundUsing(mathOp: any, date: any, part: any, precision: any): any;
     _dowNames: any;
     _dowNamesAbbr: any;

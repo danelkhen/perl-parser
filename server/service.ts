@@ -4,6 +4,7 @@ import { GitFile, FsFile, PerlPackage, PerlCriticResult } from "./service-spec";
 import * as fs2 from "./fs3";
 import * as ChildProcess from "child_process"
 import { isNullOrEmpty, isNotNullOrEmpty } from "./utils";
+import { GitBlameParser } from "./git-blame-parser"
 
 export class P5Service {
     constructor() {
@@ -204,40 +205,56 @@ export class P5Service {
     }
     git_blame(req: GitBlameRequest): Promise<GitBlameItem[]> {
         let path = this.mapPath(req.path);
-        let cmd = `git blame --incremental ${Path.basename(path)}`;
+        let cmd = `git blame --porcelain ${Path.basename(path)}`;
         let cwd = Path.dirname(path);
         console.log(cwd, cmd);
         return this.exec({ cmd, cwd }).then(res => {
-            let list: GitBlameItem[] = [];
-            let item: GitBlameItem = null;
-            res.lines().forEach(line => {
-                if (item == null) {
-                    //<40-byte hex sha1> <sourceline> <resultline> <num_lines>
-                    let tokens = line.split(' ');
-                    let num_lines = parseInt(tokens[3]);
-                    item = {
-                        sha: tokens[0],
-                        line_num: parseInt(tokens[1]),
-                        author: null,
-                        date: null,
-                    };
-                    return;
-                }
-                let index = line.indexOf(" ");
-                let tokens = line.splitAt(index);
-                let name = tokens[0];
-                let value = tokens[1];
-                if (name == "committer-time")
-                    item.date = Date.fromUnix(value);
-                else if (name == "author")
-                    item.author = value;
-                else if (name == "filename") {
-                    list.push(item);
-                    item = null;
-                }
+            let x = new GitBlameParser()
+            if (!x.parse(res))
+                return null;
+            return Object.keys(x.infoByFinalLine).map(key => {
+                let li = x.infoByFinalLine[key];
+                let commit = x.commitBySha1[li.sha1];
+                let item: GitBlameItem = {
+                    sha: li.sha1,
+                    line_num: li.finalLine,
+                    author: commit.author,
+                    date: Date.fromUnix(parseInt(commit.committerTime)).format("yyyy-MM-dd HH:mm:ss"),
+                };
+                return item;
             });
-            return list.orderBy(t=>t.line_num);
         });
+        //return this.exec({ cmd, cwd }).then(res => {
+        //    let list: GitBlameItem[] = [];
+        //    let item: GitBlameItem = null;
+        //    res.lines().forEach(line => {
+        //        if (item == null) {
+        //            //<40-byte hex sha1> <sourceline> <resultline> <num_lines>
+        //            let tokens = line.split(' ');
+        //            let num_lines = parseInt(tokens[3]);
+        //            item = {
+        //                sha: tokens[0],
+        //                line_num: parseInt(tokens[1]),
+        //                author: null,
+        //                date: null,
+        //            };
+        //            return;
+        //        }
+        //        let index = line.indexOf(" ");
+        //        let tokens = line.splitAt(index);
+        //        let name = tokens[0];
+        //        let value = tokens[1];
+        //        if (name == "committer-time")
+        //            item.date = Date.fromUnix(value);
+        //        else if (name == "author")
+        //            item.author = value;
+        //        else if (name == "filename") {
+        //            list.push(item);
+        //            item = null;
+        //        }
+        //    });
+        //    return list.orderBy(t => t.line_num);
+        //});
     }
 
 }
