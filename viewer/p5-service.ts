@@ -259,7 +259,6 @@ line_num
 {line: "use DateTime::TimeZone;", line_num: "154"}
 path
 :
-"apps/admin/affiliateadmin/affiliate.html"*/
 
 
 

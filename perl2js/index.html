@@ -1,0 +1,26 @@
+﻿<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <title></title>
+    <link rel="stylesheet" href="css/index.css" />
+</head>
+<body>
+    <div>
+        <input class="tbFilename" />
+        <button onclick="page.go()">go</button>
+        <button onclick="document.body.classList.toggle('fullscreen')">toggle</button>
+        <a class="btnPreview">preview</a>
+    </div>
+    <textarea id="code"></textarea>
+    <textarea id="preview"></textarea>
+
+    <script src="libs/corex-js/corex.js"></script>
+    <script type=module>
+        import * as index from './out/index.js'
+        window.page = index;
+        index.main();
+    </script>
+
+</body>
+</html>
